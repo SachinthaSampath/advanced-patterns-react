@@ -1,4 +1,5 @@
 import express, { Express, Request, Response } from "express";
+
 import productsRouter from "./features/products/router";
 
 const app: Express = express();
