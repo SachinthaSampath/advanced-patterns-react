@@ -1,6 +1,6 @@
 import express, { Express, Request, Response } from "express";
 
-import productsRouter from "./features/products/router";
+import postsRouter from "@/features/post/router";
 
 const app: Express = express();
 const port = process.env.PORT || 3000;
@@ -27,7 +27,7 @@ app.get("/", (req: Request, res: Response) => {
 });
 
 // Routes
-app.use("/api/products", productsRouter);
+app.use("/api/posts", postsRouter);
 
 // Start server
 app.listen(port, () => {

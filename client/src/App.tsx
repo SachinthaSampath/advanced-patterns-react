@@ -2,7 +2,7 @@ import { useEffect } from "react";
 
 export default function App() {
   useEffect(() => {
-    fetch("http://localhost:3000/api/products")
+    fetch("http://localhost:3000/api/posts")
       .then((res) => res.json())
       .then((data) => console.log(data));
   }, []);
