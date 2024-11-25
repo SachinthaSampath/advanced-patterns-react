@@ -1,4 +1,4 @@
-import express, { Express, Request, Response } from "express";
+import express, { Express, NextFunction, Request, Response } from "express";
 
 import postsRouter from "@/features/post/router";
 
@@ -7,6 +7,11 @@ const port = process.env.PORT || 3000;
 
 // JSON middleware
 app.use(express.json());
+
+// Delay middleware - adds 1 second delay to all requests
+app.use((req: Request, res: Response, next: NextFunction) => {
+  setTimeout(next, 1000);
+});
 
 // Add access control headers
 app.use(function (req, res, next) {

@@ -9,3 +9,5 @@ export const postsTable = sqliteTable("posts_table", {
   createdAt: text().notNull(),
   updatedAt: text().notNull(),
 });
+
+export type Post = typeof postsTable.$inferSelect;

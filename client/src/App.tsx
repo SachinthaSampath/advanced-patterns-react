@@ -1,15 +1,16 @@
-import { useEffect } from "react";
+import PostList from "@/features/post/components/PostList";
+import { useGetPostsQuery } from "@/features/post/hooks/getPostsQuery";
 
 export default function App() {
-  useEffect(() => {
-    fetch("http://localhost:3000/api/posts")
-      .then((res) => res.json())
-      .then((data) => console.log(data));
-  }, []);
+  const getPostsQuery = useGetPostsQuery();
+
+  if (getPostsQuery.isLoading) {
+    return <div>Loading...</div>;
+  }
 
   return (
-    <div>
-      <h1>Hello World</h1>
+    <div className="container mx-auto px-4 py-8">
+      <PostList posts={getPostsQuery.data} />
     </div>
   );
 }
