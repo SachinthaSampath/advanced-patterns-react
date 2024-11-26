@@ -1,21 +1,24 @@
 {
-  "name": "server",
+  "name": "@advanced-react/server",
   "version": "1.0.0",
   "scripts": {
     "start": "node dist/index.js",
-    "dev": "tsx watch --include \"./src/**\" ./src/index.ts",
+    "dev": "tsx ./index.ts",
     "drizzle:generate": "drizzle-kit generate",
     "drizzle:regenerate": "rm -rf ./drizzle && drizzle-kit generate",
     "drizzle:migrate": "drizzle-kit migrate",
     "drizzle:seed": "tsx ./src/database/seed.ts"
   },
   "dependencies": {
+    "@trpc/server": "11.0.0-rc.645",
     "better-sqlite3": "^11.5.0",
+    "cors": "^2.8.5",
     "drizzle-orm": "^0.36.4",
     "express": "^4.21.1"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.12",
+    "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "drizzle-kit": "^0.28.1",
     "tsx": "^4.19.2"

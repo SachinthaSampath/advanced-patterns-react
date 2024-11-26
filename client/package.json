@@ -1,5 +1,5 @@
 {
-  "name": "client",
+  "name": "@advanced-react/client",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -9,8 +9,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@advanced-react/server": "workspace:*",
     "@radix-ui/react-slot": "^1.1.0",
     "@tanstack/react-query": "^5.61.0",
+    "@trpc/client": "11.0.0-rc.645",
+    "@trpc/react-query": "11.0.0-rc.645",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "lucide-react": "^0.460.0",

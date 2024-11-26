@@ -1,6 +1,6 @@
-import { db } from ".";
+import { postsTable } from "../features/post/models";
 
-import { postsTable } from "@/features/post/models";
+import { db } from ".";
 
 async function seed() {
   await db.insert(postsTable).values({

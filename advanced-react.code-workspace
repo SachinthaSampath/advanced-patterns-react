@@ -10,6 +10,7 @@
 			"source.fixAll.eslint": "explicit"
 		},
 		"eslint.workingDirectories": ["./client", "./server"],
+		"typescript.referencesCodeLens.enabled": true,
 		"[json]": {
 			"editor.tabSize": 2
 		},

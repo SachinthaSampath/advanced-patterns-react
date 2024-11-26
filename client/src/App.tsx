@@ -1,16 +1,34 @@
-import PostList from "@/features/post/components/PostList";
-import { useGetPostsQuery } from "@/features/post/hooks/getPostsQuery";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
+import { httpBatchLink } from "@trpc/client";
+import { useState } from "react";
+
+import { trpc } from "@/lib/trpc";
+import HomePage from "@/pages/HomePage";
 
 export default function App() {
-  const getPostsQuery = useGetPostsQuery();
-
-  if (getPostsQuery.isLoading) {
-    return <div>Loading...</div>;
-  }
+  const [queryClient] = useState(() => new QueryClient());
+  const [trpcClient] = useState(() =>
+    trpc.createClient({
+      links: [
+        httpBatchLink({
+          url: "http://localhost:3000",
+          fetch(url, options) {
+            return fetch(url, {
+              ...options,
+              credentials: "include",
+            });
+          },
+        }),
+      ],
+    })
+  );
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <PostList posts={getPostsQuery.data} />
-    </div>
+    <trpc.Provider client={trpcClient} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient}>
+        <HomePage />
+      </QueryClientProvider>
+    </trpc.Provider>
   );
 }
