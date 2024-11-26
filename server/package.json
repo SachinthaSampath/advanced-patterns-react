@@ -13,6 +13,7 @@
     "@trpc/server": "11.0.0-rc.645",
     "better-sqlite3": "^11.5.0",
     "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
     "drizzle-orm": "^0.36.4",
     "express": "^4.21.1"
   },

@@ -4,6 +4,7 @@ import { httpBatchLink } from "@trpc/client";
 import { useState } from "react";
 
 import { trpc } from "@/lib/trpc";
+import { env } from "@/lib/utils/env";
 import HomePage from "@/pages/HomePage";
 
 export default function App() {
@@ -12,7 +13,7 @@ export default function App() {
     trpc.createClient({
       links: [
         httpBatchLink({
-          url: "http://localhost:3000",
+          url: env.VITE_SERVER_BASE_URL,
           fetch(url, options) {
             return fetch(url, {
               ...options,

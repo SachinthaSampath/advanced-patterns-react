@@ -3,6 +3,7 @@ import cors from "cors";
 
 import { postRouter } from "./features/post/router";
 import { router } from "./trpc";
+import { env } from "./utils/env";
 
 const appRouter = router({
   posts: postRouter,
@@ -12,7 +13,7 @@ export type AppRouter = typeof appRouter;
 const server = createHTTPServer({
   router: appRouter,
   middleware: cors({
-    origin: ["http://localhost:5173"],
+    origin: [env.CLIENT_BASE_URL],
     credentials: true,
   }),
 });
