@@ -1,28 +1,18 @@
 import { Experience } from "@advanced-react/server/features/experience/models";
-import { useState } from "react";
+import { Link } from "@tanstack/react-router";
 
 import CommentsSection from "@/features/comment/components/CommentsSection";
-import { trpc } from "@/lib/trpc";
-
-import ExperienceForm from "./ExperienceForm";
+import { trpc } from "@/router";
 
 type ExperienceCardProps = {
   experience: Experience;
 };
 
 export default function ExperienceCard({ experience }: ExperienceCardProps) {
-  const [isEditing, setIsEditing] = useState(false);
   const utils = trpc.useUtils();
 
   const deleteMutation = trpc.experiences.delete.useMutation({
     onSuccess: () => {
-      utils.experiences.feed.invalidate();
-    },
-  });
-
-  const editMutation = trpc.experiences.edit.useMutation({
-    onSuccess: () => {
-      setIsEditing(false);
       utils.experiences.feed.invalidate();
     },
   });
@@ -32,24 +22,6 @@ export default function ExperienceCard({ experience }: ExperienceCardProps) {
       deleteMutation.mutate({ id: experience.id });
     }
   };
-
-  const handleEdit = (data: { title: string; content: string }) => {
-    editMutation.mutate({
-      id: experience.id,
-      ...data,
-    });
-  };
-
-  if (isEditing) {
-    return (
-      <ExperienceForm
-        initialData={experience}
-        onSubmit={handleEdit}
-        isSubmitting={editMutation.isPending}
-        onCancel={() => setIsEditing(false)}
-      />
-    );
-  }
 
   return (
     <article className="border rounded-lg p-4 mb-4">
@@ -62,12 +34,13 @@ export default function ExperienceCard({ experience }: ExperienceCardProps) {
           </time>
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={() => setIsEditing(true)}
+          <Link
+            to="/experiences/$experienceId/edit"
+            params={{ experienceId: experience.id }}
             className="text-sm text-blue-500 hover:text-blue-700"
           >
             Edit
-          </button>
+          </Link>
           <button
             onClick={handleDelete}
             disabled={deleteMutation.isPending}

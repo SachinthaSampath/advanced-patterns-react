@@ -1,7 +1,7 @@
 import { Comment } from "@advanced-react/server/features/comment/models";
 import { useState } from "react";
 
-import { trpc } from "@/lib/trpc";
+import { trpc } from "@/router";
 
 type CommentItemProps = {
   comment: Comment;
@@ -19,7 +19,9 @@ export default function CommentItem({
 
   const deleteMutation = trpc.comments.delete.useMutation({
     onSuccess: () => {
-      utils.comments.byPostId.invalidate({ postId: comment.postId });
+      utils.comments.byExperienceId.invalidate({
+        experienceId: comment.experienceId,
+      });
       onCommentUpdated();
     },
   });
@@ -27,7 +29,9 @@ export default function CommentItem({
   const editMutation = trpc.comments.edit.useMutation({
     onSuccess: () => {
       setIsEditing(false);
-      utils.comments.byPostId.invalidate({ postId: comment.postId });
+      utils.comments.byExperienceId.invalidate({
+        experienceId: comment.experienceId,
+      });
       onCommentUpdated();
     },
   });

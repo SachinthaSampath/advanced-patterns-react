@@ -1,14 +1,21 @@
+import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useMemo } from "react";
 
 import ExperienceList from "@/features/experience/components/ExperienceList";
 import InfiniteScroll from "@/features/shared/components/InfiniteScroll";
-import { trpc } from "@/lib/trpc";
+import { trpc } from "@/router";
 
-export default function HomePage() {
+export const Route = createFileRoute("/")({
+  component: Index,
+  loader: async ({ context: { trpcQueryUtils } }) => {
+    await trpcQueryUtils.experiences.feed.ensureData({});
+    return;
+  },
+});
+
+function Index() {
   const experiencesQuery = trpc.experiences.feed.useInfiniteQuery(
-    {
-      limit: 10,
-    },
+    {},
     {
       getNextPageParam: (lastPage) => lastPage.nextCursor,
       initialCursor: 0,

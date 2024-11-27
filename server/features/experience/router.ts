@@ -7,6 +7,15 @@ import { DEFAULT_EXPERIENCE_LIMIT } from "../../utils/constants";
 import { experiencesTable } from "./models";
 
 export const experienceRouter = router({
+  byId: publicProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const experience = await db.query.experiencesTable.findFirst({
+        where: (experiences, { eq }) => eq(experiences.id, input.id),
+      });
+      return experience;
+    }),
+
   feed: publicProcedure
     .input(
       z.object({
@@ -15,8 +24,8 @@ export const experienceRouter = router({
       })
     )
     .query(async ({ input }) => {
-      const limit = input.limit ?? DEFAULT_EXPERIENCE_LIMIT;
-      const cursor = input.cursor ?? 0;
+      const limit = input?.limit ?? DEFAULT_EXPERIENCE_LIMIT;
+      const cursor = input?.cursor ?? 0;
 
       const experiences = await db.query.experiencesTable.findMany({
         limit,

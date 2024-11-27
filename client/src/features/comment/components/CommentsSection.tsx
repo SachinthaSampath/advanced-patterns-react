@@ -1,7 +1,7 @@
+import { trpc } from "@/router";
+
 import CommentForm from "./CommentForm";
 import CommentList from "./CommentList";
-
-import { trpc } from "@/lib/trpc";
 
 type CommentsSectionProps = {
   experienceId: number;
