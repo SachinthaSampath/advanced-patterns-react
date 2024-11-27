@@ -57,12 +57,12 @@ export default function CommentItem({
     return (
       <form
         onSubmit={handleEdit}
-        className="p-2 bg-neutral-50 dark:bg-neutral-800 rounded"
+        className="rounded bg-neutral-50 p-2 dark:bg-neutral-800"
       >
         <textarea
           value={editContent}
           onChange={(e) => setEditContent(e.target.value)}
-          className="w-full p-2 border border-neutral-200 dark:border-neutral-800 rounded mb-2"
+          className="mb-2 w-full rounded border border-neutral-200 p-2 dark:border-neutral-800"
           rows={2}
         />
         <div className="flex gap-2">
@@ -78,11 +78,11 @@ export default function CommentItem({
   }
 
   return (
-    <div className="p-2 bg-neutral-50 dark:bg-neutral-800 rounded">
+    <div className="rounded bg-neutral-50 p-2 dark:bg-neutral-800">
       <p className="text-neutral-800 dark:text-neutral-100">
         {comment.content}
       </p>
-      <div className="flex items-center justify-between mt-1">
+      <div className="mt-1 flex items-center justify-between">
         <time className="text-xs text-neutral-500">
           {new Date(comment.createdAt).toLocaleDateString()}
         </time>

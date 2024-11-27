@@ -21,7 +21,7 @@ export const experienceRouter = router({
       z.object({
         limit: z.number().optional(),
         cursor: z.number().optional(),
-      })
+      }),
     )
     .query(async ({ input }) => {
       const limit = input?.limit ?? DEFAULT_EXPERIENCE_LIMIT;
@@ -56,7 +56,7 @@ export const experienceRouter = router({
         id: z.number(),
         title: z.string().min(1),
         content: z.string().min(1),
-      })
+      }),
     )
     .mutation(async ({ input }) => {
       const now = new Date().toISOString();

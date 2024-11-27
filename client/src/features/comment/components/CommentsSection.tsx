@@ -30,8 +30,8 @@ export default function CommentsSection({
   };
 
   return (
-    <div className="mt-4 border-t border-neutral-200 dark:border-neutral-800 pt-4 space-y-4">
-      <h3 className="font-semibold mb-2">Comments</h3>
+    <div className="mt-4 space-y-4 border-t border-neutral-200 pt-4 dark:border-neutral-800">
+      <h3 className="mb-2 font-semibold">Comments</h3>
 
       <CommentForm
         onSubmit={handleAddComment}

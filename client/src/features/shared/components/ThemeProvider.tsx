@@ -29,7 +29,7 @@ export default function ThemeProvider({
   ...props
 }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(
-    () => getItem(storageKey) || defaultTheme
+    () => getItem(storageKey) || defaultTheme,
   );
 
   useEffect(() => {

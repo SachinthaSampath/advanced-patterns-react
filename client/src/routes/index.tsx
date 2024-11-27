@@ -19,7 +19,7 @@ function Index() {
     {
       getNextPageParam: (lastPage) => lastPage.nextCursor,
       initialCursor: 0,
-    }
+    },
   );
 
   const handleLoadMore = useCallback(() => {
@@ -40,7 +40,7 @@ function Index() {
 
   return (
     <div className="container mx-auto p-4">
-      <div className="flex flex-col gap-4 max-w-feed mx-auto">
+      <div className="max-w-feed mx-auto flex flex-col gap-4">
         <InfiniteScroll
           onLoadMore={handleLoadMore}
           hasNextPage={experiencesQuery.hasNextPage}

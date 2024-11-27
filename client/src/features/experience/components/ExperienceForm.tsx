@@ -28,9 +28,9 @@ export default function ExperienceForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="border rounded-lg p-4 mb-4">
+    <form onSubmit={handleSubmit} className="mb-4 rounded-lg border p-4">
       <div className="mb-4">
-        <label htmlFor="title" className="block text-sm font-medium mb-1">
+        <label htmlFor="title" className="mb-1 block text-sm font-medium">
           Title
         </label>
         <input
@@ -38,20 +38,20 @@ export default function ExperienceForm({
           id="title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="w-full p-2 border rounded"
+          className="w-full rounded border p-2"
           required
         />
       </div>
 
       <div className="mb-4">
-        <label htmlFor="content" className="block text-sm font-medium mb-1">
+        <label htmlFor="content" className="mb-1 block text-sm font-medium">
           Content
         </label>
         <textarea
           id="content"
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          className="w-full p-2 border rounded"
+          className="w-full rounded border p-2"
           rows={3}
           required
         />
@@ -61,14 +61,14 @@ export default function ExperienceForm({
         <button
           type="submit"
           disabled={isSubmitting}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+          className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600 disabled:opacity-50"
         >
           {isSubmitting ? "Saving..." : "Save"}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+          className="rounded bg-gray-500 px-4 py-2 text-white hover:bg-gray-600"
         >
           Cancel
         </button>

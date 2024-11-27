@@ -25,16 +25,16 @@ export default function Button({
 }
 
 const buttonVariants = cva(
-  "rounded-md font-semibold disabled:opacity-50 disabled:pointer-events-none",
+  "rounded-md font-semibold disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
         default:
-          "bg-gradient-to-r from-primary-500 to-secondary-500 text-neutral-900 hover:bg-gradient-to-r hover:from-primary-500/70 hover:to-secondary-500/70",
+          "from-primary-500 to-secondary-500 hover:from-primary-500/70 hover:to-secondary-500/70 bg-gradient-to-r text-neutral-900 hover:bg-gradient-to-r",
         outline:
-          "border border-neutral-200 hover:text-neutral-900 hover:bg-neutral-100 dark:border-neutral-800 dark:hover:text-neutral-50 dark:hover:bg-neutral-800",
+          "border border-neutral-200 hover:bg-neutral-100 hover:text-neutral-900 dark:border-neutral-800 dark:hover:bg-neutral-800 dark:hover:text-neutral-50",
         link: "bg-transparent hover:opacity-70",
-        destructive: "bg-red-500 text-white hover:bg-red-500/70",
+        destructive: "h-4 bg-red-500 p-4 text-white hover:bg-red-500/70",
         "destructive-link": "text-red-500 hover:text-red-500/70",
       },
       size: {
@@ -45,12 +45,12 @@ const buttonVariants = cva(
       {
         variant: ["link", "destructive-link"],
         size: "default",
-        class: "p-0 h-auto",
+        class: "h-auto p-0",
       },
     ],
     defaultVariants: {
       variant: "default",
       size: "default",
     },
-  }
+  },
 );

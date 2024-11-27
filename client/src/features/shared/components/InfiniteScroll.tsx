@@ -25,7 +25,7 @@ export default function InfiniteScroll({
       },
       {
         rootMargin: `0px 0px ${threshold}px 0px`,
-      }
+      },
     );
 
     const currentContainer = containerRef.current;

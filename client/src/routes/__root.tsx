@@ -18,7 +18,7 @@ function Root() {
     <ThemeProvider defaultTheme="dark">
       <div>
         <header className="border-b border-neutral-200 dark:border-neutral-800">
-          <div className="container mx-auto p-4 flex justify-between items-center">
+          <div className="container mx-auto flex items-center justify-between p-4">
             <h1 className="text-xl font-bold">Advanced React</h1>
             <ThemeToggle />
           </div>

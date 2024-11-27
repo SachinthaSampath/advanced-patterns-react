@@ -28,7 +28,7 @@ export default function CommentForm({
         value={content}
         onChange={(e) => setContent(e.target.value)}
         placeholder="Add a comment..."
-        className="w-full p-2 border border-neutral-200 dark:border-neutral-800 rounded"
+        className="w-full rounded border border-neutral-200 p-2 dark:border-neutral-800"
       />
       <Button type="submit" disabled={!content.trim() || isSubmitting}>
         {isSubmitting ? "Adding..." : "Add Comment"}

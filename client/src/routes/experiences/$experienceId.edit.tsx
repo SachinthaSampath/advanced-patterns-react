@@ -49,7 +49,7 @@ function EditExperience() {
   return (
     <div className="container mx-auto p-4">
       <div className="max-w-feed mx-auto">
-        <h1 className="text-2xl font-bold mb-4">Edit Experience</h1>
+        <h1 className="mb-4 text-2xl font-bold">Edit Experience</h1>
         <ExperienceForm
           initialData={experienceQuery.data}
           onSubmit={handleSubmit}

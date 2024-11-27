@@ -10,7 +10,7 @@ export const commentRouter = router({
     .input(
       z.object({
         experienceId: z.number(),
-      })
+      }),
     )
     .query(async ({ input }) => {
       const comments = await db.query.commentsTable.findMany({
@@ -29,7 +29,7 @@ export const commentRouter = router({
       z.object({
         experienceId: z.number(),
         content: z.string().min(1),
-      })
+      }),
     )
     .mutation(async ({ input }) => {
       const now = new Date().toISOString();
@@ -57,7 +57,7 @@ export const commentRouter = router({
       z.object({
         id: z.number(),
         content: z.string().min(1),
-      })
+      }),
     )
     .mutation(async ({ input }) => {
       const now = new Date().toISOString();
