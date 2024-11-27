@@ -10,6 +10,7 @@
     "drizzle:seed": "tsx ./database/seed.ts"
   },
   "dependencies": {
+    "@advanced-react/shared": "workspace:*",
     "@trpc/server": "11.0.0-rc.645",
     "better-sqlite3": "^11.5.0",
     "cors": "^2.8.5",

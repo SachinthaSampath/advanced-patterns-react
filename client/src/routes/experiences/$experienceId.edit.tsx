@@ -23,13 +23,6 @@ function EditExperience() {
   const utils = trpc.useUtils();
 
   const experienceQuery = trpc.experiences.byId.useQuery({ id: experienceId });
-  const editMutation = trpc.experiences.edit.useMutation({
-    onSuccess: () => {
-      utils.experiences.feed.invalidate();
-      utils.experiences.byId.invalidate({ id: experienceId });
-      navigate({ to: "/" });
-    },
-  });
 
   if (experienceQuery.isLoading) {
     return <div>Loading...</div>;
@@ -39,22 +32,20 @@ function EditExperience() {
     return <div>Experience not found</div>;
   }
 
-  const handleSubmit = (data: { title: string; content: string }) => {
-    editMutation.mutate({
-      id: experienceId,
-      ...data,
-    });
-  };
-
   return (
     <div className="container mx-auto p-4">
       <div className="max-w-feed mx-auto">
         <h1 className="mb-4 text-2xl font-bold">Edit Experience</h1>
         <ExperienceForm
-          initialData={experienceQuery.data}
-          onSubmit={handleSubmit}
-          isSubmitting={editMutation.isPending}
-          onCancel={() => navigate({ to: "/" })}
+          experience={experienceQuery.data}
+          onSuccess={() => {
+            utils.experiences.feed.invalidate();
+            utils.experiences.byId.invalidate({ id: experienceId });
+            navigate({ to: "/" });
+          }}
+          onCancel={() => {
+            navigate({ to: "/" });
+          }}
         />
       </div>
     </div>

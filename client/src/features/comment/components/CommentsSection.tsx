@@ -11,19 +11,8 @@ export default function CommentsSection({
   experienceId,
 }: CommentsSectionProps) {
   const utils = trpc.useUtils();
-  const commentsQuery = trpc.comments.byExperienceId.useQuery({ experienceId });
-  const addCommentMutation = trpc.comments.add.useMutation({
-    onSuccess: () => {
-      utils.comments.byExperienceId.invalidate({ experienceId });
-    },
-  });
 
-  const handleAddComment = (content: string) => {
-    addCommentMutation.mutate({
-      experienceId,
-      content,
-    });
-  };
+  const commentsQuery = trpc.comments.byExperienceId.useQuery({ experienceId });
 
   const handleCommentUpdated = () => {
     commentsQuery.refetch();
@@ -34,8 +23,10 @@ export default function CommentsSection({
       <h3 className="mb-2 font-semibold">Comments</h3>
 
       <CommentForm
-        onSubmit={handleAddComment}
-        isSubmitting={addCommentMutation.isPending}
+        experienceId={experienceId}
+        onSuccess={() => {
+          utils.comments.byExperienceId.invalidate({ experienceId });
+        }}
       />
 
       {commentsQuery.data && (

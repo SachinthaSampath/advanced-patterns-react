@@ -1,6 +1,22 @@
 import { initTRPC } from "@trpc/server";
+import { ZodError } from "zod";
 
-const t = initTRPC.create();
+const t = initTRPC.create({
+  errorFormatter(opts) {
+    const { shape, error } = opts;
+    return {
+      ...shape,
+      data: {
+        ...shape.data,
+        zodError:
+          // Only show zod errors for bad request errors
+          error.code === "BAD_REQUEST" && error.cause instanceof ZodError
+            ? error.cause.flatten()
+            : null,
+      },
+    };
+  },
+});
 
 // Add middleware to simulate network delay
 const withDelay = t.middleware(async ({ next }) => {

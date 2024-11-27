@@ -1,7 +1,12 @@
 import { Comment } from "@advanced-react/server/features/comment/models";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
+import { FormProvider, useForm } from "react-hook-form";
+import { z } from "zod";
 
-import Button from "@/features/shared/components/ui/button";
+import FormField from "@/features/shared/components/FormField";
+import Button from "@/features/shared/components/ui/Button";
+import TextArea from "@/features/shared/components/ui/TextArea";
 import { trpc } from "@/router";
 
 type CommentItemProps = {
@@ -9,12 +14,24 @@ type CommentItemProps = {
   onCommentUpdated: () => void;
 };
 
+const editCommentSchema = z.object({
+  content: z.string().min(1, "Comment cannot be empty"),
+});
+
+type EditCommentFormData = z.infer<typeof editCommentSchema>;
+
 export default function CommentItem({
   comment,
   onCommentUpdated,
 }: CommentItemProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [editContent, setEditContent] = useState(comment.content);
+
+  const form = useForm<EditCommentFormData>({
+    resolver: zodResolver(editCommentSchema),
+    defaultValues: {
+      content: comment.content,
+    },
+  });
 
   const utils = trpc.useUtils();
 
@@ -43,37 +60,40 @@ export default function CommentItem({
     }
   };
 
-  const handleEdit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editContent.trim()) return;
-
+  const handleEdit = form.handleSubmit((data) => {
     editMutation.mutate({
       id: comment.id,
-      content: editContent,
+      content: data.content,
     });
-  };
+  });
 
   if (isEditing) {
     return (
-      <form
-        onSubmit={handleEdit}
-        className="rounded bg-neutral-50 p-2 dark:bg-neutral-800"
-      >
-        <textarea
-          value={editContent}
-          onChange={(e) => setEditContent(e.target.value)}
-          className="mb-2 w-full rounded border border-neutral-200 p-2 dark:border-neutral-800"
-          rows={2}
-        />
-        <div className="flex gap-2">
-          <Button type="submit" disabled={editMutation.isPending}>
-            {editMutation.isPending ? "Saving..." : "Save"}
-          </Button>
-          <Button variant="link" onClick={() => setIsEditing(false)}>
-            Cancel
-          </Button>
-        </div>
-      </form>
+      <FormProvider {...form}>
+        <form
+          onSubmit={handleEdit}
+          className="rounded bg-neutral-50 p-2 dark:bg-neutral-800"
+        >
+          <FormField<EditCommentFormData> name="content" className="mb-2">
+            {({ error, name }) => (
+              <TextArea
+                {...form.register(name)}
+                rows={2}
+                error={error}
+                disabled={editMutation.isPending}
+              />
+            )}
+          </FormField>
+          <div className="flex gap-2">
+            <Button type="submit" disabled={editMutation.isPending}>
+              {editMutation.isPending ? "Saving..." : "Save"}
+            </Button>
+            <Button variant="link" onClick={() => setIsEditing(false)}>
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </FormProvider>
     );
   }
 

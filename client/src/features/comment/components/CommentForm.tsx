@@ -1,38 +1,60 @@
-import { useState } from "react";
+import type { Experience } from "@advanced-react/server/features/experience/models";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { FormProvider, useForm } from "react-hook-form";
+import { z } from "zod";
 
-import Button from "@/features/shared/components/ui/button";
+import FormField from "@/features/shared/components/FormField";
+import Button from "@/features/shared/components/ui/Button";
+import Input from "@/features/shared/components/ui/Input";
+import { trpc } from "@/router";
+
+const commentSchema = z.object({
+  content: z.string().min(1, "Comment cannot be empty"),
+});
+
+type CommentFormData = z.infer<typeof commentSchema>;
 
 type CommentFormProps = {
-  onSubmit: (content: string) => void;
-  isSubmitting?: boolean;
+  experienceId: Experience["id"];
+  onSuccess?: () => void;
 };
 
 export default function CommentForm({
-  onSubmit,
-  isSubmitting,
+  experienceId,
+  onSuccess,
 }: CommentFormProps) {
-  const [content, setContent] = useState("");
+  const form = useForm<CommentFormData>({
+    resolver: zodResolver(commentSchema),
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!content.trim()) return;
+  const addCommentMutation = trpc.comments.add.useMutation({
+    onSuccess,
+  });
 
-    onSubmit(content);
-    setContent("");
-  };
+  function onSubmit(data: CommentFormData) {
+    addCommentMutation.mutate({
+      experienceId,
+      content: data.content,
+    });
+  }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-2">
-      <input
-        type="text"
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        placeholder="Add a comment..."
-        className="w-full rounded border border-neutral-200 p-2 dark:border-neutral-800"
-      />
-      <Button type="submit" disabled={!content.trim() || isSubmitting}>
-        {isSubmitting ? "Adding..." : "Add Comment"}
-      </Button>
-    </form>
+    <FormProvider {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
+        <FormField<CommentFormData> name="content">
+          {({ error, name }) => (
+            <Input
+              {...form.register(name)}
+              placeholder="Add a comment..."
+              error={error}
+              disabled={addCommentMutation.isPending}
+            />
+          )}
+        </FormField>
+        <Button type="submit" disabled={addCommentMutation.isPending}>
+          {addCommentMutation.isPending ? "Adding..." : "Add Comment"}
+        </Button>
+      </form>
+    </FormProvider>
   );
 }

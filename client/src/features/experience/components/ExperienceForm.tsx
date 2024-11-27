@@ -1,78 +1,74 @@
 import { Experience } from "@advanced-react/server/features/experience/models";
-import { useState } from "react";
+import { experienceSchema } from "@advanced-react/shared/schema/experience";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { FormProvider, useForm } from "react-hook-form";
+import { z } from "zod";
+
+import FormField from "@/features/shared/components/FormField";
+import Button from "@/features/shared/components/ui/Button";
+import Input from "@/features/shared/components/ui/Input";
+import TextArea from "@/features/shared/components/ui/TextArea";
+import { trpc } from "@/router";
+
+type ExperienceFormData = z.infer<typeof experienceSchema>;
 
 type ExperienceFormProps = {
-  initialData: Experience;
-  onSubmit: (data: { title: string; content: string }) => void;
-  onCancel: () => void;
-  isSubmitting?: boolean;
+  experience: Experience;
+  onSuccess?: () => void;
+  onCancel?: () => void;
 };
 
 export default function ExperienceForm({
-  initialData,
-  onSubmit,
+  experience,
+  onSuccess,
   onCancel,
-  isSubmitting,
 }: ExperienceFormProps) {
-  const [title, setTitle] = useState(initialData.title);
-  const [content, setContent] = useState(initialData.content);
+  const form = useForm<ExperienceFormData>({
+    resolver: zodResolver(experienceSchema),
+    defaultValues: experience,
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title.trim() || !content.trim()) return;
+  const editMutation = trpc.experiences.edit.useMutation({
+    onSuccess,
+  });
 
-    onSubmit({
-      title,
-      content,
-    });
-  };
+  function onSubmit(data: ExperienceFormData) {
+    editMutation.mutate({ id: experience.id, ...data });
+  }
 
   return (
-    <form onSubmit={handleSubmit} className="mb-4 rounded-lg border p-4">
-      <div className="mb-4">
-        <label htmlFor="title" className="mb-1 block text-sm font-medium">
-          Title
-        </label>
-        <input
-          type="text"
-          id="title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="w-full rounded border p-2"
-          required
-        />
-      </div>
+    <FormProvider {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField<ExperienceFormData> name="title" label="Title">
+          {({ error, name }) => (
+            <Input
+              {...form.register(name)}
+              error={error}
+              disabled={editMutation.isPending}
+            />
+          )}
+        </FormField>
 
-      <div className="mb-4">
-        <label htmlFor="content" className="mb-1 block text-sm font-medium">
-          Content
-        </label>
-        <textarea
-          id="content"
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          className="w-full rounded border p-2"
-          rows={3}
-          required
-        />
-      </div>
+        <FormField<ExperienceFormData> name="content" label="Content">
+          {({ error, name }) => (
+            <TextArea
+              {...form.register(name)}
+              rows={4}
+              error={error}
+              disabled={editMutation.isPending}
+            />
+          )}
+        </FormField>
 
-      <div className="flex gap-2">
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600 disabled:opacity-50"
-        >
-          {isSubmitting ? "Saving..." : "Save"}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="rounded bg-gray-500 px-4 py-2 text-white hover:bg-gray-600"
-        >
-          Cancel
-        </button>
-      </div>
-    </form>
+        <div className="flex gap-2">
+          <Button type="submit" disabled={editMutation.isPending}>
+            {editMutation.isPending ? "Saving..." : "Save"}
+          </Button>
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
+        </div>
+      </form>
+    </FormProvider>
   );
 }

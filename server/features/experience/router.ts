@@ -1,3 +1,4 @@
+import { experienceSchema } from "@advanced-react/shared/schema/experience";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
@@ -41,21 +42,11 @@ export const experienceRouter = router({
       };
     }),
 
-  delete: publicProcedure
-    .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
-      await db
-        .delete(experiencesTable)
-        .where(eq(experiencesTable.id, input.id));
-      return input.id;
-    }),
-
   edit: publicProcedure
     .input(
       z.object({
         id: z.number(),
-        title: z.string().min(1),
-        content: z.string().min(1),
+        ...experienceSchema.shape,
       }),
     )
     .mutation(async ({ input }) => {
@@ -72,5 +63,14 @@ export const experienceRouter = router({
         .returning();
 
       return experience[0];
+    }),
+
+  delete: publicProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      await db
+        .delete(experiencesTable)
+        .where(eq(experiencesTable.id, input.id));
+      return input.id;
     }),
 });

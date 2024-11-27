@@ -1,8 +1,8 @@
 import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/router-devtools";
 
-import ThemeProvider from "@/features/shared/components/ThemeProvider";
-import ThemeToggle from "@/features/shared/components/ThemeToggle";
+import ThemeProvider from "@/features/shared/components/theme/ThemeProvider";
+import ThemeToggle from "@/features/shared/components/theme/ThemeToggle";
 import { trpcQueryUtils } from "@/router";
 
 export interface RouterAppContext {
