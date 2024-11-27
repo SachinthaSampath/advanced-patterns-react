@@ -35,6 +35,8 @@ export default [
           groups: [
             // External packages come first.
             ["^@?\\w"],
+            // Aliased internal packages.
+            ["^@/"],
             // Internal packages.
             ["^\\.\\./", "^\\./"],
             // Side effect imports.

@@ -3,10 +3,10 @@ import { z } from "zod";
 
 import { db } from "../../database";
 import { publicProcedure, router } from "../../trpc";
-import { DEFAULT_POST_LIMIT } from "../../utils/constants";
-import { postsTable } from "./models";
+import { DEFAULT_EXPERIENCE_LIMIT } from "../../utils/constants";
+import { experiencesTable } from "./models";
 
-export const postRouter = router({
+export const experienceRouter = router({
   feed: publicProcedure
     .input(
       z.object({
@@ -15,10 +15,10 @@ export const postRouter = router({
       })
     )
     .query(async ({ input }) => {
-      const limit = input.limit ?? DEFAULT_POST_LIMIT;
+      const limit = input.limit ?? DEFAULT_EXPERIENCE_LIMIT;
       const cursor = input.cursor ?? 0;
 
-      const posts = await db.query.postsTable.findMany({
+      const experiences = await db.query.experiencesTable.findMany({
         limit,
         offset: cursor,
         with: {
@@ -26,18 +26,18 @@ export const postRouter = router({
         },
       });
 
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
       return {
-        posts,
-        nextCursor: posts.length === limit ? cursor + limit : undefined,
+        experiences,
+        nextCursor: experiences.length === limit ? cursor + limit : undefined,
       };
     }),
 
   delete: publicProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
-      await db.delete(postsTable).where(eq(postsTable.id, input.id));
+      await db
+        .delete(experiencesTable)
+        .where(eq(experiencesTable.id, input.id));
       return input.id;
     }),
 
@@ -52,16 +52,16 @@ export const postRouter = router({
     .mutation(async ({ input }) => {
       const now = new Date().toISOString();
 
-      const post = await db
-        .update(postsTable)
+      const experience = await db
+        .update(experiencesTable)
         .set({
           title: input.title,
           content: input.content,
           updatedAt: now,
         })
-        .where(eq(postsTable.id, input.id))
+        .where(eq(experiencesTable.id, input.id))
         .returning();
 
-      return post[0];
+      return experience[0];
     }),
 });

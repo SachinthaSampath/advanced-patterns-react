@@ -15,7 +15,7 @@ export default function CommentItem({
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(comment.content);
 
-  const utils = trpc.useContext();
+  const utils = trpc.useUtils();
 
   const deleteMutation = trpc.comments.delete.useMutation({
     onSuccess: () => {

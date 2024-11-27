@@ -1,11 +1,11 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "513caffa-cac8-4262-8c8c-24deaf90d9ce",
+  "id": "1b601e4a-226f-4e64-8237-7f10b9451eb5",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
-    "posts_table": {
-      "name": "posts_table",
+    "comments_table": {
+      "name": "comments_table",
       "columns": {
         "id": {
           "name": "id",
@@ -14,16 +14,16 @@
           "notNull": true,
           "autoincrement": true
         },
-        "title": {
-          "name": "title",
+        "content": {
+          "name": "content",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "content": {
-          "name": "content",
-          "type": "text",
+        "experienceId": {
+          "name": "experienceId",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
@@ -49,8 +49,8 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "comments_table": {
-      "name": "comments_table",
+    "experiences_table": {
+      "name": "experiences_table",
       "columns": {
         "id": {
           "name": "id",
@@ -59,16 +59,16 @@
           "notNull": true,
           "autoincrement": true
         },
-        "content": {
-          "name": "content",
+        "title": {
+          "name": "title",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "postId": {
-          "name": "postId",
-          "type": "integer",
+        "content": {
+          "name": "content",
+          "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false

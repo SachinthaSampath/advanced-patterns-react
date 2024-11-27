@@ -1,48 +1,49 @@
-import { Post } from "@advanced-react/server/features/post/models";
+import { Experience } from "@advanced-react/server/features/experience/models";
 import { useState } from "react";
 
 import CommentsSection from "@/features/comment/components/CommentsSection";
-import PostForm from "@/features/post/components/PostForm";
 import { trpc } from "@/lib/trpc";
 
-type PostCardProps = {
-  post: Post;
+import ExperienceForm from "./ExperienceForm";
+
+type ExperienceCardProps = {
+  experience: Experience;
 };
 
-export default function PostCard({ post }: PostCardProps) {
+export default function ExperienceCard({ experience }: ExperienceCardProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const utils = trpc.useContext();
+  const utils = trpc.useUtils();
 
-  const deleteMutation = trpc.posts.delete.useMutation({
+  const deleteMutation = trpc.experiences.delete.useMutation({
     onSuccess: () => {
-      utils.posts.feed.invalidate();
+      utils.experiences.feed.invalidate();
     },
   });
 
-  const editMutation = trpc.posts.edit.useMutation({
+  const editMutation = trpc.experiences.edit.useMutation({
     onSuccess: () => {
       setIsEditing(false);
-      utils.posts.feed.invalidate();
+      utils.experiences.feed.invalidate();
     },
   });
 
   const handleDelete = () => {
-    if (window.confirm("Are you sure you want to delete this post?")) {
-      deleteMutation.mutate({ id: post.id });
+    if (window.confirm("Are you sure you want to delete this experience?")) {
+      deleteMutation.mutate({ id: experience.id });
     }
   };
 
   const handleEdit = (data: { title: string; content: string }) => {
     editMutation.mutate({
-      id: post.id,
+      id: experience.id,
       ...data,
     });
   };
 
   if (isEditing) {
     return (
-      <PostForm
-        initialData={post}
+      <ExperienceForm
+        initialData={experience}
         onSubmit={handleEdit}
         isSubmitting={editMutation.isPending}
         onCancel={() => setIsEditing(false)}
@@ -54,10 +55,10 @@ export default function PostCard({ post }: PostCardProps) {
     <article className="border rounded-lg p-4 mb-4">
       <div className="flex justify-between items-start mb-4">
         <div>
-          <h2 className="text-xl font-bold mb-2">{post.title}</h2>
-          <p className="text-gray-700 mb-2">{post.content}</p>
+          <h2 className="text-xl font-bold mb-2">{experience.title}</h2>
+          <p className="text-gray-700 mb-2">{experience.content}</p>
           <time className="text-sm text-gray-500">
-            Posted on: {new Date(post.createdAt).toLocaleDateString()}
+            Posted on: {new Date(experience.createdAt).toLocaleDateString()}
           </time>
         </div>
         <div className="flex gap-2">
@@ -77,7 +78,7 @@ export default function PostCard({ post }: PostCardProps) {
         </div>
       </div>
 
-      <CommentsSection postId={post.id} />
+      <CommentsSection experienceId={experience.id} />
     </article>
   );
 }

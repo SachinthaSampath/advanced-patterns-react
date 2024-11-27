@@ -1,19 +1,19 @@
-import { Post } from "@advanced-react/server/features/post/models";
+import { Experience } from "@advanced-react/server/features/experience/models";
 import { useState } from "react";
 
-type PostFormProps = {
-  initialData: Post;
+type ExperienceFormProps = {
+  initialData: Experience;
   onSubmit: (data: { title: string; content: string }) => void;
   onCancel: () => void;
   isSubmitting?: boolean;
 };
 
-export default function PostForm({
+export default function ExperienceForm({
   initialData,
   onSubmit,
   onCancel,
   isSubmitting,
-}: PostFormProps) {
+}: ExperienceFormProps) {
   const [title, setTitle] = useState(initialData.title);
   const [content, setContent] = useState(initialData.content);
 

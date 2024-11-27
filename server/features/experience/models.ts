@@ -1,6 +1,6 @@
 import { int, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
-export const postsTable = sqliteTable("posts_table", {
+export const experiencesTable = sqliteTable("experiences_table", {
   id: int().primaryKey({ autoIncrement: true }),
   title: text().notNull(),
   content: text().notNull(),
@@ -8,4 +8,4 @@ export const postsTable = sqliteTable("posts_table", {
   updatedAt: text().notNull(),
 });
 
-export type Post = typeof postsTable.$inferSelect;
+export type Experience = typeof experiencesTable.$inferSelect;

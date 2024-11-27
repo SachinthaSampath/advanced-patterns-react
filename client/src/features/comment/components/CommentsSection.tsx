@@ -4,21 +4,23 @@ import CommentList from "./CommentList";
 import { trpc } from "@/lib/trpc";
 
 type CommentsSectionProps = {
-  postId: number;
+  experienceId: number;
 };
 
-export default function CommentsSection({ postId }: CommentsSectionProps) {
-  const utils = trpc.useContext();
-  const commentsQuery = trpc.comments.byPostId.useQuery({ postId });
+export default function CommentsSection({
+  experienceId,
+}: CommentsSectionProps) {
+  const utils = trpc.useUtils();
+  const commentsQuery = trpc.comments.byExperienceId.useQuery({ experienceId });
   const addCommentMutation = trpc.comments.add.useMutation({
     onSuccess: () => {
-      utils.comments.byPostId.invalidate({ postId });
+      utils.comments.byExperienceId.invalidate({ experienceId });
     },
   });
 
   const handleAddComment = (content: string) => {
     addCommentMutation.mutate({
-      postId,
+      experienceId,
       content,
     });
   };

@@ -6,18 +6,19 @@ import { publicProcedure, router } from "../../trpc";
 import { commentsTable } from "./models";
 
 export const commentRouter = router({
-  byPostId: publicProcedure
+  byExperienceId: publicProcedure
     .input(
       z.object({
-        postId: z.number(),
+        experienceId: z.number(),
       })
     )
     .query(async ({ input }) => {
       const comments = await db.query.commentsTable.findMany({
-        where: (comments, { eq }) => eq(comments.postId, input.postId),
+        where: (comments, { eq }) =>
+          eq(comments.experienceId, input.experienceId),
         orderBy: (comments, { desc }) => [desc(comments.createdAt)],
         with: {
-          post: true,
+          experience: true,
         },
       });
       return comments;
@@ -26,7 +27,7 @@ export const commentRouter = router({
   add: publicProcedure
     .input(
       z.object({
-        postId: z.number(),
+        experienceId: z.number(),
         content: z.string().min(1),
       })
     )
@@ -35,7 +36,7 @@ export const commentRouter = router({
       const comment = await db
         .insert(commentsTable)
         .values({
-          postId: input.postId,
+          experienceId: input.experienceId,
           content: input.content,
           createdAt: now,
           updatedAt: now,

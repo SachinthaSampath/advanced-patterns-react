@@ -1,15 +1,15 @@
-CREATE TABLE `posts_table` (
+CREATE TABLE `comments_table` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-	`title` text NOT NULL,
 	`content` text NOT NULL,
+	`experienceId` integer NOT NULL,
 	`createdAt` text NOT NULL,
 	`updatedAt` text NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE `comments_table` (
+CREATE TABLE `experiences_table` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`title` text NOT NULL,
 	`content` text NOT NULL,
-	`postId` integer NOT NULL,
 	`createdAt` text NOT NULL,
 	`updatedAt` text NOT NULL
 );

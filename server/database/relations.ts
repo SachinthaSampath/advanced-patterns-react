@@ -1,15 +1,15 @@
 import { relations } from "drizzle-orm";
 
 import { commentsTable } from "../features/comment/models";
-import { postsTable } from "../features/post/models";
+import { experiencesTable } from "../features/experience/models";
 
-export const postsRelations = relations(postsTable, ({ many }) => ({
+export const experiencesRelations = relations(experiencesTable, ({ many }) => ({
   comments: many(commentsTable),
 }));
 
 export const commentsRelations = relations(commentsTable, ({ one }) => ({
-  post: one(postsTable, {
-    fields: [commentsTable.postId],
-    references: [postsTable.id],
+  experience: one(experiencesTable, {
+    fields: [commentsTable.experienceId],
+    references: [experiencesTable.id],
   }),
 }));

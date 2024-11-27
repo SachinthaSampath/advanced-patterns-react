@@ -1,12 +1,11 @@
 import { useCallback, useMemo } from "react";
 
-import PostList from "@/features/post/components/PostList";
+import ExperienceList from "@/features/experience/components/ExperienceList";
 import InfiniteScroll from "@/features/shared/components/InfiniteScroll";
 import { trpc } from "@/lib/trpc";
-import { cn } from "@/lib/utils/cn";
 
 export default function HomePage() {
-  const postsQuery = trpc.posts.feed.useInfiniteQuery(
+  const experiencesQuery = trpc.experiences.feed.useInfiniteQuery(
     {
       limit: 10,
     },
@@ -17,27 +16,32 @@ export default function HomePage() {
   );
 
   const handleLoadMore = useCallback(() => {
-    if (postsQuery.hasNextPage && !postsQuery.isFetchingNextPage) {
-      postsQuery.fetchNextPage();
+    if (experiencesQuery.hasNextPage && !experiencesQuery.isFetchingNextPage) {
+      experiencesQuery.fetchNextPage();
     }
-  }, [postsQuery]);
+  }, [experiencesQuery]);
 
-  const posts = useMemo(() => {
-    return postsQuery.data?.pages.flatMap((page) => page.posts) ?? [];
-  }, [postsQuery.data]);
+  const experiences = useMemo(() => {
+    return (
+      experiencesQuery.data?.pages.flatMap((page) => page.experiences) ?? []
+    );
+  }, [experiencesQuery.data]);
 
-  if (postsQuery.isLoading) {
+  if (experiencesQuery.isLoading) {
     return <div>Loading...</div>;
   }
 
   return (
     <div className="container mx-auto p-4">
-      <div className={cn("flex flex-col gap-4 max-w-feed mx-auto")}>
+      <div className="flex flex-col gap-4 max-w-feed mx-auto">
         <InfiniteScroll
           onLoadMore={handleLoadMore}
-          hasNextPage={postsQuery.hasNextPage}
+          hasNextPage={experiencesQuery.hasNextPage}
         >
-          <PostList posts={posts} isLoading={postsQuery.isFetchingNextPage} />
+          <ExperienceList
+            experiences={experiences}
+            isLoading={experiencesQuery.isFetchingNextPage}
+          />
         </InfiniteScroll>
       </div>
     </div>

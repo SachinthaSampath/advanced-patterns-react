@@ -1,11 +1,11 @@
 import { commentsTable } from "../features/comment/models";
-import { postsTable } from "../features/post/models";
+import { experiencesTable } from "../features/experience/models";
 
 import { db } from ".";
 
 async function seed() {
   for (let i = 0; i < 100; i++) {
-    await db.insert(postsTable).values({
+    await db.insert(experiencesTable).values({
       title: `Hello, world! ${i}`,
       content: "This is a test post.",
       createdAt: new Date().toISOString(),
@@ -14,11 +14,11 @@ async function seed() {
   }
 
   // Add some sample comments
-  for (let postId = 1; postId <= 10; postId++) {
+  for (let experienceId = 1; experienceId <= 10; experienceId++) {
     for (let i = 0; i < 3; i++) {
       await db.insert(commentsTable).values({
-        postId,
-        content: `Sample comment ${i + 1} for post ${postId}`,
+        experienceId,
+        content: `Sample comment ${i + 1} for post ${experienceId}`,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
