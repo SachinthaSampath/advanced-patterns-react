@@ -5,9 +5,9 @@
     "start": "node dist/index.js",
     "dev": "tsx ./index.ts",
     "drizzle:generate": "drizzle-kit generate",
-    "drizzle:regenerate": "rm -rf ./drizzle && drizzle-kit generate",
+    "drizzle:regenerate": "rm -rf ./drizzle && rm database.db && pnpm drizzle:generate && pnpm drizzle:migrate && pnpm drizzle:seed",
     "drizzle:migrate": "drizzle-kit migrate",
-    "drizzle:seed": "tsx ./src/database/seed.ts"
+    "drizzle:seed": "tsx ./database/seed.ts"
   },
   "dependencies": {
     "@trpc/server": "11.0.0-rc.645",

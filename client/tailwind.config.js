@@ -2,6 +2,12 @@
 export default {
   darkMode: ["class"],
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
-  theme: {},
+  theme: {
+    extend: {
+      maxWidth: {
+        feed: "600px",
+      },
+    },
+  },
   plugins: [require("tailwindcss-animate")],
 };
