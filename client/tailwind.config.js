@@ -4,6 +4,14 @@ export default {
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
+      colors: {
+        primary: {
+          500: "#faf5cf",
+        },
+        secondary: {
+          500: "#a37d54",
+        },
+      },
       maxWidth: {
         feed: "600px",
       },

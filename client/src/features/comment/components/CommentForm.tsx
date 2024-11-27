@@ -1,5 +1,7 @@
 import { useState } from "react";
 
+import Button from "@/features/shared/components/ui/button";
+
 type CommentFormProps = {
   onSubmit: (content: string) => void;
   isSubmitting?: boolean;
@@ -20,7 +22,7 @@ export default function CommentForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="mb-4">
+    <form onSubmit={handleSubmit} className="space-y-2">
       <input
         type="text"
         value={content}
@@ -28,13 +30,9 @@ export default function CommentForm({
         placeholder="Add a comment..."
         className="w-full p-2 border border-neutral-200 dark:border-neutral-800 rounded"
       />
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-      >
+      <Button type="submit" disabled={!content.trim() || isSubmitting}>
         {isSubmitting ? "Adding..." : "Add Comment"}
-      </button>
+      </Button>
     </form>
   );
 }

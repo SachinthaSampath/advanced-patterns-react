@@ -1,6 +1,7 @@
 import { Comment } from "@advanced-react/server/features/comment/models";
 import { useState } from "react";
 
+import Button from "@/features/shared/components/ui/button";
 import { trpc } from "@/router";
 
 type CommentItemProps = {
@@ -65,20 +66,12 @@ export default function CommentItem({
           rows={2}
         />
         <div className="flex gap-2">
-          <button
-            type="submit"
-            disabled={editMutation.isPending}
-            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-          >
+          <Button type="submit" disabled={editMutation.isPending}>
             {editMutation.isPending ? "Saving..." : "Save"}
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsEditing(false)}
-            className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600"
-          >
+          </Button>
+          <Button variant="link" onClick={() => setIsEditing(false)}>
             Cancel
-          </button>
+          </Button>
         </div>
       </form>
     );
@@ -94,19 +87,16 @@ export default function CommentItem({
           {new Date(comment.createdAt).toLocaleDateString()}
         </time>
         <div className="flex gap-2">
-          <button
-            onClick={() => setIsEditing(true)}
-            className="text-xs text-blue-500 hover:text-blue-700"
-          >
+          <Button variant="link" onClick={() => setIsEditing(true)}>
             Edit
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="destructive-link"
             onClick={handleDelete}
             disabled={deleteMutation.isPending}
-            className="text-xs text-red-500 hover:text-red-700"
           >
             {deleteMutation.isPending ? "Deleting..." : "Delete"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

@@ -1,7 +1,8 @@
 import { Experience } from "@advanced-react/server/features/experience/models";
-import { Link } from "@tanstack/react-router";
 
 import CommentsSection from "@/features/comment/components/CommentsSection";
+import Button from "@/features/shared/components/ui/button";
+import Link from "@/features/shared/components/ui/Link";
 import { trpc } from "@/router";
 
 type ExperienceCardProps = {
@@ -36,20 +37,21 @@ export default function ExperienceCard({ experience }: ExperienceCardProps) {
           </time>
         </div>
         <div className="flex gap-2">
-          <Link
-            to="/experiences/$experienceId/edit"
-            params={{ experienceId: experience.id }}
-            className="text-sm text-blue-500 hover:text-blue-700"
-          >
-            Edit
-          </Link>
-          <button
+          <Button asChild variant="link">
+            <Link
+              to="/experiences/$experienceId/edit"
+              params={{ experienceId: experience.id }}
+            >
+              Edit
+            </Link>
+          </Button>
+          <Button
+            variant="destructive-link"
             onClick={handleDelete}
             disabled={deleteMutation.isPending}
-            className="text-sm text-red-500 hover:text-red-700"
           >
             {deleteMutation.isPending ? "Deleting..." : "Delete"}
-          </button>
+          </Button>
         </div>
       </div>
 
