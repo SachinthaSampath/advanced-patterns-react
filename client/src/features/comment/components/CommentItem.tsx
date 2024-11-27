@@ -54,11 +54,14 @@ export default function CommentItem({
 
   if (isEditing) {
     return (
-      <form onSubmit={handleEdit} className="p-2 bg-gray-50 rounded">
+      <form
+        onSubmit={handleEdit}
+        className="p-2 bg-neutral-50 dark:bg-neutral-800 rounded"
+      >
         <textarea
           value={editContent}
           onChange={(e) => setEditContent(e.target.value)}
-          className="w-full p-2 border rounded mb-2"
+          className="w-full p-2 border border-neutral-200 dark:border-neutral-800 rounded mb-2"
           rows={2}
         />
         <div className="flex gap-2">
@@ -82,10 +85,12 @@ export default function CommentItem({
   }
 
   return (
-    <div className="p-2 bg-gray-50 rounded">
-      <p className="text-gray-800">{comment.content}</p>
+    <div className="p-2 bg-neutral-50 dark:bg-neutral-800 rounded">
+      <p className="text-neutral-800 dark:text-neutral-100">
+        {comment.content}
+      </p>
       <div className="flex items-center justify-between mt-1">
-        <time className="text-xs text-gray-500">
+        <time className="text-xs text-neutral-500">
           {new Date(comment.createdAt).toLocaleDateString()}
         </time>
         <div className="flex gap-2">

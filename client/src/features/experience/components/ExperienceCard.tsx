@@ -24,12 +24,14 @@ export default function ExperienceCard({ experience }: ExperienceCardProps) {
   };
 
   return (
-    <article className="border rounded-lg p-4 mb-4">
+    <article className="border border-neutral-200 dark:border-neutral-800 rounded-lg p-4 mb-4">
       <div className="flex justify-between items-start mb-4">
         <div>
           <h2 className="text-xl font-bold mb-2">{experience.title}</h2>
-          <p className="text-gray-700 mb-2">{experience.content}</p>
-          <time className="text-sm text-gray-500">
+          <p className="text-neutral-800 dark:text-neutral-100 mb-2">
+            {experience.content}
+          </p>
+          <time className="text-sm text-neutral-500">
             Posted on: {new Date(experience.createdAt).toLocaleDateString()}
           </time>
         </div>
