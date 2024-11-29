@@ -14,10 +14,6 @@ export default function CommentsSection({
 
   const commentsQuery = trpc.comments.byExperienceId.useQuery({ experienceId });
 
-  const handleCommentUpdated = () => {
-    commentsQuery.refetch();
-  };
-
   return (
     <div className="mt-4 space-y-4 border-t border-neutral-200 pt-4 dark:border-neutral-800">
       <h3 className="mb-2 font-semibold">Comments</h3>
@@ -32,7 +28,9 @@ export default function CommentsSection({
       {commentsQuery.data && (
         <CommentList
           comments={commentsQuery.data}
-          onCommentUpdated={handleCommentUpdated}
+          onCommentUpdated={() => {
+            commentsQuery.refetch();
+          }}
         />
       )}
     </div>

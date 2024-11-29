@@ -12,6 +12,7 @@
 
 import { Route as rootRoute } from "./routes/__root";
 import { Route as IndexImport } from "./routes/index";
+import { Route as ExperiencesExperienceIdImport } from "./routes/experiences/$experienceId";
 import { Route as ExperiencesExperienceIdEditImport } from "./routes/experiences/$experienceId.edit";
 
 // Create/Update Routes
@@ -22,11 +23,17 @@ const IndexRoute = IndexImport.update({
   getParentRoute: () => rootRoute,
 } as any);
 
+const ExperiencesExperienceIdRoute = ExperiencesExperienceIdImport.update({
+  id: "/experiences/$experienceId",
+  path: "/experiences/$experienceId",
+  getParentRoute: () => rootRoute,
+} as any);
+
 const ExperiencesExperienceIdEditRoute =
   ExperiencesExperienceIdEditImport.update({
-    id: "/experiences/$experienceId/edit",
-    path: "/experiences/$experienceId/edit",
-    getParentRoute: () => rootRoute,
+    id: "/edit",
+    path: "/edit",
+    getParentRoute: () => ExperiencesExperienceIdRoute,
   } as any);
 
 // Populate the FileRoutesByPath interface
@@ -40,51 +47,82 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof IndexImport;
       parentRoute: typeof rootRoute;
     };
+    "/experiences/$experienceId": {
+      id: "/experiences/$experienceId";
+      path: "/experiences/$experienceId";
+      fullPath: "/experiences/$experienceId";
+      preLoaderRoute: typeof ExperiencesExperienceIdImport;
+      parentRoute: typeof rootRoute;
+    };
     "/experiences/$experienceId/edit": {
       id: "/experiences/$experienceId/edit";
-      path: "/experiences/$experienceId/edit";
+      path: "/edit";
       fullPath: "/experiences/$experienceId/edit";
       preLoaderRoute: typeof ExperiencesExperienceIdEditImport;
-      parentRoute: typeof rootRoute;
+      parentRoute: typeof ExperiencesExperienceIdImport;
     };
   }
 }
 
 // Create and export the route tree
 
+interface ExperiencesExperienceIdRouteChildren {
+  ExperiencesExperienceIdEditRoute: typeof ExperiencesExperienceIdEditRoute;
+}
+
+const ExperiencesExperienceIdRouteChildren: ExperiencesExperienceIdRouteChildren =
+  {
+    ExperiencesExperienceIdEditRoute: ExperiencesExperienceIdEditRoute,
+  };
+
+const ExperiencesExperienceIdRouteWithChildren =
+  ExperiencesExperienceIdRoute._addFileChildren(
+    ExperiencesExperienceIdRouteChildren,
+  );
+
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute;
+  "/experiences/$experienceId": typeof ExperiencesExperienceIdRouteWithChildren;
   "/experiences/$experienceId/edit": typeof ExperiencesExperienceIdEditRoute;
 }
 
 export interface FileRoutesByTo {
   "/": typeof IndexRoute;
+  "/experiences/$experienceId": typeof ExperiencesExperienceIdRouteWithChildren;
   "/experiences/$experienceId/edit": typeof ExperiencesExperienceIdEditRoute;
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute;
   "/": typeof IndexRoute;
+  "/experiences/$experienceId": typeof ExperiencesExperienceIdRouteWithChildren;
   "/experiences/$experienceId/edit": typeof ExperiencesExperienceIdEditRoute;
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
-  fullPaths: "/" | "/experiences/$experienceId/edit";
+  fullPaths:
+    | "/"
+    | "/experiences/$experienceId"
+    | "/experiences/$experienceId/edit";
   fileRoutesByTo: FileRoutesByTo;
-  to: "/" | "/experiences/$experienceId/edit";
-  id: "__root__" | "/" | "/experiences/$experienceId/edit";
+  to: "/" | "/experiences/$experienceId" | "/experiences/$experienceId/edit";
+  id:
+    | "__root__"
+    | "/"
+    | "/experiences/$experienceId"
+    | "/experiences/$experienceId/edit";
   fileRoutesById: FileRoutesById;
 }
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute;
-  ExperiencesExperienceIdEditRoute: typeof ExperiencesExperienceIdEditRoute;
+  ExperiencesExperienceIdRoute: typeof ExperiencesExperienceIdRouteWithChildren;
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  ExperiencesExperienceIdEditRoute: ExperiencesExperienceIdEditRoute,
+  ExperiencesExperienceIdRoute: ExperiencesExperienceIdRouteWithChildren,
 };
 
 export const routeTree = rootRoute
@@ -98,14 +136,21 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
-        "/experiences/$experienceId/edit"
+        "/experiences/$experienceId"
       ]
     },
     "/": {
       "filePath": "index.tsx"
     },
+    "/experiences/$experienceId": {
+      "filePath": "experiences/$experienceId.tsx",
+      "children": [
+        "/experiences/$experienceId/edit"
+      ]
+    },
     "/experiences/$experienceId/edit": {
-      "filePath": "experiences/$experienceId.edit.tsx"
+      "filePath": "experiences/$experienceId.edit.tsx",
+      "parent": "/experiences/$experienceId"
     }
   }
 }

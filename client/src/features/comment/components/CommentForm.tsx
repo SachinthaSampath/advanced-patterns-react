@@ -1,4 +1,5 @@
 import type { Experience } from "@advanced-react/server/features/experience/models";
+import { commentSchema } from "@advanced-react/shared/schema/comment";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FormProvider, useForm } from "react-hook-form";
 import { z } from "zod";
@@ -8,11 +9,7 @@ import Button from "@/features/shared/components/ui/Button";
 import Input from "@/features/shared/components/ui/Input";
 import { trpc } from "@/router";
 
-const commentSchema = z.object({
-  content: z.string().min(1, "Comment cannot be empty"),
-});
-
-type CommentFormData = z.infer<typeof commentSchema>;
+type CommentFormData = Omit<z.infer<typeof commentSchema>, "id">;
 
 type CommentFormProps = {
   experienceId: Experience["id"];

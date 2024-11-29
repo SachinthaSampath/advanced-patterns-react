@@ -1,4 +1,4 @@
-import { Experience } from "@advanced-react/server/features/experience/models";
+import type { Experience } from "@advanced-react/server/features/experience/models";
 import { experienceSchema } from "@advanced-react/shared/schema/experience";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FormProvider, useForm } from "react-hook-form";
@@ -33,7 +33,7 @@ export default function ExperienceForm({
   });
 
   function onSubmit(data: ExperienceFormData) {
-    editMutation.mutate({ id: experience.id, ...data });
+    editMutation.mutate(data);
   }
 
   return (

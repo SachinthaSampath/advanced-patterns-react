@@ -1,4 +1,5 @@
 import { Comment } from "@advanced-react/server/features/comment/models";
+import { commentSchema } from "@advanced-react/shared/schema/comment";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
@@ -14,11 +15,7 @@ type CommentItemProps = {
   onCommentUpdated: () => void;
 };
 
-const editCommentSchema = z.object({
-  content: z.string().min(1, "Comment cannot be empty"),
-});
-
-type EditCommentFormData = z.infer<typeof editCommentSchema>;
+type EditCommentFormData = Omit<z.infer<typeof commentSchema>, "id">;
 
 export default function CommentItem({
   comment,
@@ -27,7 +24,7 @@ export default function CommentItem({
   const [isEditing, setIsEditing] = useState(false);
 
   const form = useForm<EditCommentFormData>({
-    resolver: zodResolver(editCommentSchema),
+    resolver: zodResolver(commentSchema),
     defaultValues: {
       content: comment.content,
     },

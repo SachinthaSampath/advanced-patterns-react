@@ -9,10 +9,10 @@ import { experiencesTable } from "./models";
 
 export const experienceRouter = router({
   byId: publicProcedure
-    .input(z.object({ id: z.number() }))
+    .input(z.object({ id: experienceSchema.shape.id }))
     .query(async ({ input }) => {
       const experience = await db.query.experiencesTable.findFirst({
-        where: (experiences, { eq }) => eq(experiences.id, input.id),
+        where: eq(experiencesTable.id, input.id),
       });
       return experience;
     }),
@@ -31,9 +31,6 @@ export const experienceRouter = router({
       const experiences = await db.query.experiencesTable.findMany({
         limit,
         offset: cursor,
-        with: {
-          comments: true,
-        },
       });
 
       return {
@@ -42,31 +39,24 @@ export const experienceRouter = router({
       };
     }),
 
-  edit: publicProcedure
-    .input(
-      z.object({
-        id: z.number(),
-        ...experienceSchema.shape,
-      }),
-    )
-    .mutation(async ({ input }) => {
-      const now = new Date().toISOString();
+  edit: publicProcedure.input(experienceSchema).mutation(async ({ input }) => {
+    const now = new Date().toISOString();
 
-      const experience = await db
-        .update(experiencesTable)
-        .set({
-          title: input.title,
-          content: input.content,
-          updatedAt: now,
-        })
-        .where(eq(experiencesTable.id, input.id))
-        .returning();
+    const experience = await db
+      .update(experiencesTable)
+      .set({
+        title: input.title,
+        content: input.content,
+        updatedAt: now,
+      })
+      .where(eq(experiencesTable.id, input.id))
+      .returning();
 
-      return experience[0];
-    }),
+    return experience[0];
+  }),
 
   delete: publicProcedure
-    .input(z.object({ id: z.number() }))
+    .input(z.object({ id: experienceSchema.shape.id }))
     .mutation(async ({ input }) => {
       await db
         .delete(experiencesTable)

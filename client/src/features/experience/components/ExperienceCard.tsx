@@ -13,7 +13,15 @@ export default function ExperienceCard({ experience }: ExperienceCardProps) {
     <article className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
       <div className="flex items-start justify-between">
         <div className="space-y-2">
-          <h2 className="text-xl font-bold">{experience.title}</h2>
+          <Link
+            to="/experiences/$experienceId"
+            params={{ experienceId: experience.id }}
+            className="block hover:no-underline"
+          >
+            <h2 className="text-xl font-bold hover:underline">
+              {experience.title}
+            </h2>
+          </Link>
           <p className="text-neutral-800 dark:text-neutral-100">
             {experience.content}
           </p>

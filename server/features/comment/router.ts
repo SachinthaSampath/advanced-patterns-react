@@ -1,4 +1,6 @@
-import { eq } from "drizzle-orm";
+import { commentSchema } from "@advanced-react/shared/schema/comment";
+import { experienceSchema } from "@advanced-react/shared/schema/experience";
+import { desc, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "../../database";
@@ -9,30 +11,28 @@ export const commentRouter = router({
   byExperienceId: publicProcedure
     .input(
       z.object({
-        experienceId: z.number(),
+        experienceId: experienceSchema.shape.id,
       }),
     )
     .query(async ({ input }) => {
       const comments = await db.query.commentsTable.findMany({
-        where: (comments, { eq }) =>
-          eq(comments.experienceId, input.experienceId),
-        orderBy: (comments, { desc }) => [desc(comments.createdAt)],
-        with: {
-          experience: true,
-        },
+        where: eq(commentsTable.experienceId, input.experienceId),
+        orderBy: desc(commentsTable.createdAt),
       });
+
       return comments;
     }),
 
   add: publicProcedure
     .input(
       z.object({
-        experienceId: z.number(),
-        content: z.string().min(1),
+        experienceId: experienceSchema.shape.id,
+        content: commentSchema.shape.content,
       }),
     )
     .mutation(async ({ input }) => {
       const now = new Date().toISOString();
+
       const comment = await db
         .insert(commentsTable)
         .values({
@@ -42,33 +42,29 @@ export const commentRouter = router({
           updatedAt: now,
         })
         .returning();
+
       return comment[0];
     }),
 
+  edit: publicProcedure.input(commentSchema).mutation(async ({ input }) => {
+    const now = new Date().toISOString();
+
+    const comment = await db
+      .update(commentsTable)
+      .set({
+        content: input.content,
+        updatedAt: now,
+      })
+      .where(eq(commentsTable.id, input.id))
+      .returning();
+
+    return comment[0];
+  }),
+
   delete: publicProcedure
-    .input(z.object({ id: z.number() }))
+    .input(z.object({ id: commentSchema.shape.id }))
     .mutation(async ({ input }) => {
       await db.delete(commentsTable).where(eq(commentsTable.id, input.id));
       return input.id;
-    }),
-
-  edit: publicProcedure
-    .input(
-      z.object({
-        id: z.number(),
-        content: z.string().min(1),
-      }),
-    )
-    .mutation(async ({ input }) => {
-      const now = new Date().toISOString();
-      const comment = await db
-        .update(commentsTable)
-        .set({
-          content: input.content,
-          updatedAt: now,
-        })
-        .where(eq(commentsTable.id, input.id))
-        .returning();
-      return comment[0];
     }),
 });
