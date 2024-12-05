@@ -25,7 +25,7 @@ export default function Button({
 }
 
 const buttonVariants = cva(
-  "rounded-md font-semibold disabled:pointer-events-none disabled:opacity-50",
+  "flex flex-row items-center justify-center gap-2 rounded-md font-semibold disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {

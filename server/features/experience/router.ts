@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "../../database";
-import { publicProcedure, router } from "../../trpc";
+import { protectedProcedure, publicProcedure, router } from "../../trpc";
 import { DEFAULT_EXPERIENCE_LIMIT } from "../../utils/constants";
 import { experiencesTable } from "./models";
 
@@ -17,7 +17,7 @@ export const experienceRouter = router({
       return experience;
     }),
 
-  feed: publicProcedure
+  feed: protectedProcedure
     .input(
       z.object({
         limit: z.number().optional(),

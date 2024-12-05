@@ -21,10 +21,6 @@ function Index() {
     },
   );
 
-  if (experiencesQuery.isLoading) {
-    return <div>Loading...</div>;
-  }
-
   return (
     <div className="container mx-auto p-4">
       <div className="max-w-feed mx-auto flex flex-col gap-4">
@@ -45,7 +41,9 @@ function Index() {
                 (page) => page.experiences,
               ) ?? []
             }
-            isLoading={experiencesQuery.isFetchingNextPage}
+            isLoading={
+              experiencesQuery.isLoading || experiencesQuery.isFetchingNextPage
+            }
           />
         </InfiniteScroll>
       </div>
