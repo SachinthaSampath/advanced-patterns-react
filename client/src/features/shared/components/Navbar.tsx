@@ -20,8 +20,8 @@ export default function Navbar() {
   const utils = trpc.useUtils();
 
   const logoutMutation = trpc.auth.logout.useMutation({
-    onSuccess: () => {
-      utils.auth.currentUser.invalidate();
+    async onSuccess() {
+      await utils.auth.currentUser.invalidate();
       router.navigate({ to: "/login" });
     },
   });

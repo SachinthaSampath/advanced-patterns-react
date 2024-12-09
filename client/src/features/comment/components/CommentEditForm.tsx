@@ -14,16 +14,15 @@ type EditCommentFormData = Omit<z.infer<typeof commentSchema>, "id">;
 
 type CommentEditFormProps = {
   comment: Comment;
-  onSuccess?: () => void;
-  onCancel?: () => void;
+  setIsEditing: (value: boolean) => void;
 };
 
 export default function CommentEditForm({
   comment,
-  onSuccess,
-  onCancel,
+  setIsEditing,
 }: CommentEditFormProps) {
   const { toast } = useToast();
+  const utils = trpc.useUtils();
 
   const form = useForm<EditCommentFormData>({
     resolver: zodResolver(commentSchema.omit({ id: true })),
@@ -33,15 +32,37 @@ export default function CommentEditForm({
   });
 
   const editMutation = trpc.comments.edit.useMutation({
+    async onMutate(data) {
+      setIsEditing(false);
+
+      await utils.comments.byExperienceId.cancel();
+
+      const previousComments = utils.comments.byExperienceId.getData({
+        experienceId: comment.experienceId,
+      });
+
+      utils.comments.byExperienceId.setData(
+        { experienceId: comment.experienceId },
+        (oldData: Comment[] | undefined) =>
+          oldData?.map((c) =>
+            c.id === comment.id ? { ...c, content: data.content } : c,
+          ),
+      );
+
+      return { previousComments };
+    },
     onSuccess() {
       toast({
         title: "Comment updated",
         description: "Your comment has been updated successfully",
       });
-
-      onSuccess?.();
     },
-    onError() {
+    onError(_, __, context) {
+      utils.comments.byExperienceId.setData(
+        { experienceId: comment.experienceId },
+        context?.previousComments,
+      );
+
       toast({
         title: "Failed to edit comment",
         description: "Please try again later",
@@ -77,7 +98,7 @@ export default function CommentEditForm({
           <Button type="submit" disabled={editMutation.isPending}>
             {editMutation.isPending ? "Saving..." : "Save"}
           </Button>
-          <Button variant="link" onClick={onCancel}>
+          <Button variant="link" onClick={() => setIsEditing(false)}>
             Cancel
           </Button>
         </div>

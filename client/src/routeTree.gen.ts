@@ -14,8 +14,8 @@ import { Route as rootRoute } from "./routes/__root";
 import { Route as RegisterImport } from "./routes/register";
 import { Route as LoginImport } from "./routes/login";
 import { Route as IndexImport } from "./routes/index";
-import { Route as ExperiencesExperienceIdImport } from "./routes/experiences/$experienceId";
-import { Route as ExperiencesExperienceIdEditImport } from "./routes/experiences/$experienceId.edit";
+import { Route as ExperiencesExperienceIdIndexImport } from "./routes/experiences/$experienceId/index";
+import { Route as ExperiencesExperienceIdEditImport } from "./routes/experiences/$experienceId/edit";
 
 // Create/Update Routes
 
@@ -37,17 +37,18 @@ const IndexRoute = IndexImport.update({
   getParentRoute: () => rootRoute,
 } as any);
 
-const ExperiencesExperienceIdRoute = ExperiencesExperienceIdImport.update({
-  id: "/experiences/$experienceId",
-  path: "/experiences/$experienceId",
-  getParentRoute: () => rootRoute,
-} as any);
+const ExperiencesExperienceIdIndexRoute =
+  ExperiencesExperienceIdIndexImport.update({
+    id: "/experiences/$experienceId/",
+    path: "/experiences/$experienceId/",
+    getParentRoute: () => rootRoute,
+  } as any);
 
 const ExperiencesExperienceIdEditRoute =
   ExperiencesExperienceIdEditImport.update({
-    id: "/edit",
-    path: "/edit",
-    getParentRoute: () => ExperiencesExperienceIdRoute,
+    id: "/experiences/$experienceId/edit",
+    path: "/experiences/$experienceId/edit",
+    getParentRoute: () => rootRoute,
   } as any);
 
 // Populate the FileRoutesByPath interface
@@ -75,53 +76,39 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof RegisterImport;
       parentRoute: typeof rootRoute;
     };
-    "/experiences/$experienceId": {
-      id: "/experiences/$experienceId";
-      path: "/experiences/$experienceId";
-      fullPath: "/experiences/$experienceId";
-      preLoaderRoute: typeof ExperiencesExperienceIdImport;
-      parentRoute: typeof rootRoute;
-    };
     "/experiences/$experienceId/edit": {
       id: "/experiences/$experienceId/edit";
-      path: "/edit";
+      path: "/experiences/$experienceId/edit";
       fullPath: "/experiences/$experienceId/edit";
       preLoaderRoute: typeof ExperiencesExperienceIdEditImport;
-      parentRoute: typeof ExperiencesExperienceIdImport;
+      parentRoute: typeof rootRoute;
+    };
+    "/experiences/$experienceId/": {
+      id: "/experiences/$experienceId/";
+      path: "/experiences/$experienceId";
+      fullPath: "/experiences/$experienceId";
+      preLoaderRoute: typeof ExperiencesExperienceIdIndexImport;
+      parentRoute: typeof rootRoute;
     };
   }
 }
 
 // Create and export the route tree
 
-interface ExperiencesExperienceIdRouteChildren {
-  ExperiencesExperienceIdEditRoute: typeof ExperiencesExperienceIdEditRoute;
-}
-
-const ExperiencesExperienceIdRouteChildren: ExperiencesExperienceIdRouteChildren =
-  {
-    ExperiencesExperienceIdEditRoute: ExperiencesExperienceIdEditRoute,
-  };
-
-const ExperiencesExperienceIdRouteWithChildren =
-  ExperiencesExperienceIdRoute._addFileChildren(
-    ExperiencesExperienceIdRouteChildren,
-  );
-
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute;
   "/login": typeof LoginRoute;
   "/register": typeof RegisterRoute;
-  "/experiences/$experienceId": typeof ExperiencesExperienceIdRouteWithChildren;
   "/experiences/$experienceId/edit": typeof ExperiencesExperienceIdEditRoute;
+  "/experiences/$experienceId": typeof ExperiencesExperienceIdIndexRoute;
 }
 
 export interface FileRoutesByTo {
   "/": typeof IndexRoute;
   "/login": typeof LoginRoute;
   "/register": typeof RegisterRoute;
-  "/experiences/$experienceId": typeof ExperiencesExperienceIdRouteWithChildren;
   "/experiences/$experienceId/edit": typeof ExperiencesExperienceIdEditRoute;
+  "/experiences/$experienceId": typeof ExperiencesExperienceIdIndexRoute;
 }
 
 export interface FileRoutesById {
@@ -129,8 +116,8 @@ export interface FileRoutesById {
   "/": typeof IndexRoute;
   "/login": typeof LoginRoute;
   "/register": typeof RegisterRoute;
-  "/experiences/$experienceId": typeof ExperiencesExperienceIdRouteWithChildren;
   "/experiences/$experienceId/edit": typeof ExperiencesExperienceIdEditRoute;
+  "/experiences/$experienceId/": typeof ExperiencesExperienceIdIndexRoute;
 }
 
 export interface FileRouteTypes {
@@ -139,22 +126,22 @@ export interface FileRouteTypes {
     | "/"
     | "/login"
     | "/register"
-    | "/experiences/$experienceId"
-    | "/experiences/$experienceId/edit";
+    | "/experiences/$experienceId/edit"
+    | "/experiences/$experienceId";
   fileRoutesByTo: FileRoutesByTo;
   to:
     | "/"
     | "/login"
     | "/register"
-    | "/experiences/$experienceId"
-    | "/experiences/$experienceId/edit";
+    | "/experiences/$experienceId/edit"
+    | "/experiences/$experienceId";
   id:
     | "__root__"
     | "/"
     | "/login"
     | "/register"
-    | "/experiences/$experienceId"
-    | "/experiences/$experienceId/edit";
+    | "/experiences/$experienceId/edit"
+    | "/experiences/$experienceId/";
   fileRoutesById: FileRoutesById;
 }
 
@@ -162,14 +149,16 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute;
   LoginRoute: typeof LoginRoute;
   RegisterRoute: typeof RegisterRoute;
-  ExperiencesExperienceIdRoute: typeof ExperiencesExperienceIdRouteWithChildren;
+  ExperiencesExperienceIdEditRoute: typeof ExperiencesExperienceIdEditRoute;
+  ExperiencesExperienceIdIndexRoute: typeof ExperiencesExperienceIdIndexRoute;
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
-  ExperiencesExperienceIdRoute: ExperiencesExperienceIdRouteWithChildren,
+  ExperiencesExperienceIdEditRoute: ExperiencesExperienceIdEditRoute,
+  ExperiencesExperienceIdIndexRoute: ExperiencesExperienceIdIndexRoute,
 };
 
 export const routeTree = rootRoute
@@ -185,7 +174,8 @@ export const routeTree = rootRoute
         "/",
         "/login",
         "/register",
-        "/experiences/$experienceId"
+        "/experiences/$experienceId/edit",
+        "/experiences/$experienceId/"
       ]
     },
     "/": {
@@ -197,15 +187,11 @@ export const routeTree = rootRoute
     "/register": {
       "filePath": "register.tsx"
     },
-    "/experiences/$experienceId": {
-      "filePath": "experiences/$experienceId.tsx",
-      "children": [
-        "/experiences/$experienceId/edit"
-      ]
-    },
     "/experiences/$experienceId/edit": {
-      "filePath": "experiences/$experienceId.edit.tsx",
-      "parent": "/experiences/$experienceId"
+      "filePath": "experiences/$experienceId/edit.tsx"
+    },
+    "/experiences/$experienceId/": {
+      "filePath": "experiences/$experienceId/index.tsx"
     }
   }
 }

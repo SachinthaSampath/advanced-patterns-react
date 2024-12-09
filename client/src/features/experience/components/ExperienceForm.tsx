@@ -9,21 +9,15 @@ import Button from "@/features/shared/components/ui/Button";
 import Input from "@/features/shared/components/ui/Input";
 import TextArea from "@/features/shared/components/ui/TextArea";
 import { useToast } from "@/features/shared/hooks/useToast";
-import { trpc } from "@/router";
+import { router, trpc } from "@/router";
 
 type ExperienceFormData = z.infer<typeof experienceSchema>;
 
 type ExperienceFormProps = {
   experience: Experience;
-  onSuccess?: () => void;
-  onCancel?: () => void;
 };
 
-export default function ExperienceForm({
-  experience,
-  onSuccess,
-  onCancel,
-}: ExperienceFormProps) {
+export default function ExperienceForm({ experience }: ExperienceFormProps) {
   const { toast } = useToast();
 
   const form = useForm<ExperienceFormData>({
@@ -31,8 +25,20 @@ export default function ExperienceForm({
     defaultValues: experience,
   });
 
+  const utils = trpc.useUtils();
+
   const editMutation = trpc.experiences.edit.useMutation({
-    onSuccess,
+    async onSuccess() {
+      await utils.experiences.feed.invalidate();
+      router.history.back();
+    },
+    onError() {
+      toast({
+        title: "Failed to edit experience",
+        description: "Please try again later",
+        variant: "destructive",
+      });
+    },
   });
 
   async function onSubmit(data: ExperienceFormData) {
@@ -52,22 +58,13 @@ export default function ExperienceForm({
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField<ExperienceFormData> name="title" label="Title">
           {({ error, name }) => (
-            <Input
-              {...form.register(name)}
-              error={error}
-              disabled={editMutation.isPending}
-            />
+            <Input {...form.register(name)} error={error} />
           )}
         </FormField>
 
         <FormField<ExperienceFormData> name="content" label="Content">
           {({ error, name }) => (
-            <TextArea
-              {...form.register(name)}
-              rows={4}
-              error={error}
-              disabled={editMutation.isPending}
-            />
+            <TextArea {...form.register(name)} rows={4} error={error} />
           )}
         </FormField>
 
@@ -75,7 +72,11 @@ export default function ExperienceForm({
           <Button type="submit" disabled={editMutation.isPending}>
             {editMutation.isPending ? "Saving..." : "Save"}
           </Button>
-          <Button type="button" variant="outline" onClick={onCancel}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.history.back()}
+          >
             Cancel
           </Button>
         </div>

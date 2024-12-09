@@ -5,7 +5,7 @@ import CommentsSection from "@/features/comment/components/CommentsSection";
 import ExperienceCard from "@/features/experience/components/ExperienceCard";
 import { trpc } from "@/router";
 
-export const Route = createFileRoute("/experiences/$experienceId")({
+export const Route = createFileRoute("/experiences/$experienceId/")({
   params: {
     parse: (params) => ({
       experienceId: z.coerce.number().parse(params.experienceId),

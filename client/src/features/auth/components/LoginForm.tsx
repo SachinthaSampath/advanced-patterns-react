@@ -17,8 +17,8 @@ export default function LoginForm() {
   const utils = trpc.useUtils();
 
   const loginMutation = trpc.auth.login.useMutation({
-    onSuccess() {
-      utils.auth.currentUser.invalidate();
+    async onSuccess() {
+      await utils.auth.currentUser.invalidate();
       router.navigate({ to: "/" });
     },
     onError() {

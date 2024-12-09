@@ -12,15 +12,12 @@ export const Route = createFileRoute("/experiences/$experienceId/edit")({
     await trpcQueryUtils.experiences.byId.ensureData({
       id: params.experienceId,
     });
-    return;
   },
   component: EditExperience,
 });
 
 function EditExperience() {
   const { experienceId } = Route.useParams();
-  const navigate = Route.useNavigate();
-  const utils = trpc.useUtils();
 
   const experienceQuery = trpc.experiences.byId.useQuery({ id: experienceId });
 
@@ -36,17 +33,7 @@ function EditExperience() {
     <div className="container mx-auto p-4">
       <div className="max-w-feed mx-auto">
         <h1 className="mb-4 text-2xl font-bold">Edit Experience</h1>
-        <ExperienceForm
-          experience={experienceQuery.data}
-          onSuccess={() => {
-            utils.experiences.feed.invalidate();
-            utils.experiences.byId.invalidate({ id: experienceId });
-            navigate({ to: "/" });
-          }}
-          onCancel={() => {
-            navigate({ to: "/" });
-          }}
-        />
+        <ExperienceForm experience={experienceQuery.data} />
       </div>
     </div>
   );

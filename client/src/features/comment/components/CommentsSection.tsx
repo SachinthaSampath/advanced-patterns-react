@@ -20,8 +20,8 @@ export default function CommentsSection({
 
       <CommentForm
         experienceId={experienceId}
-        onSuccess={() => {
-          utils.comments.byExperienceId.invalidate({ experienceId });
+        onSuccess={async () => {
+          return utils.comments.byExperienceId.invalidate({ experienceId });
         }}
       />
 

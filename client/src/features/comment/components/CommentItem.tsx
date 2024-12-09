@@ -3,12 +3,14 @@ import { useState } from "react";
 
 import Button from "@/features/shared/components/ui/Button";
 import { useToast } from "@/features/shared/hooks/useToast";
+import { cn } from "@/lib/utils/cn";
 import { trpc } from "@/router";
 
 import CommentEditForm from "./CommentEditForm";
+import { OptimisticComment } from "./CommentForm";
 
 type CommentItemProps = {
-  comment: Comment;
+  comment: Comment | OptimisticComment;
 };
 
 export default function CommentItem({ comment }: CommentItemProps) {
@@ -19,17 +21,32 @@ export default function CommentItem({ comment }: CommentItemProps) {
   const utils = trpc.useUtils();
 
   const deleteMutation = trpc.comments.delete.useMutation({
-    onSuccess() {
-      utils.comments.byExperienceId.invalidate({
+    async onMutate({ id }) {
+      await utils.comments.byExperienceId.cancel();
+
+      const previousComments = utils.comments.byExperienceId.getData({
         experienceId: comment.experienceId,
       });
 
+      utils.comments.byExperienceId.setData(
+        { experienceId: comment.experienceId },
+        (oldData: Comment[] | undefined) => oldData?.filter((c) => c.id !== id),
+      );
+
+      return { previousComments };
+    },
+    onSuccess() {
       toast({
         title: "Comment deleted",
         description: "Your comment has been deleted successfully",
       });
     },
-    onError() {
+    onError(_, __, context) {
+      utils.comments.byExperienceId.setData(
+        { experienceId: comment.experienceId },
+        context?.previousComments,
+      );
+
       toast({
         title: "Failed to delete comment",
         description: "Please try again later",
@@ -39,23 +56,16 @@ export default function CommentItem({ comment }: CommentItemProps) {
   });
 
   if (isEditing) {
-    return (
-      <CommentEditForm
-        comment={comment}
-        onSuccess={() => {
-          setIsEditing(false);
-
-          utils.comments.byExperienceId.invalidate({
-            experienceId: comment.experienceId,
-          });
-        }}
-        onCancel={() => setIsEditing(false)}
-      />
-    );
+    return <CommentEditForm comment={comment} setIsEditing={setIsEditing} />;
   }
 
   return (
-    <div className="rounded bg-neutral-50 p-2 dark:bg-neutral-800">
+    <div
+      className={cn(
+        "rounded bg-neutral-50 p-2 dark:bg-neutral-800",
+        (comment as OptimisticComment).optimistic && "opacity-50",
+      )}
+    >
       <p className="text-neutral-800 dark:text-neutral-100">
         {comment.content}
       </p>
@@ -64,13 +74,20 @@ export default function CommentItem({ comment }: CommentItemProps) {
           {new Date(comment.createdAt).toLocaleDateString()}
         </time>
         <div className="flex gap-2">
-          <Button variant="link" onClick={() => setIsEditing(true)}>
+          <Button
+            variant="link"
+            onClick={() => setIsEditing(true)}
+            disabled={(comment as OptimisticComment).optimistic}
+          >
             Edit
           </Button>
           <Button
             variant="destructive-link"
             onClick={() => deleteMutation.mutate({ id: comment.id })}
-            disabled={deleteMutation.isPending}
+            disabled={
+              deleteMutation.isPending ||
+              (comment as OptimisticComment).optimistic
+            }
           >
             {deleteMutation.isPending ? "Deleting..." : "Delete"}
           </Button>
