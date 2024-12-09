@@ -7,6 +7,7 @@ import { z } from "zod";
 import FormField from "@/features/shared/components/FormField";
 import Button from "@/features/shared/components/ui/Button";
 import Input from "@/features/shared/components/ui/Input";
+import { useToast } from "@/features/shared/hooks/useToast";
 import { trpc } from "@/router";
 
 type CommentFormData = Omit<z.infer<typeof commentSchema>, "id">;
@@ -20,12 +21,28 @@ export default function CommentForm({
   experienceId,
   onSuccess,
 }: CommentFormProps) {
+  const { toast } = useToast();
+
   const form = useForm<CommentFormData>({
-    resolver: zodResolver(commentSchema),
+    resolver: zodResolver(commentSchema.omit({ id: true })),
   });
 
   const addCommentMutation = trpc.comments.add.useMutation({
-    onSuccess,
+    onSuccess: () => {
+      toast({
+        title: "Comment added",
+        description: "Your comment has been added successfully",
+      });
+
+      onSuccess?.();
+    },
+    onError() {
+      toast({
+        title: "Failed to add comment",
+        description: "Please try again later",
+        variant: "destructive",
+      });
+    },
   });
 
   function onSubmit(data: CommentFormData) {

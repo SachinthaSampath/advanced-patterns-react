@@ -8,6 +8,7 @@ import FormField from "@/features/shared/components/FormField";
 import Button from "@/features/shared/components/ui/Button";
 import Input from "@/features/shared/components/ui/Input";
 import TextArea from "@/features/shared/components/ui/TextArea";
+import { useToast } from "@/features/shared/hooks/useToast";
 import { trpc } from "@/router";
 
 type ExperienceFormData = z.infer<typeof experienceSchema>;
@@ -23,6 +24,8 @@ export default function ExperienceForm({
   onSuccess,
   onCancel,
 }: ExperienceFormProps) {
+  const { toast } = useToast();
+
   const form = useForm<ExperienceFormData>({
     resolver: zodResolver(experienceSchema),
     defaultValues: experience,
@@ -32,8 +35,16 @@ export default function ExperienceForm({
     onSuccess,
   });
 
-  function onSubmit(data: ExperienceFormData) {
-    editMutation.mutate(data);
+  async function onSubmit(data: ExperienceFormData) {
+    try {
+      await editMutation.mutateAsync(data);
+    } catch {
+      toast({
+        title: "Failed to edit experience",
+        description: "Please try again later",
+        variant: "destructive",
+      });
+    }
   }
 
   return (

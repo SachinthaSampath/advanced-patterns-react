@@ -25,14 +25,7 @@ export default function CommentsSection({
         }}
       />
 
-      {commentsQuery.data && (
-        <CommentList
-          comments={commentsQuery.data}
-          onCommentUpdated={() => {
-            commentsQuery.refetch();
-          }}
-        />
-      )}
+      {commentsQuery.data && <CommentList comments={commentsQuery.data} />}
     </div>
   );
 }

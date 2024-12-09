@@ -6,14 +6,29 @@ import { z } from "zod";
 import FormField from "@/features/shared/components/FormField";
 import Button from "@/features/shared/components/ui/Button";
 import Input from "@/features/shared/components/ui/Input";
+import { useToast } from "@/features/shared/hooks/useToast";
 import { router, trpc } from "@/router";
 
 type LoginFormData = z.infer<typeof userCredentialsSchema>;
 
 export default function LoginForm() {
+  const { toast } = useToast();
+
   const utils = trpc.useUtils();
 
-  const loginMutation = trpc.auth.login.useMutation();
+  const loginMutation = trpc.auth.login.useMutation({
+    onSuccess() {
+      utils.auth.currentUser.invalidate();
+      router.navigate({ to: "/" });
+    },
+    onError() {
+      toast({
+        title: "Failed to login",
+        description: "Please try again later",
+        variant: "destructive",
+      });
+    },
+  });
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(userCredentialsSchema),
@@ -23,14 +38,8 @@ export default function LoginForm() {
     },
   });
 
-  async function onSubmit(data: LoginFormData) {
-    try {
-      await loginMutation.mutateAsync(data);
-      utils.auth.currentUser.invalidate();
-      router.navigate({ to: "/" });
-    } catch (error) {
-      console.error(error);
-    }
+  function onSubmit(data: LoginFormData) {
+    loginMutation.mutate(data);
   }
 
   return (

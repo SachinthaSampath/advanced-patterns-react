@@ -1,96 +1,56 @@
 import { Comment } from "@advanced-react/server/features/comment/models";
-import { commentSchema } from "@advanced-react/shared/schema/comment";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
-import { FormProvider, useForm } from "react-hook-form";
-import { z } from "zod";
 
-import FormField from "@/features/shared/components/FormField";
 import Button from "@/features/shared/components/ui/Button";
-import TextArea from "@/features/shared/components/ui/TextArea";
+import { useToast } from "@/features/shared/hooks/useToast";
 import { trpc } from "@/router";
+
+import CommentEditForm from "./CommentEditForm";
 
 type CommentItemProps = {
   comment: Comment;
-  onCommentUpdated: () => void;
 };
 
-type EditCommentFormData = Omit<z.infer<typeof commentSchema>, "id">;
+export default function CommentItem({ comment }: CommentItemProps) {
+  const { toast } = useToast();
 
-export default function CommentItem({
-  comment,
-  onCommentUpdated,
-}: CommentItemProps) {
   const [isEditing, setIsEditing] = useState(false);
-
-  const form = useForm<EditCommentFormData>({
-    resolver: zodResolver(commentSchema),
-    defaultValues: {
-      content: comment.content,
-    },
-  });
 
   const utils = trpc.useUtils();
 
   const deleteMutation = trpc.comments.delete.useMutation({
-    onSuccess: () => {
+    onSuccess() {
       utils.comments.byExperienceId.invalidate({
         experienceId: comment.experienceId,
       });
-      onCommentUpdated();
-    },
-  });
 
-  const editMutation = trpc.comments.edit.useMutation({
-    onSuccess: () => {
-      setIsEditing(false);
-      utils.comments.byExperienceId.invalidate({
-        experienceId: comment.experienceId,
+      toast({
+        title: "Comment deleted",
+        description: "Your comment has been deleted successfully",
       });
-      onCommentUpdated();
     },
-  });
-
-  const handleDelete = () => {
-    if (window.confirm("Are you sure you want to delete this comment?")) {
-      deleteMutation.mutate({ id: comment.id });
-    }
-  };
-
-  const handleEdit = form.handleSubmit((data) => {
-    editMutation.mutate({
-      id: comment.id,
-      content: data.content,
-    });
+    onError() {
+      toast({
+        title: "Failed to delete comment",
+        description: "Please try again later",
+        variant: "destructive",
+      });
+    },
   });
 
   if (isEditing) {
     return (
-      <FormProvider {...form}>
-        <form
-          onSubmit={handleEdit}
-          className="rounded bg-neutral-50 p-2 dark:bg-neutral-800"
-        >
-          <FormField<EditCommentFormData> name="content" className="mb-2">
-            {({ error, name }) => (
-              <TextArea
-                {...form.register(name)}
-                rows={2}
-                error={error}
-                disabled={editMutation.isPending}
-              />
-            )}
-          </FormField>
-          <div className="flex gap-2">
-            <Button type="submit" disabled={editMutation.isPending}>
-              {editMutation.isPending ? "Saving..." : "Save"}
-            </Button>
-            <Button variant="link" onClick={() => setIsEditing(false)}>
-              Cancel
-            </Button>
-          </div>
-        </form>
-      </FormProvider>
+      <CommentEditForm
+        comment={comment}
+        onSuccess={() => {
+          setIsEditing(false);
+
+          utils.comments.byExperienceId.invalidate({
+            experienceId: comment.experienceId,
+          });
+        }}
+        onCancel={() => setIsEditing(false)}
+      />
     );
   }
 
@@ -109,7 +69,7 @@ export default function CommentItem({
           </Button>
           <Button
             variant="destructive-link"
-            onClick={handleDelete}
+            onClick={() => deleteMutation.mutate({ id: comment.id })}
             disabled={deleteMutation.isPending}
           >
             {deleteMutation.isPending ? "Deleting..." : "Delete"}

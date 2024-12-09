@@ -6,14 +6,29 @@ import { z } from "zod";
 import FormField from "@/features/shared/components/FormField";
 import Button from "@/features/shared/components/ui/Button";
 import Input from "@/features/shared/components/ui/Input";
+import { useToast } from "@/features/shared/hooks/useToast";
 import { router, trpc } from "@/router";
 
 type RegisterFormData = z.infer<typeof userCredentialsSchema>;
 
 export default function RegisterForm() {
+  const { toast } = useToast();
+
   const utils = trpc.useUtils();
 
-  const registerMutation = trpc.auth.register.useMutation();
+  const registerMutation = trpc.auth.register.useMutation({
+    onSuccess() {
+      utils.auth.currentUser.invalidate();
+      router.navigate({ to: "/" });
+    },
+    onError() {
+      toast({
+        title: "Failed to register",
+        description: "Please try again later",
+        variant: "destructive",
+      });
+    },
+  });
 
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(userCredentialsSchema),
@@ -23,14 +38,8 @@ export default function RegisterForm() {
     },
   });
 
-  async function onSubmit(data: RegisterFormData) {
-    try {
-      await registerMutation.mutateAsync(data);
-      utils.auth.currentUser.invalidate();
-      router.navigate({ to: "/" });
-    } catch (error) {
-      console.error(error);
-    }
+  function onSubmit(data: RegisterFormData) {
+    registerMutation.mutate(data);
   }
 
   return (

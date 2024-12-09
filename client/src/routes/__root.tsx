@@ -4,6 +4,7 @@ import { TanStackRouterDevtools } from "@tanstack/router-devtools";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import Navbar from "@/features/shared/components/Navbar";
 import ThemeProvider from "@/features/shared/components/theme/ThemeProvider";
+import { Toaster } from "@/features/shared/components/ui/Toaster";
 import { trpcQueryUtils } from "@/router";
 
 export interface RouterAppContext {
@@ -17,6 +18,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 function Root() {
   return (
     <ThemeProvider defaultTheme="dark">
+      <Toaster />
       <div>
         <header className="border-b border-neutral-200 dark:border-neutral-800">
           <div className="container mx-auto flex items-center justify-between p-4">
