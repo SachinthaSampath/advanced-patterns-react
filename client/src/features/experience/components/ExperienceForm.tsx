@@ -1,5 +1,5 @@
 import type { Experience } from "@advanced-react/server/features/experience/models";
-import { experienceSchema } from "@advanced-react/shared/schema/experience";
+import { experienceValidationSchema } from "@advanced-react/shared/schema/experience";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FormProvider, useForm } from "react-hook-form";
 import { z } from "zod";
@@ -11,7 +11,7 @@ import TextArea from "@/features/shared/components/ui/TextArea";
 import { useToast } from "@/features/shared/hooks/useToast";
 import { router, trpc } from "@/router";
 
-type ExperienceFormData = z.infer<typeof experienceSchema>;
+type ExperienceFormData = z.infer<typeof experienceValidationSchema>;
 
 type ExperienceFormProps = {
   experience: Experience;
@@ -21,7 +21,7 @@ export default function ExperienceForm({ experience }: ExperienceFormProps) {
   const { toast } = useToast();
 
   const form = useForm<ExperienceFormData>({
-    resolver: zodResolver(experienceSchema),
+    resolver: zodResolver(experienceValidationSchema),
     defaultValues: experience,
   });
 

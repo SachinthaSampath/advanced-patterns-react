@@ -1,7 +1,6 @@
 import { z } from "zod";
 
-export const experienceSchema = z.object({
-  id: z.number(),
+export const experienceValidationSchema = z.object({
   title: z.string().min(1, "Title is required"),
   content: z.string().min(1, "Content is required"),
 });

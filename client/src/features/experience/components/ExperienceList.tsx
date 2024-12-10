@@ -1,10 +1,12 @@
-import { Experience } from "@advanced-react/server/features/experience/models";
+import { Experience, User } from "@advanced-react/server/database/schema";
 
 import ExperienceCard from "./ExperienceCard";
 
 interface ExperienceListProps {
+  experiences: (Experience & {
+    user: User;
+  })[];
   isLoading?: boolean;
-  experiences: Experience[];
 }
 
 export default function ExperienceList({

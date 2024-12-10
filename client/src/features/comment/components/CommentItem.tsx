@@ -1,8 +1,9 @@
-import { Comment } from "@advanced-react/server/features/comment/models";
+import { Comment, User } from "@advanced-react/server/database/schema";
 import { useState } from "react";
 
 import Button from "@/features/shared/components/ui/Button";
 import { useToast } from "@/features/shared/hooks/useToast";
+import UserAvatar from "@/features/user/components/UserAvatar";
 import { cn } from "@/lib/utils/cn";
 import { trpc } from "@/router";
 
@@ -10,7 +11,7 @@ import CommentEditForm from "./CommentEditForm";
 import { OptimisticComment } from "./CommentForm";
 
 type CommentItemProps = {
-  comment: Comment | OptimisticComment;
+  comment: (Comment & { user: User }) | OptimisticComment;
 };
 
 export default function CommentItem({ comment }: CommentItemProps) {
@@ -30,7 +31,7 @@ export default function CommentItem({ comment }: CommentItemProps) {
 
       utils.comments.byExperienceId.setData(
         { experienceId: comment.experienceId },
-        (oldData: Comment[] | undefined) => oldData?.filter((c) => c.id !== id),
+        (oldData) => oldData?.filter((c) => c.id !== id),
       );
 
       return { previousComments };
@@ -62,10 +63,11 @@ export default function CommentItem({ comment }: CommentItemProps) {
   return (
     <div
       className={cn(
-        "rounded bg-neutral-50 p-2 dark:bg-neutral-800",
+        "space-y-2 rounded bg-neutral-50 p-4 dark:bg-neutral-800",
         (comment as OptimisticComment).optimistic && "opacity-50",
       )}
     >
+      <UserAvatar user={comment.user} />
       <p className="text-neutral-800 dark:text-neutral-100">
         {comment.content}
       </p>

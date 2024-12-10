@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "79371d7e-5519-4e1c-9e7b-5d3cf63d8f3c",
+  "id": "9c64975f-e306-4ec9-9943-f8f8136d2976",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "users_table": {
@@ -13,6 +13,20 @@
           "primaryKey": true,
           "notNull": true,
           "autoincrement": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "avatarUrl": {
+          "name": "avatarUrl",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         },
         "email": {
           "name": "email",
@@ -72,30 +86,62 @@
           "notNull": true,
           "autoincrement": false
         },
-        "experienceId": {
-          "name": "experienceId",
+        "experience_id": {
+          "name": "experience_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "createdAt": {
-          "name": "createdAt",
+        "user_id": {
+          "name": "user_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "updatedAt": {
-          "name": "updatedAt",
+        "updated_at": {
+          "name": "updated_at",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         }
       },
-      "indexes": {},
-      "foreignKeys": {},
+      "indexes": {
+        "comments_experience_id_idx": {
+          "name": "comments_experience_id_idx",
+          "columns": ["experience_id"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "comments_table_experience_id_experiences_table_id_fk": {
+          "name": "comments_table_experience_id_experiences_table_id_fk",
+          "tableFrom": "comments_table",
+          "tableTo": "experiences_table",
+          "columnsFrom": ["experience_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "comments_table_user_id_users_table_id_fk": {
+          "name": "comments_table_user_id_users_table_id_fk",
+          "tableFrom": "comments_table",
+          "tableTo": "users_table",
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}
@@ -124,23 +170,46 @@
           "notNull": true,
           "autoincrement": false
         },
-        "createdAt": {
-          "name": "createdAt",
+        "user_id": {
+          "name": "user_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "updatedAt": {
-          "name": "updatedAt",
+        "updated_at": {
+          "name": "updated_at",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         }
       },
-      "indexes": {},
-      "foreignKeys": {},
+      "indexes": {
+        "experiences_user_id_idx": {
+          "name": "experiences_user_id_idx",
+          "columns": ["user_id"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "experiences_table_user_id_users_table_id_fk": {
+          "name": "experiences_table_user_id_users_table_id_fk",
+          "tableFrom": "experiences_table",
+          "tableTo": "users_table",
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}

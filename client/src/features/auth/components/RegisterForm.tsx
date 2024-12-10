@@ -17,8 +17,8 @@ export default function RegisterForm() {
   const utils = trpc.useUtils();
 
   const registerMutation = trpc.auth.register.useMutation({
-    onSuccess() {
-      utils.auth.currentUser.invalidate();
+    async onSuccess() {
+      await utils.auth.currentUser.invalidate();
       router.navigate({ to: "/" });
     },
     onError() {
@@ -35,6 +35,7 @@ export default function RegisterForm() {
     defaultValues: {
       email: "",
       password: "",
+      name: "",
     },
   });
 
@@ -45,24 +46,29 @@ export default function RegisterForm() {
   return (
     <FormProvider {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField<RegisterFormData> name="name" label="Name">
+          {({ error, name }) => (
+            <Input
+              {...form.register(name)}
+              type="text"
+              error={error}
+              placeholder="Your name"
+            />
+          )}
+        </FormField>
         <FormField<RegisterFormData> name="email" label="Email">
           {({ error, name }) => (
             <Input
               {...form.register(name)}
               type="email"
               error={error}
-              disabled={registerMutation.isPending}
+              placeholder="name@example.com"
             />
           )}
         </FormField>
         <FormField<RegisterFormData> name="password" label="Password">
           {({ error, name }) => (
-            <Input
-              {...form.register(name)}
-              type="password"
-              error={error}
-              disabled={registerMutation.isPending}
-            />
+            <Input {...form.register(name)} type="password" error={error} />
           )}
         </FormField>
         <Button

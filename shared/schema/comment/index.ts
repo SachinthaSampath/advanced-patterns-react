@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-export const commentSchema = z.object({
-  id: z.number(),
+export const commentValidationSchema = z.object({
   content: z.string().min(1, "Content is required"),
 });

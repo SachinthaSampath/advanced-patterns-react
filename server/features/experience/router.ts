@@ -1,23 +1,49 @@
-import { experienceSchema } from "@advanced-react/shared/schema/experience";
+import { experienceValidationSchema } from "@advanced-react/shared/schema/experience";
+import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "../../database";
-import { protectedProcedure, publicProcedure, router } from "../../trpc";
+import {
+  cleanUserSelectSchema,
+  experienceSelectSchema,
+  experiencesTable,
+} from "../../database/schema";
+import { publicProcedure, router } from "../../trpc";
 import { DEFAULT_EXPERIENCE_LIMIT } from "../../utils/constants";
-import { experiencesTable } from "./models";
 
 export const experienceRouter = router({
   byId: publicProcedure
-    .input(z.object({ id: experienceSchema.shape.id }))
+    .input(z.object({ id: experienceSelectSchema.shape.id }))
+    .output(
+      experienceSelectSchema.extend({
+        user: cleanUserSelectSchema,
+      }),
+    )
     .query(async ({ input }) => {
       const experience = await db.query.experiencesTable.findFirst({
         where: eq(experiencesTable.id, input.id),
+        with: {
+          user: {
+            columns: {
+              email: false,
+              password: false,
+            },
+          },
+        },
       });
+
+      if (!experience) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Experience not found",
+        });
+      }
+
       return experience;
     }),
 
-  feed: protectedProcedure
+  feed: publicProcedure
     .input(
       z.object({
         limit: z.number().optional(),
@@ -31,6 +57,14 @@ export const experienceRouter = router({
       const experiences = await db.query.experiencesTable.findMany({
         limit,
         offset: cursor,
+        with: {
+          user: {
+            columns: {
+              password: false,
+              email: false,
+            },
+          },
+        },
       });
 
       return {
@@ -39,24 +73,31 @@ export const experienceRouter = router({
       };
     }),
 
-  edit: publicProcedure.input(experienceSchema).mutation(async ({ input }) => {
-    const now = new Date().toISOString();
+  edit: publicProcedure
+    .input(
+      z.object({
+        id: experienceSelectSchema.shape.id,
+        ...experienceValidationSchema.shape,
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const now = new Date().toISOString();
 
-    const experience = await db
-      .update(experiencesTable)
-      .set({
-        title: input.title,
-        content: input.content,
-        updatedAt: now,
-      })
-      .where(eq(experiencesTable.id, input.id))
-      .returning();
+      const experience = await db
+        .update(experiencesTable)
+        .set({
+          title: input.title,
+          content: input.content,
+          updatedAt: now,
+        })
+        .where(eq(experiencesTable.id, input.id))
+        .returning();
 
-    return experience[0];
-  }),
+      return experience[0];
+    }),
 
   delete: publicProcedure
-    .input(z.object({ id: experienceSchema.shape.id }))
+    .input(z.object({ id: experienceSelectSchema.shape.id }))
     .mutation(async ({ input }) => {
       await db
         .delete(experiencesTable)

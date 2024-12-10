@@ -12,14 +12,9 @@ export const Route = createFileRoute("/experiences/$experienceId/")({
     }),
   },
   loader: async ({ params, context: { trpcQueryUtils } }) => {
-    await Promise.all([
-      trpcQueryUtils.experiences.byId.ensureData({
-        id: params.experienceId,
-      }),
-      trpcQueryUtils.comments.byExperienceId.ensureData({
-        experienceId: params.experienceId,
-      }),
-    ]);
+    await trpcQueryUtils.experiences.byId.ensureData({
+      id: params.experienceId,
+    });
   },
   component: ExperienceDetails,
 });

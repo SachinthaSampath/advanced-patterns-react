@@ -16,7 +16,7 @@ import { routeTree } from "./routeTree.gen";
 
 export const queryClient = new QueryClient();
 
-export const trpc = createTRPCReact<AppRouter>({});
+export const trpc = createTRPCReact<AppRouter>();
 
 export const customLink: TRPCLink<AppRouter> = () => {
   return ({ next, op }) => {

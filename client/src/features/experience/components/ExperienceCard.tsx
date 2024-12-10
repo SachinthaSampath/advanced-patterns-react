@@ -1,35 +1,45 @@
-import type { Experience } from "@advanced-react/server/features/experience/models";
+import { Experience, User } from "@advanced-react/server/database/schema";
 
 import Button from "@/features/shared/components/ui/Button";
 import Link from "@/features/shared/components/ui/Link";
+import UserAvatar from "@/features/user/components/UserAvatar";
 import { trpc } from "@/router";
 
 type ExperienceCardProps = {
-  experience: Experience;
+  experience: Experience & { user: User };
 };
 
 export default function ExperienceCard({ experience }: ExperienceCardProps) {
   return (
     <article className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
-      <div className="flex items-start justify-between">
+      <div className="flex items-start gap-4">
+        <UserAvatar user={experience.user} showName={false} />
         <div className="space-y-2">
-          <Link
-            to="/experiences/$experienceId"
-            params={{ experienceId: experience.id }}
-            className="block hover:no-underline"
-          >
-            <h2 className="text-xl font-bold hover:underline">
-              {experience.title}
-            </h2>
-          </Link>
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="flex items-center gap-1">
+                <span className="font-semibold">{experience.user.name}</span>
+                <span className="text-sm text-neutral-500">·</span>
+                <time className="text-sm text-neutral-500">
+                  {new Date(experience.createdAt).toLocaleDateString()}
+                </time>
+              </div>
+              <Link
+                to="/experiences/$experienceId"
+                params={{ experienceId: experience.id }}
+                className="block hover:no-underline"
+              >
+                <h2 className="text-xl font-bold hover:underline">
+                  {experience.title}
+                </h2>
+              </Link>
+            </div>
+            <ExperienceCardButtons experience={experience} />
+          </div>
           <p className="text-neutral-800 dark:text-neutral-100">
             {experience.content}
           </p>
-          <time className="text-sm text-neutral-500">
-            Posted on: {new Date(experience.createdAt).toLocaleDateString()}
-          </time>
         </div>
-        <ExperienceCardButtons experience={experience} />
       </div>
     </article>
   );
@@ -43,8 +53,8 @@ function ExperienceCardButtons({ experience }: ExperienceCardButtonsProps) {
   const utils = trpc.useUtils();
 
   const deleteMutation = trpc.experiences.delete.useMutation({
-    onSuccess: () => {
-      utils.experiences.feed.invalidate();
+    async onSuccess() {
+      await utils.experiences.feed.invalidate();
     },
   });
 

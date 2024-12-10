@@ -1,23 +1,35 @@
-import { commentSchema } from "@advanced-react/shared/schema/comment";
-import { experienceSchema } from "@advanced-react/shared/schema/experience";
+import { commentValidationSchema } from "@advanced-react/shared/schema/comment";
 import { desc, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "../../database";
+import {
+  cleanUserSelectSchema,
+  commentSelectSchema,
+  commentsTable,
+  experienceSelectSchema,
+} from "../../database/schema";
 import { publicProcedure, router } from "../../trpc";
-import { commentsTable } from "./models";
 
 export const commentRouter = router({
   byExperienceId: publicProcedure
     .input(
       z.object({
-        experienceId: experienceSchema.shape.id,
+        experienceId: experienceSelectSchema.shape.id,
       }),
     )
     .query(async ({ input }) => {
       const comments = await db.query.commentsTable.findMany({
         where: eq(commentsTable.experienceId, input.experienceId),
         orderBy: desc(commentsTable.createdAt),
+        with: {
+          user: {
+            columns: {
+              password: false,
+              email: false,
+            },
+          },
+        },
       });
 
       return comments;
@@ -26,8 +38,9 @@ export const commentRouter = router({
   add: publicProcedure
     .input(
       z.object({
-        experienceId: experienceSchema.shape.id,
-        content: commentSchema.shape.content,
+        experienceId: experienceSelectSchema.shape.id,
+        content: commentValidationSchema.shape.content,
+        userId: cleanUserSelectSchema.shape.id,
       }),
     )
     .mutation(async ({ input }) => {
@@ -38,6 +51,7 @@ export const commentRouter = router({
         .values({
           experienceId: input.experienceId,
           content: input.content,
+          userId: input.userId,
           createdAt: now,
           updatedAt: now,
         })
@@ -46,23 +60,30 @@ export const commentRouter = router({
       return comment[0];
     }),
 
-  edit: publicProcedure.input(commentSchema).mutation(async ({ input }) => {
-    const now = new Date().toISOString();
+  edit: publicProcedure
+    .input(
+      z.object({
+        id: commentSelectSchema.shape.id,
+        ...commentValidationSchema.shape,
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const now = new Date().toISOString();
 
-    const comment = await db
-      .update(commentsTable)
-      .set({
-        content: input.content,
-        updatedAt: now,
-      })
-      .where(eq(commentsTable.id, input.id))
-      .returning();
+      const comment = await db
+        .update(commentsTable)
+        .set({
+          content: input.content,
+          updatedAt: now,
+        })
+        .where(eq(commentsTable.id, input.id))
+        .returning();
 
-    return comment[0];
-  }),
+      return comment[0];
+    }),
 
   delete: publicProcedure
-    .input(z.object({ id: commentSchema.shape.id }))
+    .input(z.object({ id: commentSelectSchema.shape.id }))
     .mutation(async ({ input }) => {
       await db.delete(commentsTable).where(eq(commentsTable.id, input.id));
       return input.id;

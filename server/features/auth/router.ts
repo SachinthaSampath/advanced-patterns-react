@@ -36,6 +36,7 @@ export const authRouter = router({
       const users = await db
         .insert(usersTable)
         .values({
+          name: input.name,
           email: input.email,
           password: hashedPassword,
           createdAt: now,

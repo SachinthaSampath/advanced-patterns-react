@@ -1,5 +1,5 @@
 import { Comment } from "@advanced-react/server/features/comment/models";
-import { commentSchema } from "@advanced-react/shared/schema/comment";
+import { commentValidationSchema } from "@advanced-react/shared/schema/comment";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FormProvider, useForm } from "react-hook-form";
 import { z } from "zod";
@@ -10,7 +10,7 @@ import TextArea from "@/features/shared/components/ui/TextArea";
 import { useToast } from "@/features/shared/hooks/useToast";
 import { trpc } from "@/router";
 
-type EditCommentFormData = Omit<z.infer<typeof commentSchema>, "id">;
+type EditCommentFormData = z.infer<typeof commentValidationSchema>;
 
 type CommentEditFormProps = {
   comment: Comment;
@@ -25,7 +25,7 @@ export default function CommentEditForm({
   const utils = trpc.useUtils();
 
   const form = useForm<EditCommentFormData>({
-    resolver: zodResolver(commentSchema.omit({ id: true })),
+    resolver: zodResolver(commentValidationSchema),
     defaultValues: {
       content: comment.content,
     },
@@ -43,7 +43,7 @@ export default function CommentEditForm({
 
       utils.comments.byExperienceId.setData(
         { experienceId: comment.experienceId },
-        (oldData: Comment[] | undefined) =>
+        (oldData) =>
           oldData?.map((c) =>
             c.id === comment.id ? { ...c, content: data.content } : c,
           ),
