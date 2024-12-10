@@ -9,7 +9,7 @@ import {
   experienceSelectSchema,
   experiencesTable,
 } from "../../database/schema";
-import { publicProcedure, router } from "../../trpc";
+import { protectedProcedure, publicProcedure, router } from "../../trpc";
 import { DEFAULT_EXPERIENCE_LIMIT } from "../../utils/constants";
 
 export const experienceRouter = router({
@@ -73,17 +73,35 @@ export const experienceRouter = router({
       };
     }),
 
-  edit: publicProcedure
+  edit: protectedProcedure
     .input(
       z.object({
         id: experienceSelectSchema.shape.id,
         ...experienceValidationSchema.shape,
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      const experience = await db.query.experiencesTable.findFirst({
+        where: eq(experiencesTable.id, input.id),
+      });
+
+      if (!experience) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Experience not found",
+        });
+      }
+
+      if (experience.userId !== ctx.user.id) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You can only edit your own experiences",
+        });
+      }
+
       const now = new Date().toISOString();
 
-      const experience = await db
+      const updatedExperience = await db
         .update(experiencesTable)
         .set({
           title: input.title,
@@ -93,15 +111,34 @@ export const experienceRouter = router({
         .where(eq(experiencesTable.id, input.id))
         .returning();
 
-      return experience[0];
+      return updatedExperience[0];
     }),
 
-  delete: publicProcedure
+  delete: protectedProcedure
     .input(z.object({ id: experienceSelectSchema.shape.id }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      const experience = await db.query.experiencesTable.findFirst({
+        where: eq(experiencesTable.id, input.id),
+      });
+
+      if (!experience) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Experience not found",
+        });
+      }
+
+      if (experience.userId !== ctx.user.id) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You can only delete your own experiences",
+        });
+      }
+
       await db
         .delete(experiencesTable)
         .where(eq(experiencesTable.id, input.id));
+
       return input.id;
     }),
 });

@@ -38,7 +38,7 @@ export default function Navbar() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{currentUser.email}</DropdownMenuLabel>
+              <DropdownMenuLabel>{currentUser.name}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={async () => {

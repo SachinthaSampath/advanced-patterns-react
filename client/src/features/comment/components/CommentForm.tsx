@@ -13,8 +13,8 @@ import { useToast } from "@/features/shared/hooks/useToast";
 import { trpc } from "@/router";
 
 export type OptimisticComment = Comment & {
-  user: User;
   optimistic: true;
+  user: User;
 };
 
 type CommentFormData = z.infer<typeof commentValidationSchema>;
@@ -91,15 +91,18 @@ export default function CommentForm({ experienceId }: CommentFormProps) {
   });
 
   function onSubmit(data: CommentFormData) {
-    if (!currentUser) {
-      return;
-    }
-
     addCommentMutation.mutate({
       content: data.content,
       experienceId,
-      userId: currentUser.id,
     });
+  }
+
+  if (!currentUser) {
+    return (
+      <div className="text-center text-neutral-500">
+        Please log in to add comments
+      </div>
+    );
   }
 
   return (

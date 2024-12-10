@@ -124,18 +124,18 @@ export const authRouter = router({
     .output(
       z.object({
         accessToken: z.string().nullable(),
-        user: cleanUserSelectSchema.nullable(),
+        currentUser: cleanUserSelectSchema.nullable(),
       }),
     )
     .query(async ({ ctx }) => {
       if (!ctx.user) {
-        return { accessToken: null, user: null };
+        return { accessToken: null, currentUser: null };
       }
 
       // Return user without password
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password, ...cleanUser } = ctx.user;
 
-      return { accessToken: ctx.accessToken, user: cleanUser };
+      return { accessToken: ctx.accessToken, currentUser: cleanUser };
     }),
 });

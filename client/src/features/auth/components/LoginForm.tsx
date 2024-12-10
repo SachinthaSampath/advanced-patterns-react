@@ -9,7 +9,11 @@ import Input from "@/features/shared/components/ui/Input";
 import { useToast } from "@/features/shared/hooks/useToast";
 import { router, trpc } from "@/router";
 
-type LoginFormData = z.infer<typeof userCredentialsSchema>;
+const loginCredentialsSchema = userCredentialsSchema.omit({
+  name: true,
+});
+
+type LoginFormData = z.infer<typeof loginCredentialsSchema>;
 
 export default function LoginForm() {
   const { toast } = useToast();
@@ -31,7 +35,7 @@ export default function LoginForm() {
   });
 
   const form = useForm<LoginFormData>({
-    resolver: zodResolver(userCredentialsSchema),
+    resolver: zodResolver(loginCredentialsSchema),
     defaultValues: {
       email: "",
       password: "",

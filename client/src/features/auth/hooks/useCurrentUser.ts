@@ -5,7 +5,7 @@ export function useCurrentUser() {
 
   return {
     accessToken: currentUserQuery.data?.accessToken,
-    currentUser: currentUserQuery.data?.user,
+    currentUser: currentUserQuery.data?.currentUser,
     isFetched: currentUserQuery.isFetched,
   };
 }

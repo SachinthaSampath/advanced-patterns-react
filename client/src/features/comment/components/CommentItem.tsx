@@ -1,6 +1,7 @@
 import { Comment, User } from "@advanced-react/server/database/schema";
 import { useState } from "react";
 
+import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import Button from "@/features/shared/components/ui/Button";
 import { useToast } from "@/features/shared/hooks/useToast";
 import UserAvatar from "@/features/user/components/UserAvatar";
@@ -16,7 +17,7 @@ type CommentItemProps = {
 
 export default function CommentItem({ comment }: CommentItemProps) {
   const { toast } = useToast();
-
+  const { currentUser } = useCurrentUser();
   const [isEditing, setIsEditing] = useState(false);
 
   const utils = trpc.useUtils();
@@ -60,6 +61,8 @@ export default function CommentItem({ comment }: CommentItemProps) {
     return <CommentEditForm comment={comment} setIsEditing={setIsEditing} />;
   }
 
+  const isCommentOwner = currentUser?.id === comment.userId;
+
   return (
     <div
       className={cn(
@@ -75,25 +78,27 @@ export default function CommentItem({ comment }: CommentItemProps) {
         <time className="text-xs text-neutral-500">
           {new Date(comment.createdAt).toLocaleDateString()}
         </time>
-        <div className="flex gap-2">
-          <Button
-            variant="link"
-            onClick={() => setIsEditing(true)}
-            disabled={(comment as OptimisticComment).optimistic}
-          >
-            Edit
-          </Button>
-          <Button
-            variant="destructive-link"
-            onClick={() => deleteMutation.mutate({ id: comment.id })}
-            disabled={
-              deleteMutation.isPending ||
-              (comment as OptimisticComment).optimistic
-            }
-          >
-            {deleteMutation.isPending ? "Deleting..." : "Delete"}
-          </Button>
-        </div>
+        {isCommentOwner && (
+          <div className="flex gap-2">
+            <Button
+              variant="link"
+              onClick={() => setIsEditing(true)}
+              disabled={(comment as OptimisticComment).optimistic}
+            >
+              Edit
+            </Button>
+            <Button
+              variant="destructive-link"
+              onClick={() => deleteMutation.mutate({ id: comment.id })}
+              disabled={
+                deleteMutation.isPending ||
+                (comment as OptimisticComment).optimistic
+              }
+            >
+              {deleteMutation.isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

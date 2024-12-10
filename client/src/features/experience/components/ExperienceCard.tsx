@@ -1,7 +1,9 @@
 import { Experience, User } from "@advanced-react/server/database/schema";
 
+import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import Button from "@/features/shared/components/ui/Button";
 import Link from "@/features/shared/components/ui/Link";
+import { toast } from "@/features/shared/hooks/useToast";
 import UserAvatar from "@/features/user/components/UserAvatar";
 import { trpc } from "@/router";
 
@@ -46,17 +48,30 @@ export default function ExperienceCard({ experience }: ExperienceCardProps) {
 }
 
 type ExperienceCardButtonsProps = {
-  experience: Experience;
+  experience: Experience & { user: User };
 };
 
 function ExperienceCardButtons({ experience }: ExperienceCardButtonsProps) {
+  const { currentUser } = useCurrentUser();
   const utils = trpc.useUtils();
 
   const deleteMutation = trpc.experiences.delete.useMutation({
     async onSuccess() {
       await utils.experiences.feed.invalidate();
     },
+    onError() {
+      toast({
+        title: "Failed to delete experience",
+        description: "Please try again later",
+        variant: "destructive",
+      });
+    },
   });
+
+  // Only show edit/delete buttons if the current user owns the experience
+  if (!currentUser || currentUser.id !== experience.userId) {
+    return null;
+  }
 
   return (
     <div className="flex gap-2">
