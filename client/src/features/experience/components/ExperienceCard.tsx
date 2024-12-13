@@ -1,17 +1,25 @@
 import { Experience, User } from "@advanced-react/server/database/schema";
+import { MessageSquare } from "lucide-react";
 
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import Button from "@/features/shared/components/ui/Button";
 import Link from "@/features/shared/components/ui/Link";
-import { toast } from "@/features/shared/hooks/useToast";
+import { useToast } from "@/features/shared/hooks/useToast";
 import UserAvatar from "@/features/user/components/UserAvatar";
 import { trpc } from "@/router";
 
 type ExperienceCardProps = {
-  experience: Experience & { user: User };
+  experience: Experience & {
+    commentsCount: number;
+    user: User;
+  };
 };
 
 export default function ExperienceCard({ experience }: ExperienceCardProps) {
+  const { currentUser } = useCurrentUser();
+
+  const isPostOwner = currentUser?.id === experience.userId;
+
   return (
     <article className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
       <div className="flex items-start gap-4">
@@ -36,42 +44,106 @@ export default function ExperienceCard({ experience }: ExperienceCardProps) {
                 </h2>
               </Link>
             </div>
-            <ExperienceCardButtons experience={experience} />
+            {isPostOwner && (
+              <ExperienceCardOwnerButtons experience={experience} />
+            )}
           </div>
           <p className="text-neutral-800 dark:text-neutral-100">
             {experience.content}
           </p>
+          <ExperienceCardButtons experience={experience} />
         </div>
       </div>
     </article>
   );
 }
 
-type ExperienceCardButtonsProps = {
-  experience: Experience & { user: User };
-};
+type ExperienceCardButtonsProps = Pick<ExperienceCardProps, "experience">;
 
 function ExperienceCardButtons({ experience }: ExperienceCardButtonsProps) {
-  const { currentUser } = useCurrentUser();
+  return (
+    <div className="flex items-center gap-4">
+      <Button variant="link" asChild>
+        <Link
+          to="/experiences/$experienceId"
+          params={{ experienceId: experience.id }}
+          variant="ghost"
+        >
+          <MessageSquare className="h-5 w-5" />
+          <span>{experience.commentsCount}</span>
+        </Link>
+      </Button>
+    </div>
+  );
+}
+
+type ExperienceCardOwnerButtonsProps = Pick<ExperienceCardProps, "experience">;
+
+function ExperienceCardOwnerButtons({
+  experience,
+}: ExperienceCardOwnerButtonsProps) {
+  const { toast } = useToast();
   const utils = trpc.useUtils();
 
   const deleteMutation = trpc.experiences.delete.useMutation({
-    async onSuccess() {
-      await utils.experiences.feed.invalidate();
+    onMutate: async ({ id }) => {
+      await Promise.all([
+        utils.experiences.feed.cancel(),
+        utils.experiences.byId.cancel(),
+      ]);
+
+      const previousExperience = utils.experiences.byId.getData({
+        id: experience.id,
+      });
+
+      const previousPages = utils.experiences.feed.getInfiniteData();
+
+      utils.experiences.feed.setInfiniteData({}, (oldData) => {
+        if (!oldData) {
+          return { pages: [], pageParams: [] };
+        }
+
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page) => ({
+            ...page,
+            experiences: page.experiences.filter((e) => e.id !== id),
+          })),
+        };
+      });
+
+      utils.experiences.byId.setData({ id }, undefined);
+
+      const { dismiss } = toast({
+        title: "Experience deleted",
+        description: "Your experience has been deleted",
+      });
+
+      return { dismiss, previousPages, previousExperience };
     },
-    onError() {
+    onSuccess: async () => {
+      await Promise.all([
+        utils.experiences.feed.invalidate(),
+        utils.experiences.byId.invalidate(),
+      ]);
+    },
+    onError: (error, _, context) => {
+      context?.dismiss();
+
+      utils.experiences.feed.setInfiniteData({}, context?.previousPages);
+
+      utils.experiences.byId.setData(
+        { id: experience.id },
+        context?.previousExperience,
+      );
+
       toast({
         title: "Failed to delete experience",
-        description: "Please try again later",
+        description: error.message,
         variant: "destructive",
       });
     },
   });
-
-  // Only show edit/delete buttons if the current user owns the experience
-  if (!currentUser || currentUser.id !== experience.userId) {
-    return null;
-  }
 
   return (
     <div className="flex gap-2">

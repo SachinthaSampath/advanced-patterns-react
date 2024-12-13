@@ -1,7 +1,7 @@
 import { QueryErrorFallback } from "@/features/shared/components/QueryErrorFallback";
 import { trpc } from "@/router";
 
-import CommentForm from "./CommentForm";
+import CommentCreateForm from "./CommentCreateForm";
 import CommentList from "./CommentList";
 
 type CommentsSectionProps = {
@@ -18,7 +18,7 @@ export default function CommentsSection({
   }
 
   if (commentsQuery.error) {
-    return <QueryErrorFallback refetch={() => commentsQuery.refetch()} />;
+    return <QueryErrorFallback refetch={commentsQuery.refetch} />;
   }
 
   if (!commentsQuery.data) {
@@ -29,7 +29,7 @@ export default function CommentsSection({
     <div className="mt-4 space-y-4 border-t border-neutral-200 pt-4 dark:border-neutral-800">
       <h3 className="mb-2 font-semibold">Comments</h3>
 
-      <CommentForm experienceId={experienceId} />
+      <CommentCreateForm experienceId={experienceId} />
 
       {commentsQuery.data && <CommentList comments={commentsQuery.data} />}
     </div>

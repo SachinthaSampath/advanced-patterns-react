@@ -13,49 +13,51 @@ import { router, trpc } from "@/router";
 
 type ExperienceFormData = z.infer<typeof experienceValidationSchema>;
 
-type ExperienceFormProps = {
+type ExperienceEditFormProps = {
   experience: Experience;
 };
 
-export default function ExperienceForm({ experience }: ExperienceFormProps) {
+export default function ExperienceEditForm({
+  experience,
+}: ExperienceEditFormProps) {
   const { toast } = useToast();
+  const utils = trpc.useUtils();
 
   const form = useForm<ExperienceFormData>({
     resolver: zodResolver(experienceValidationSchema),
     defaultValues: experience,
   });
 
-  const utils = trpc.useUtils();
-
   const editMutation = trpc.experiences.edit.useMutation({
-    async onSuccess() {
-      await utils.experiences.feed.invalidate();
+    onSuccess: async () => {
+      await Promise.all([
+        utils.experiences.feed.invalidate(),
+        utils.experiences.byId.invalidate({
+          id: experience.id,
+        }),
+      ]);
+
       router.history.back();
     },
-    onError() {
+    onError: (error) => {
       toast({
         title: "Failed to edit experience",
-        description: "Please try again later",
+        description: error.message,
         variant: "destructive",
       });
     },
   });
 
-  async function onSubmit(data: ExperienceFormData) {
-    try {
-      await editMutation.mutateAsync(data);
-    } catch {
-      toast({
-        title: "Failed to edit experience",
-        description: "Please try again later",
-        variant: "destructive",
-      });
-    }
-  }
+  const handleSubmit = form.handleSubmit((data) => {
+    editMutation.mutate({
+      id: experience.id,
+      ...data,
+    });
+  });
 
   return (
     <FormProvider {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4">
         <FormField<ExperienceFormData> name="title" label="Title">
           {({ error, name }) => (
             <Input {...form.register(name)} error={error} />

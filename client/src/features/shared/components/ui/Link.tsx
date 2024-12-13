@@ -29,6 +29,7 @@ const linkVariants = cva("hover:underline", {
   variants: {
     variant: {
       default: "text-secondary-500 dark:text-primary-500",
+      ghost: "hover:no-underline",
     },
   },
   defaultVariants: {

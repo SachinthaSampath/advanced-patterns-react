@@ -1,4 +1,3 @@
-import { Comment, User } from "@advanced-react/server/database/schema";
 import type { Experience } from "@advanced-react/server/features/experience/models";
 import { commentValidationSchema } from "@advanced-react/shared/schema/comment";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,34 +11,45 @@ import Input from "@/features/shared/components/ui/Input";
 import { useToast } from "@/features/shared/hooks/useToast";
 import { trpc } from "@/router";
 
-export type OptimisticComment = Comment & {
-  optimistic: true;
-  user: User;
-};
+import { OptimisticComment } from "../types";
 
-type CommentFormData = z.infer<typeof commentValidationSchema>;
+type CommentCreateFormData = z.infer<typeof commentValidationSchema>;
 
-type CommentFormProps = {
+type CommentCreateFormProps = {
   experienceId: Experience["id"];
 };
 
-export default function CommentForm({ experienceId }: CommentFormProps) {
+export default function CommentCreateForm({
+  experienceId,
+}: CommentCreateFormProps) {
   const { toast } = useToast();
   const { currentUser } = useCurrentUser();
+  const utils = trpc.useUtils();
 
-  const form = useForm<CommentFormData>({
+  const form = useForm<CommentCreateFormData>({
     resolver: zodResolver(commentValidationSchema),
   });
 
-  const utils = trpc.useUtils();
-
   const addCommentMutation = trpc.comments.add.useMutation({
-    async onMutate(data) {
-      form.reset();
-
+    onMutate: async (data) => {
       if (!currentUser) {
         return;
       }
+
+      form.reset();
+
+      await Promise.all([
+        utils.comments.byExperienceId.cancel(),
+        utils.experiences.byId.cancel(),
+      ]);
+
+      const previousComments = utils.comments.byExperienceId.getData({
+        experienceId,
+      });
+
+      const previousExperience = utils.experiences.byId.getData({
+        id: experienceId,
+      });
 
       const optimisticComment: OptimisticComment = {
         id: Math.random(),
@@ -52,50 +62,65 @@ export default function CommentForm({ experienceId }: CommentFormProps) {
         updatedAt: new Date().toISOString(),
       };
 
-      await utils.comments.byExperienceId.cancel();
-
-      const previousCommentsByExperienceId =
-        utils.comments.byExperienceId.getData({ experienceId });
-
       utils.comments.byExperienceId.setData({ experienceId }, (oldData) => {
         if (!oldData) {
           return [optimisticComment];
         }
+
         return [optimisticComment, ...oldData];
       });
 
+      utils.experiences.byId.setData({ id: experienceId }, (oldData) => {
+        if (!oldData) {
+          return;
+        }
+
+        return {
+          ...oldData,
+          commentsCount: oldData.commentsCount + 1,
+        };
+      });
+
       return {
-        previousCommentsByExperienceId,
+        previousComments,
+        previousExperience,
       };
     },
     onSuccess: async () => {
-      await utils.comments.byExperienceId.invalidate({ experienceId });
-
-      toast({
-        title: "Comment added",
-        description: "Your comment has been added successfully",
-      });
+      await Promise.all([
+        utils.comments.byExperienceId.invalidate({
+          experienceId,
+        }),
+        utils.experiences.byId.invalidate({
+          id: experienceId,
+        }),
+      ]);
     },
-    onError(_, __, context) {
+    onError: (error, __, context) => {
       utils.comments.byExperienceId.setData(
         { experienceId },
-        context?.previousCommentsByExperienceId,
+        context?.previousComments,
+      );
+
+      utils.experiences.byId.setData(
+        { id: experienceId },
+        context?.previousExperience,
       );
 
       toast({
         title: "Failed to add comment",
-        description: "Please try again later",
+        description: error.message,
         variant: "destructive",
       });
     },
   });
 
-  function onSubmit(data: CommentFormData) {
+  const handleSubmit = form.handleSubmit((data) => {
     addCommentMutation.mutate({
       content: data.content,
       experienceId,
     });
-  }
+  });
 
   if (!currentUser) {
     return (
@@ -107,8 +132,8 @@ export default function CommentForm({ experienceId }: CommentFormProps) {
 
   return (
     <FormProvider {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
-        <FormField<CommentFormData> name="content">
+      <form onSubmit={handleSubmit} className="space-y-2">
+        <FormField<CommentCreateFormData> name="content">
           {({ error, name }) => (
             <Input
               {...form.register(name)}
@@ -117,9 +142,7 @@ export default function CommentForm({ experienceId }: CommentFormProps) {
             />
           )}
         </FormField>
-        <Button type="submit" disabled={addCommentMutation.isPending}>
-          Add Comment
-        </Button>
+        <Button type="submit">Add Comment</Button>
       </form>
     </FormProvider>
   );

@@ -49,14 +49,12 @@ export const authRouter = router({
         { expiresIn: "7d" },
       );
 
-      // Set refresh token as a cookie
       ctx.res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
         secure: true,
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       });
 
-      // Creates access token
       const accessToken = auth.createToken(
         { refreshToken },
         { expiresIn: "15m" },
@@ -66,7 +64,7 @@ export const authRouter = router({
     }),
 
   login: publicProcedure
-    .input(userCredentialsSchema)
+    .input(userCredentialsSchema.omit({ name: true }))
     .output(
       z.object({
         accessToken: z.string(),
@@ -99,7 +97,6 @@ export const authRouter = router({
         { expiresIn: "7d" },
       );
 
-      // Set refresh token as a cookie
       ctx.res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
         secure: true,
@@ -115,7 +112,6 @@ export const authRouter = router({
     }),
 
   logout: protectedProcedure.mutation(async ({ ctx }) => {
-    // Clear refresh token cookie
     ctx.res.clearCookie("refreshToken");
     return;
   }),
@@ -132,7 +128,6 @@ export const authRouter = router({
         return { accessToken: null, currentUser: null };
       }
 
-      // Return user without password
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password, ...cleanUser } = ctx.user;
 

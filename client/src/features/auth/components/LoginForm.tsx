@@ -21,14 +21,20 @@ export default function LoginForm() {
   const utils = trpc.useUtils();
 
   const loginMutation = trpc.auth.login.useMutation({
-    async onSuccess() {
+    onSuccess: async () => {
       await utils.auth.currentUser.invalidate();
+
       router.navigate({ to: "/" });
+
+      toast({
+        title: "Logged in",
+        description: "You have been logged in",
+      });
     },
-    onError() {
+    onError: (error) => {
       toast({
         title: "Failed to login",
-        description: "Please try again later",
+        description: error.message,
         variant: "destructive",
       });
     },
@@ -42,31 +48,21 @@ export default function LoginForm() {
     },
   });
 
-  function onSubmit(data: LoginFormData) {
+  const handleSubmit = form.handleSubmit((data) => {
     loginMutation.mutate(data);
-  }
+  });
 
   return (
     <FormProvider {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4">
         <FormField<LoginFormData> name="email" label="Email">
           {({ error, name }) => (
-            <Input
-              {...form.register(name)}
-              type="email"
-              error={error}
-              disabled={loginMutation.isPending}
-            />
+            <Input {...form.register(name)} type="email" error={error} />
           )}
         </FormField>
         <FormField<LoginFormData> name="password" label="Password">
           {({ error, name }) => (
-            <Input
-              {...form.register(name)}
-              type="password"
-              error={error}
-              disabled={loginMutation.isPending}
-            />
+            <Input {...form.register(name)} type="password" error={error} />
           )}
         </FormField>
         <Button

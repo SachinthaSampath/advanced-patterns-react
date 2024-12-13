@@ -5,6 +5,7 @@ import ExperienceCard from "./ExperienceCard";
 interface ExperienceListProps {
   experiences: (Experience & {
     user: User;
+    commentsCount: number;
   })[];
   isLoading?: boolean;
 }
@@ -20,7 +21,7 @@ export default function ExperienceList({
       ))}
       {isLoading && (
         <div className="flex justify-center py-4">
-          <div>Loading more...</div>
+          <div>Loading...</div>
         </div>
       )}
     </div>

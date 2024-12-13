@@ -10,7 +10,7 @@ import TextArea from "@/features/shared/components/ui/TextArea";
 import { useToast } from "@/features/shared/hooks/useToast";
 import { trpc } from "@/router";
 
-type EditCommentFormData = z.infer<typeof commentValidationSchema>;
+type EditCommentCreateFormData = z.infer<typeof commentValidationSchema>;
 
 type CommentEditFormProps = {
   comment: Comment;
@@ -24,7 +24,7 @@ export default function CommentEditForm({
   const { toast } = useToast();
   const utils = trpc.useUtils();
 
-  const form = useForm<EditCommentFormData>({
+  const form = useForm<EditCommentCreateFormData>({
     resolver: zodResolver(commentValidationSchema),
     defaultValues: {
       content: comment.content,
@@ -32,7 +32,7 @@ export default function CommentEditForm({
   });
 
   const editMutation = trpc.comments.edit.useMutation({
-    async onMutate(data) {
+    onMutate: async (data) => {
       setIsEditing(false);
 
       await utils.comments.byExperienceId.cancel();
@@ -51,13 +51,13 @@ export default function CommentEditForm({
 
       return { previousComments };
     },
-    onSuccess() {
+    onSuccess: () => {
       toast({
         title: "Comment updated",
-        description: "Your comment has been updated successfully",
+        description: "Your comment has been updated",
       });
     },
-    onError(_, __, context) {
+    onError: (error, __, context) => {
       utils.comments.byExperienceId.setData(
         { experienceId: comment.experienceId },
         context?.previousComments,
@@ -65,7 +65,7 @@ export default function CommentEditForm({
 
       toast({
         title: "Failed to edit comment",
-        description: "Please try again later",
+        description: error.message,
         variant: "destructive",
       });
     },
@@ -84,14 +84,9 @@ export default function CommentEditForm({
         onSubmit={handleSubmit}
         className="rounded bg-neutral-50 p-2 dark:bg-neutral-800"
       >
-        <FormField<EditCommentFormData> name="content" className="mb-2">
+        <FormField<EditCommentCreateFormData> name="content" className="mb-2">
           {({ error, name }) => (
-            <TextArea
-              {...form.register(name)}
-              rows={2}
-              error={error}
-              disabled={editMutation.isPending}
-            />
+            <TextArea {...form.register(name)} rows={2} error={error} />
           )}
         </FormField>
         <div className="flex gap-2">

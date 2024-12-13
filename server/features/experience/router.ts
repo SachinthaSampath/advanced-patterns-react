@@ -1,11 +1,12 @@
 import { experienceValidationSchema } from "@advanced-react/shared/schema/experience";
 import { TRPCError } from "@trpc/server";
-import { eq } from "drizzle-orm";
+import { count, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "../../database";
 import {
   cleanUserSelectSchema,
+  commentsTable,
   experienceSelectSchema,
   experiencesTable,
 } from "../../database/schema";
@@ -17,6 +18,7 @@ export const experienceRouter = router({
     .input(z.object({ id: experienceSelectSchema.shape.id }))
     .output(
       experienceSelectSchema.extend({
+        commentsCount: z.number(),
         user: cleanUserSelectSchema,
       }),
     )
@@ -40,7 +42,15 @@ export const experienceRouter = router({
         });
       }
 
-      return experience;
+      const [commentCount] = await db
+        .select({ count: count() })
+        .from(commentsTable)
+        .where(eq(commentsTable.experienceId, input.id));
+
+      return {
+        ...experience,
+        commentsCount: commentCount?.count ?? 0,
+      };
     }),
 
   feed: publicProcedure
@@ -48,6 +58,17 @@ export const experienceRouter = router({
       z.object({
         limit: z.number().optional(),
         cursor: z.number().optional(),
+      }),
+    )
+    .output(
+      z.object({
+        experiences: z.array(
+          experienceSelectSchema.extend({
+            commentsCount: z.number(),
+            user: cleanUserSelectSchema,
+          }),
+        ),
+        nextCursor: z.number().optional(),
       }),
     )
     .query(async ({ input }) => {
@@ -67,8 +88,22 @@ export const experienceRouter = router({
         },
       });
 
+      const countQueries = experiences.map((experience) =>
+        db
+          .select({ count: count() })
+          .from(commentsTable)
+          .where(eq(commentsTable.experienceId, experience.id)),
+      );
+
+      const counts = await Promise.all(countQueries);
+
+      const experiencesWithCounts = experiences.map((experience, index) => ({
+        ...experience,
+        commentsCount: counts[index][0]?.count ?? 0,
+      }));
+
       return {
-        experiences,
+        experiences: experiencesWithCounts,
         nextCursor: experiences.length === limit ? cursor + limit : undefined,
       };
     }),
@@ -99,14 +134,12 @@ export const experienceRouter = router({
         });
       }
 
-      const now = new Date().toISOString();
-
       const updatedExperience = await db
         .update(experiencesTable)
         .set({
           title: input.title,
           content: input.content,
-          updatedAt: now,
+          updatedAt: new Date().toISOString(),
         })
         .where(eq(experiencesTable.id, input.id))
         .returning();

@@ -17,11 +17,11 @@ export default function RegisterForm() {
   const utils = trpc.useUtils();
 
   const registerMutation = trpc.auth.register.useMutation({
-    async onSuccess() {
+    onSuccess: async () => {
       await utils.auth.currentUser.invalidate();
       router.navigate({ to: "/" });
     },
-    onError() {
+    onError: () => {
       toast({
         title: "Failed to register",
         description: "Please try again later",
@@ -32,20 +32,15 @@ export default function RegisterForm() {
 
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(userCredentialsSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-      name: "",
-    },
   });
 
-  function onSubmit(data: RegisterFormData) {
+  const handleSubmit = form.handleSubmit((data) => {
     registerMutation.mutate(data);
-  }
+  });
 
   return (
     <FormProvider {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4">
         <FormField<RegisterFormData> name="name" label="Name">
           {({ error, name }) => (
             <Input

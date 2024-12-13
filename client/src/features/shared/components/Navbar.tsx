@@ -14,15 +14,24 @@ import {
 } from "@/features/shared/components/ui/DropdownMenu";
 import { router, trpc } from "@/router";
 
+import { useToast } from "../hooks/useToast";
+
 export default function Navbar() {
+  const { toast } = useToast();
   const { currentUser, isFetched } = useCurrentUser();
 
   const utils = trpc.useUtils();
 
   const logoutMutation = trpc.auth.logout.useMutation({
-    async onSuccess() {
+    onSuccess: async () => {
       await utils.auth.currentUser.invalidate();
+
       router.navigate({ to: "/login" });
+
+      toast({
+        title: "Logged out",
+        description: "You have been logged out",
+      });
     },
   });
 

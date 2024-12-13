@@ -8,7 +8,6 @@ export const Route = createFileRoute("/")({
   component: Index,
   loader: async ({ context: { trpcQueryUtils } }) => {
     await trpcQueryUtils.experiences.feed.ensureData({});
-    return;
   },
 });
 
@@ -17,7 +16,6 @@ function Index() {
     {},
     {
       getNextPageParam: (lastPage) => lastPage.nextCursor,
-      initialCursor: 0,
     },
   );
 
