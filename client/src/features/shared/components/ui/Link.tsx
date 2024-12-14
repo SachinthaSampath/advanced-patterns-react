@@ -4,10 +4,11 @@ import {
   LinkComponentProps,
 } from "@tanstack/react-router";
 import { cva, type VariantProps } from "class-variance-authority";
+import { AnchorHTMLAttributes } from "react";
 
 import { cn } from "@/lib/utils/cn";
 
-type LinkProps = React.AnchorHTMLAttributes<HTMLAnchorElement> &
+type LinkProps = AnchorHTMLAttributes<HTMLAnchorElement> &
   VariantProps<typeof linkVariants> &
   LinkComponentProps & {
     asChild?: boolean;
