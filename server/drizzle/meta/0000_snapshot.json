@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "4eeca253-bf8d-458d-b73b-8751b9962c8e",
+  "id": "0ad30bc5-a2ef-4afb-8748-1579224831b5",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "users_table": {
@@ -60,7 +60,9 @@
       "indexes": {
         "users_table_email_unique": {
           "name": "users_table_email_unique",
-          "columns": ["email"],
+          "columns": [
+            "email"
+          ],
           "isUnique": true
         }
       },
@@ -118,7 +120,9 @@
       "indexes": {
         "comments_experience_id_idx": {
           "name": "comments_experience_id_idx",
-          "columns": ["experience_id"],
+          "columns": [
+            "experience_id"
+          ],
           "isUnique": false
         }
       },
@@ -127,8 +131,12 @@
           "name": "comments_table_experience_id_experiences_table_id_fk",
           "tableFrom": "comments_table",
           "tableTo": "experiences_table",
-          "columnsFrom": ["experience_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "experience_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -136,13 +144,98 @@
           "name": "comments_table_user_id_users_table_id_fk",
           "tableFrom": "comments_table",
           "tableTo": "users_table",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "experience_attendees_table": {
+      "name": "experience_attendees_table",
+      "columns": {
+        "experience_id": {
+          "name": "experience_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "experience_attendees_experience_id_idx": {
+          "name": "experience_attendees_experience_id_idx",
+          "columns": [
+            "experience_id"
+          ],
+          "isUnique": false
+        },
+        "experience_attendees_user_id_idx": {
+          "name": "experience_attendees_user_id_idx",
+          "columns": [
+            "user_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "experience_attendees_table_experience_id_experiences_table_id_fk": {
+          "name": "experience_attendees_table_experience_id_experiences_table_id_fk",
+          "tableFrom": "experience_attendees_table",
+          "tableTo": "experiences_table",
+          "columnsFrom": [
+            "experience_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "experience_attendees_table_user_id_users_table_id_fk": {
+          "name": "experience_attendees_table_user_id_users_table_id_fk",
+          "tableFrom": "experience_attendees_table",
+          "tableTo": "users_table",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "experience_attendees_table_experience_id_user_id_pk": {
+          "columns": [
+            "experience_id",
+            "user_id"
+          ],
+          "name": "experience_attendees_table_experience_id_user_id_pk"
+        }
+      },
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
@@ -195,7 +288,9 @@
       "indexes": {
         "experiences_user_id_idx": {
           "name": "experiences_user_id_idx",
-          "columns": ["user_id"],
+          "columns": [
+            "user_id"
+          ],
           "isUnique": false
         }
       },
@@ -204,8 +299,12 @@
           "name": "experiences_table_user_id_users_table_id_fk",
           "tableFrom": "experiences_table",
           "tableTo": "users_table",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }

@@ -6,6 +6,8 @@ interface ExperienceListProps {
   experiences: (Experience & {
     user: User;
     commentsCount: number;
+    attendeesCount: number;
+    attendees: User[];
   })[];
   isLoading?: boolean;
 }

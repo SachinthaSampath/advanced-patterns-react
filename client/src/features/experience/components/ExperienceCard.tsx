@@ -1,10 +1,11 @@
 import { Experience, User } from "@advanced-react/server/database/schema";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, Users } from "lucide-react";
 
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import Button from "@/features/shared/components/ui/Button";
 import Link from "@/features/shared/components/ui/Link";
 import { useToast } from "@/features/shared/hooks/useToast";
+import { getExperienceQueries } from "@/features/shared/lib/utils/mutationHelpers";
 import UserAvatar from "@/features/user/components/UserAvatar";
 import { trpc } from "@/router";
 
@@ -12,6 +13,8 @@ type ExperienceCardProps = {
   experience: Experience & {
     commentsCount: number;
     user: User;
+    attendeesCount: number;
+    attendees: User[];
   };
 };
 
@@ -61,8 +64,185 @@ export default function ExperienceCard({ experience }: ExperienceCardProps) {
 type ExperienceCardButtonsProps = Pick<ExperienceCardProps, "experience">;
 
 function ExperienceCardButtons({ experience }: ExperienceCardButtonsProps) {
+  const { currentUser } = useCurrentUser();
+  const utils = trpc.useUtils();
+  const { toast } = useToast();
+
+  const isAttending = experience.attendees.some(
+    (attendee) => attendee.id === currentUser?.id,
+  );
+
+  const attendMutation = trpc.experiences.attend.useMutation({
+    onMutate: async () => {
+      if (!currentUser) {
+        return;
+      }
+
+      const { feed, byId } = getExperienceQueries(utils);
+
+      await Promise.all([
+        ...feed.map((query) => query.cancel()),
+        ...byId.map((query) => query.cancel()),
+      ]);
+
+      const previousData = {
+        feed: feed.map((query) => ({
+          query,
+          data: query.getData(),
+        })),
+        byId: byId.map((query) => ({
+          query,
+          data: query.getData({ id: experience.id }),
+        })),
+      };
+
+      feed.forEach((query) =>
+        query.setInfiniteData({}, (oldData) => {
+          if (!oldData) {
+            return { pages: [], pageParams: [] };
+          }
+
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page) => ({
+              ...page,
+              experiences: page.experiences.map((e) =>
+                e.id === experience.id
+                  ? {
+                      ...e,
+                      attendeesCount: e.attendeesCount + 1,
+                      attendees: [currentUser, ...e.attendees],
+                    }
+                  : e,
+              ),
+            })),
+          };
+        }),
+      );
+
+      byId.forEach((query) =>
+        query.setData({ id: experience.id }, (oldData) => {
+          if (!oldData) {
+            return;
+          }
+
+          return {
+            ...oldData,
+            attendeesCount: oldData.attendeesCount + 1,
+            attendees: [currentUser, ...oldData.attendees],
+          };
+        }),
+      );
+
+      return { previousData };
+    },
+    onError: (error, _, context) => {
+      context?.previousData.feed.forEach(({ query, data }) => {
+        query.setData({}, data);
+      });
+
+      context?.previousData.byId.forEach(({ query, data }) => {
+        query.setData({ id: experience.id }, data);
+      });
+
+      toast({
+        title: "Failed to attend experience",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const unattendMutation = trpc.experiences.unattend.useMutation({
+    onMutate: async () => {
+      if (!currentUser) {
+        return;
+      }
+
+      const { feed, byId } = getExperienceQueries(utils);
+
+      await Promise.all([
+        feed.map((query) => query.cancel()),
+        byId.map((query) => query.cancel()),
+      ]);
+
+      const previousData = {
+        feed: feed.map((query) => ({
+          query,
+          data: query.getData(),
+        })),
+        byId: byId.map((query) => ({
+          query,
+          data: query.getData({ id: experience.id }),
+        })),
+      };
+
+      feed.forEach((query) =>
+        query.setInfiniteData({}, (oldData) => {
+          if (!oldData) {
+            return { pages: [], pageParams: [] };
+          }
+
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page) => ({
+              ...page,
+              experiences: page.experiences.map((e) =>
+                e.id === experience.id
+                  ? {
+                      ...e,
+                      attendeesCount: e.attendeesCount - 1,
+                      attendees: e.attendees.filter(
+                        (a) => a.id !== currentUser.id,
+                      ),
+                    }
+                  : e,
+              ),
+            })),
+          };
+        }),
+      );
+
+      byId.forEach((query) =>
+        query.setData({ id: experience.id }, (oldData) => {
+          if (!oldData) {
+            return;
+          }
+
+          return {
+            ...oldData,
+            attendeesCount: oldData.attendeesCount - 1,
+            attendees: oldData.attendees.filter((a) => a.id !== currentUser.id),
+          };
+        }),
+      );
+
+      return { previousData };
+    },
+    onError: (error, _, context) => {
+      context?.previousData.feed.forEach(({ query, data }) => {
+        query.setData({}, data);
+      });
+
+      context?.previousData.byId.forEach(({ query, data }) => {
+        query.setData({ id: experience.id }, data);
+      });
+
+      toast({
+        title: "Failed to unattend experience",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   return (
     <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2">
+        <Users className="h-5 w-5" />
+        <span>{experience.attendeesCount}</span>
+      </div>
+
       <Button variant="link" asChild>
         <Link
           to="/experiences/$experienceId"
@@ -73,6 +253,22 @@ function ExperienceCardButtons({ experience }: ExperienceCardButtonsProps) {
           <span>{experience.commentsCount}</span>
         </Link>
       </Button>
+
+      {currentUser && currentUser.id !== experience.userId && (
+        <Button
+          variant={isAttending ? "outline" : "default"}
+          onClick={() => {
+            if (isAttending) {
+              unattendMutation.mutate({ id: experience.id });
+            } else {
+              attendMutation.mutate({ id: experience.id });
+            }
+          }}
+          disabled={attendMutation.isPending || unattendMutation.isPending}
+        >
+          {isAttending ? "Unattend" : "Attend"}
+        </Button>
+      )}
     </div>
   );
 }

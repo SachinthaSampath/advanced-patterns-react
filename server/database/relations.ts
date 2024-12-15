@@ -1,7 +1,11 @@
 import { relations } from "drizzle-orm";
 
-import { commentsTable, usersTable } from "./schema";
-import { experiencesTable } from "./schema";
+import {
+  commentsTable,
+  experienceAttendeesTable,
+  experiencesTable,
+  usersTable,
+} from "./schema";
 
 export const experiencesRelations = relations(
   experiencesTable,
@@ -11,6 +15,7 @@ export const experiencesRelations = relations(
       fields: [experiencesTable.userId],
       references: [usersTable.id],
     }),
+    attendees: many(experienceAttendeesTable),
   }),
 );
 
@@ -24,3 +29,17 @@ export const commentsRelations = relations(commentsTable, ({ one }) => ({
     references: [usersTable.id],
   }),
 }));
+
+export const experienceAttendeesRelations = relations(
+  experienceAttendeesTable,
+  ({ one }) => ({
+    experience: one(experiencesTable, {
+      fields: [experienceAttendeesTable.experienceId],
+      references: [experiencesTable.id],
+    }),
+    user: one(usersTable, {
+      fields: [experienceAttendeesTable.userId],
+      references: [usersTable.id],
+    }),
+  }),
+);
