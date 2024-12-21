@@ -6,8 +6,10 @@ import { trpc } from "@/router";
 
 export const Route = createFileRoute("/")({
   component: Index,
-  loader: async ({ context: { trpcQueryUtils } }) => {
-    await trpcQueryUtils.experiences.feed.ensureData({});
+  loader: async () => {
+    // TODO: This currently doesn't work due to a bug in TRPC
+    // https://github.com/trpc/trpc/discussions/5833
+    // await trpcQueryUtils.experiences.feed.ensureData({});
   },
 });
 

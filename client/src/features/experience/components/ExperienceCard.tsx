@@ -26,12 +26,20 @@ export default function ExperienceCard({ experience }: ExperienceCardProps) {
   return (
     <article className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
       <div className="flex items-start gap-4">
-        <UserAvatar user={experience.user} showName={false} />
+        <Link to="/users/$userId" params={{ userId: experience.user.id }}>
+          <UserAvatar user={experience.user} showName={false} />
+        </Link>
         <div className="space-y-2">
           <div className="flex items-start justify-between">
             <div>
               <div className="flex items-center gap-1">
-                <span className="font-semibold">{experience.user.name}</span>
+                <Link
+                  variant="secondary"
+                  to="/users/$userId"
+                  params={{ userId: experience.user.id }}
+                >
+                  <span className="font-semibold">{experience.user.name}</span>
+                </Link>
                 <span className="text-sm text-neutral-500">·</span>
                 <time className="text-sm text-neutral-500">
                   {new Date(experience.createdAt).toLocaleDateString()}

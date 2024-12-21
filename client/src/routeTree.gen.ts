@@ -10,147 +10,168 @@
 
 // Import Routes
 
-import { Route as rootRoute } from "./routes/__root";
-import { Route as RegisterImport } from "./routes/register";
-import { Route as LoginImport } from "./routes/login";
-import { Route as IndexImport } from "./routes/index";
-import { Route as ExperiencesExperienceIdIndexImport } from "./routes/experiences/$experienceId/index";
-import { Route as ExperiencesExperienceIdEditImport } from "./routes/experiences/$experienceId/edit";
+import { Route as rootRoute } from './routes/__root'
+import { Route as RegisterImport } from './routes/register'
+import { Route as LoginImport } from './routes/login'
+import { Route as IndexImport } from './routes/index'
+import { Route as UsersUserIdIndexImport } from './routes/users/$userId/index'
+import { Route as ExperiencesExperienceIdIndexImport } from './routes/experiences/$experienceId/index'
+import { Route as ExperiencesExperienceIdEditImport } from './routes/experiences/$experienceId/edit'
 
 // Create/Update Routes
 
 const RegisterRoute = RegisterImport.update({
-  id: "/register",
-  path: "/register",
+  id: '/register',
+  path: '/register',
   getParentRoute: () => rootRoute,
-} as any);
+} as any)
 
 const LoginRoute = LoginImport.update({
-  id: "/login",
-  path: "/login",
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRoute,
-} as any);
+} as any)
 
 const IndexRoute = IndexImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRoute,
-} as any);
+} as any)
+
+const UsersUserIdIndexRoute = UsersUserIdIndexImport.update({
+  id: '/users/$userId/',
+  path: '/users/$userId/',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const ExperiencesExperienceIdIndexRoute =
   ExperiencesExperienceIdIndexImport.update({
-    id: "/experiences/$experienceId/",
-    path: "/experiences/$experienceId/",
+    id: '/experiences/$experienceId/',
+    path: '/experiences/$experienceId/',
     getParentRoute: () => rootRoute,
-  } as any);
+  } as any)
 
 const ExperiencesExperienceIdEditRoute =
   ExperiencesExperienceIdEditImport.update({
-    id: "/experiences/$experienceId/edit",
-    path: "/experiences/$experienceId/edit",
+    id: '/experiences/$experienceId/edit',
+    path: '/experiences/$experienceId/edit',
     getParentRoute: () => rootRoute,
-  } as any);
+  } as any)
 
 // Populate the FileRoutesByPath interface
 
-declare module "@tanstack/react-router" {
+declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    "/": {
-      id: "/";
-      path: "/";
-      fullPath: "/";
-      preLoaderRoute: typeof IndexImport;
-      parentRoute: typeof rootRoute;
-    };
-    "/login": {
-      id: "/login";
-      path: "/login";
-      fullPath: "/login";
-      preLoaderRoute: typeof LoginImport;
-      parentRoute: typeof rootRoute;
-    };
-    "/register": {
-      id: "/register";
-      path: "/register";
-      fullPath: "/register";
-      preLoaderRoute: typeof RegisterImport;
-      parentRoute: typeof rootRoute;
-    };
-    "/experiences/$experienceId/edit": {
-      id: "/experiences/$experienceId/edit";
-      path: "/experiences/$experienceId/edit";
-      fullPath: "/experiences/$experienceId/edit";
-      preLoaderRoute: typeof ExperiencesExperienceIdEditImport;
-      parentRoute: typeof rootRoute;
-    };
-    "/experiences/$experienceId/": {
-      id: "/experiences/$experienceId/";
-      path: "/experiences/$experienceId";
-      fullPath: "/experiences/$experienceId";
-      preLoaderRoute: typeof ExperiencesExperienceIdIndexImport;
-      parentRoute: typeof rootRoute;
-    };
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexImport
+      parentRoute: typeof rootRoute
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginImport
+      parentRoute: typeof rootRoute
+    }
+    '/register': {
+      id: '/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof RegisterImport
+      parentRoute: typeof rootRoute
+    }
+    '/experiences/$experienceId/edit': {
+      id: '/experiences/$experienceId/edit'
+      path: '/experiences/$experienceId/edit'
+      fullPath: '/experiences/$experienceId/edit'
+      preLoaderRoute: typeof ExperiencesExperienceIdEditImport
+      parentRoute: typeof rootRoute
+    }
+    '/experiences/$experienceId/': {
+      id: '/experiences/$experienceId/'
+      path: '/experiences/$experienceId'
+      fullPath: '/experiences/$experienceId'
+      preLoaderRoute: typeof ExperiencesExperienceIdIndexImport
+      parentRoute: typeof rootRoute
+    }
+    '/users/$userId/': {
+      id: '/users/$userId/'
+      path: '/users/$userId'
+      fullPath: '/users/$userId'
+      preLoaderRoute: typeof UsersUserIdIndexImport
+      parentRoute: typeof rootRoute
+    }
   }
 }
 
 // Create and export the route tree
 
 export interface FileRoutesByFullPath {
-  "/": typeof IndexRoute;
-  "/login": typeof LoginRoute;
-  "/register": typeof RegisterRoute;
-  "/experiences/$experienceId/edit": typeof ExperiencesExperienceIdEditRoute;
-  "/experiences/$experienceId": typeof ExperiencesExperienceIdIndexRoute;
+  '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
+  '/experiences/$experienceId/edit': typeof ExperiencesExperienceIdEditRoute
+  '/experiences/$experienceId': typeof ExperiencesExperienceIdIndexRoute
+  '/users/$userId': typeof UsersUserIdIndexRoute
 }
 
 export interface FileRoutesByTo {
-  "/": typeof IndexRoute;
-  "/login": typeof LoginRoute;
-  "/register": typeof RegisterRoute;
-  "/experiences/$experienceId/edit": typeof ExperiencesExperienceIdEditRoute;
-  "/experiences/$experienceId": typeof ExperiencesExperienceIdIndexRoute;
+  '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
+  '/experiences/$experienceId/edit': typeof ExperiencesExperienceIdEditRoute
+  '/experiences/$experienceId': typeof ExperiencesExperienceIdIndexRoute
+  '/users/$userId': typeof UsersUserIdIndexRoute
 }
 
 export interface FileRoutesById {
-  __root__: typeof rootRoute;
-  "/": typeof IndexRoute;
-  "/login": typeof LoginRoute;
-  "/register": typeof RegisterRoute;
-  "/experiences/$experienceId/edit": typeof ExperiencesExperienceIdEditRoute;
-  "/experiences/$experienceId/": typeof ExperiencesExperienceIdIndexRoute;
+  __root__: typeof rootRoute
+  '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
+  '/experiences/$experienceId/edit': typeof ExperiencesExperienceIdEditRoute
+  '/experiences/$experienceId/': typeof ExperiencesExperienceIdIndexRoute
+  '/users/$userId/': typeof UsersUserIdIndexRoute
 }
 
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath;
+  fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | "/"
-    | "/login"
-    | "/register"
-    | "/experiences/$experienceId/edit"
-    | "/experiences/$experienceId";
-  fileRoutesByTo: FileRoutesByTo;
+    | '/'
+    | '/login'
+    | '/register'
+    | '/experiences/$experienceId/edit'
+    | '/experiences/$experienceId'
+    | '/users/$userId'
+  fileRoutesByTo: FileRoutesByTo
   to:
-    | "/"
-    | "/login"
-    | "/register"
-    | "/experiences/$experienceId/edit"
-    | "/experiences/$experienceId";
+    | '/'
+    | '/login'
+    | '/register'
+    | '/experiences/$experienceId/edit'
+    | '/experiences/$experienceId'
+    | '/users/$userId'
   id:
-    | "__root__"
-    | "/"
-    | "/login"
-    | "/register"
-    | "/experiences/$experienceId/edit"
-    | "/experiences/$experienceId/";
-  fileRoutesById: FileRoutesById;
+    | '__root__'
+    | '/'
+    | '/login'
+    | '/register'
+    | '/experiences/$experienceId/edit'
+    | '/experiences/$experienceId/'
+    | '/users/$userId/'
+  fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute;
-  LoginRoute: typeof LoginRoute;
-  RegisterRoute: typeof RegisterRoute;
-  ExperiencesExperienceIdEditRoute: typeof ExperiencesExperienceIdEditRoute;
-  ExperiencesExperienceIdIndexRoute: typeof ExperiencesExperienceIdIndexRoute;
+  IndexRoute: typeof IndexRoute
+  LoginRoute: typeof LoginRoute
+  RegisterRoute: typeof RegisterRoute
+  ExperiencesExperienceIdEditRoute: typeof ExperiencesExperienceIdEditRoute
+  ExperiencesExperienceIdIndexRoute: typeof ExperiencesExperienceIdIndexRoute
+  UsersUserIdIndexRoute: typeof UsersUserIdIndexRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
@@ -159,11 +180,12 @@ const rootRouteChildren: RootRouteChildren = {
   RegisterRoute: RegisterRoute,
   ExperiencesExperienceIdEditRoute: ExperiencesExperienceIdEditRoute,
   ExperiencesExperienceIdIndexRoute: ExperiencesExperienceIdIndexRoute,
-};
+  UsersUserIdIndexRoute: UsersUserIdIndexRoute,
+}
 
 export const routeTree = rootRoute
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>();
+  ._addFileTypes<FileRouteTypes>()
 
 /* ROUTE_MANIFEST_START
 {
@@ -175,7 +197,8 @@ export const routeTree = rootRoute
         "/login",
         "/register",
         "/experiences/$experienceId/edit",
-        "/experiences/$experienceId/"
+        "/experiences/$experienceId/",
+        "/users/$userId/"
       ]
     },
     "/": {
@@ -192,6 +215,9 @@ export const routeTree = rootRoute
     },
     "/experiences/$experienceId/": {
       "filePath": "experiences/$experienceId/index.tsx"
+    },
+    "/users/$userId/": {
+      "filePath": "users/$userId/index.tsx"
     }
   }
 }

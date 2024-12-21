@@ -6,6 +6,7 @@ import express from "express";
 import { authRouter } from "./features/auth/router";
 import { commentRouter } from "./features/comment/router";
 import { experienceRouter } from "./features/experience/router";
+import { userRouter } from "./features/user/router";
 import { createContext, router } from "./trpc";
 import { env } from "./utils/env";
 
@@ -13,6 +14,7 @@ const appRouter = router({
   auth: authRouter,
   comments: commentRouter,
   experiences: experienceRouter,
+  users: userRouter,
 });
 export type AppRouter = typeof appRouter;
 

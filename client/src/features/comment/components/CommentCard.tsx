@@ -3,6 +3,7 @@ import { useState } from "react";
 
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import Button from "@/features/shared/components/ui/Button";
+import Link from "@/features/shared/components/ui/Link";
 import { useToast } from "@/features/shared/hooks/useToast";
 import UserAvatar from "@/features/user/components/UserAvatar";
 import { cn } from "@/lib/utils/cn";
@@ -30,7 +31,9 @@ export default function CommentCard({ comment }: CommentCardProps) {
     <div
       className={cn("space-y-2 rounded bg-neutral-50 p-4 dark:bg-neutral-800")}
     >
-      <UserAvatar user={comment.user} />
+      <Link to="/users/$userId" params={{ userId: comment.user.id }}>
+        <UserAvatar user={comment.user} />
+      </Link>
       <p className="text-neutral-800 dark:text-neutral-100">
         {comment.content}
       </p>
