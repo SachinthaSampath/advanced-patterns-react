@@ -4,6 +4,7 @@ import {
   commentsTable,
   experienceAttendeesTable,
   experiencesTable,
+  userFollowsTable,
   usersTable,
 } from "./schema";
 
@@ -43,3 +44,19 @@ export const experienceAttendeesRelations = relations(
     }),
   }),
 );
+
+export const userFollowsRelations = relations(userFollowsTable, ({ one }) => ({
+  follower: one(usersTable, {
+    fields: [userFollowsTable.followerId],
+    references: [usersTable.id],
+  }),
+  following: one(usersTable, {
+    fields: [userFollowsTable.followingId],
+    references: [usersTable.id],
+  }),
+}));
+
+export const usersRelations = relations(usersTable, ({ many }) => ({
+  followers: many(userFollowsTable, { relationName: "following" }),
+  following: many(userFollowsTable, { relationName: "follower" }),
+}));

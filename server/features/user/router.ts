@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { count, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "../../database";
@@ -8,16 +8,22 @@ import {
   experienceAttendeesTable,
   experienceSelectSchema,
   experiencesTable,
+  userFollowsTable,
 } from "../../database/schema";
-import { publicProcedure, router } from "../../trpc";
+import { protectedProcedure, publicProcedure, router } from "../../trpc";
 import { DEFAULT_EXPERIENCE_LIMIT } from "../../utils/constants";
 import { cleanUserSelectSchema, usersTable } from "../auth/models";
 
 export const userRouter = router({
   byId: publicProcedure
     .input(z.object({ id: z.number() }))
-    .output(cleanUserSelectSchema)
-    .query(async ({ input }) => {
+    .output(
+      cleanUserSelectSchema.extend({
+        followersCount: z.number(),
+        isFollowing: z.boolean(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
       const user = await db.query.usersTable.findFirst({
         where: eq(usersTable.id, input.id),
         columns: {
@@ -36,7 +42,27 @@ export const userRouter = router({
         });
       }
 
-      return user;
+      const [followersCount] = await db
+        .select({ count: count() })
+        .from(userFollowsTable)
+        .where(eq(userFollowsTable.followingId, input.id));
+
+      const isFollowing = ctx.user
+        ? await db.query.userFollowsTable
+            .findFirst({
+              where: and(
+                eq(userFollowsTable.followerId, ctx.user.id),
+                eq(userFollowsTable.followingId, input.id),
+              ),
+            })
+            .then(Boolean)
+        : false;
+
+      return {
+        ...user,
+        followersCount: followersCount?.count ?? 0,
+        isFollowing,
+      };
     }),
 
   experiences: publicProcedure
@@ -125,5 +151,53 @@ export const userRouter = router({
         experiences: experiencesWithCounts,
         nextCursor,
       };
+    }),
+
+  follow: protectedProcedure
+    .input(z.object({ userId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.user.id === input.userId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "You cannot follow yourself",
+        });
+      }
+
+      const existingFollow = await db.query.userFollowsTable.findFirst({
+        where: and(
+          eq(userFollowsTable.followerId, ctx.user.id),
+          eq(userFollowsTable.followingId, input.userId),
+        ),
+      });
+
+      if (existingFollow) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "You are already following this user",
+        });
+      }
+
+      await db.insert(userFollowsTable).values({
+        followerId: ctx.user.id,
+        followingId: input.userId,
+        createdAt: new Date().toISOString(),
+      });
+
+      return { success: true };
+    }),
+
+  unfollow: protectedProcedure
+    .input(z.object({ userId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      await db
+        .delete(userFollowsTable)
+        .where(
+          and(
+            eq(userFollowsTable.followerId, ctx.user.id),
+            eq(userFollowsTable.followingId, input.userId),
+          ),
+        );
+
+      return { success: true };
     }),
 });

@@ -4,6 +4,7 @@ import { z } from "zod";
 import ExperienceList from "@/features/experience/components/ExperienceList";
 import InfiniteScroll from "@/features/shared/components/InfiniteScroll";
 import { QueryErrorFallback } from "@/features/shared/components/QueryErrorFallback";
+import FollowButton from "@/features/user/components/FollowButton";
 import UserAvatar from "@/features/user/components/UserAvatar";
 import { trpc } from "@/router";
 
@@ -49,9 +50,31 @@ function UserProfile() {
   return (
     <div className="container mx-auto p-4">
       <div className="max-w-feed mx-auto">
-        <div className="mb-8 flex items-center gap-4">
-          <UserAvatar user={userQuery.data} showName={false} />
-          <h1 className="text-2xl font-bold">{userQuery.data.name}</h1>
+        <div className="mb-8">
+          <div className="mb-4 flex items-center gap-4">
+            <UserAvatar user={userQuery.data} showName={false} />
+            <h1 className="text-2xl font-bold">{userQuery.data.name}</h1>
+          </div>
+
+          <div className="border-t border-neutral-200 pt-4 dark:border-neutral-800">
+            <div className="mb-4 flex gap-8">
+              <div className="text-center">
+                <div className="text-2xl font-bold">
+                  {userQuery.data.followersCount}
+                </div>
+                <div className="text-sm text-neutral-600 dark:text-neutral-400">
+                  Followers
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <FollowButton
+                userId={userQuery.data.id}
+                isFollowing={userQuery.data.isFollowing}
+              />
+            </div>
+          </div>
         </div>
 
         <h2 className="mb-4 text-xl font-semibold">Experiences</h2>

@@ -1,3 +1,12 @@
+CREATE TABLE `user_follows_table` (
+	`follower_id` integer NOT NULL,
+	`following_id` integer NOT NULL,
+	`created_at` text NOT NULL,
+	PRIMARY KEY(`follower_id`, `following_id`),
+	FOREIGN KEY (`follower_id`) REFERENCES `users_table`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`following_id`) REFERENCES `users_table`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
 CREATE TABLE `users_table` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`name` text NOT NULL,
