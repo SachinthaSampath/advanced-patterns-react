@@ -11,17 +11,22 @@ type UserAvatarProps = {
   user: User;
   showName?: boolean;
   nameClassName?: string;
+  className?: string;
 };
 
 export default function UserAvatar({
   user,
   showName = true,
   nameClassName,
+  className,
 }: UserAvatarProps) {
   return (
     <div className={cn("flex items-center gap-2")}>
-      <Avatar>
-        <AvatarImage src={user.avatarUrl} className="object-cover" />
+      <Avatar className={className}>
+        <AvatarImage
+          src={user.avatarUrl ?? undefined}
+          className="object-cover"
+        />
         <AvatarFallback>{user.name.slice(0, 2)}</AvatarFallback>
       </Avatar>
       {showName && (

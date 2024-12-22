@@ -1,11 +1,28 @@
 import { faker } from "@faker-js/faker";
 
 import { auth } from "../features/auth";
-import { commentsTable, experiencesTable, usersTable } from "./schema";
+import {
+  commentsTable,
+  experiencesTable,
+  userFollowsTable,
+  usersTable,
+} from "./schema";
 
 import { db } from ".";
 
 async function seed() {
+  // Create demo user
+  await db
+    .insert(usersTable)
+    .values({
+      name: "Cosden Solutions",
+      email: "demo@cosdensolutions.io",
+      password: await auth.hashPassword("cosdensolutions"),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    })
+    .returning();
+
   for (let i = 0; i < 100; i++) {
     // Creates fake user
     const users = await db
@@ -47,6 +64,40 @@ async function seed() {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
+    }
+  }
+
+  // Add random follows between users
+  const users = await db.query.usersTable.findMany();
+
+  // Each user will follow between 5-15 random users
+  for (const user of users) {
+    const numberOfFollows = Math.floor(Math.random() * 11) + 5; // Random number between 5-15
+    const shuffledUsers = [...users].sort(() => Math.random() - 0.5);
+
+    for (let i = 0; i < numberOfFollows && i < shuffledUsers.length; i++) {
+      const userToFollow = shuffledUsers[i];
+
+      // Don't follow yourself
+      if (userToFollow.id === user.id) {
+        continue;
+      }
+
+      try {
+        await db.insert(userFollowsTable).values({
+          followerId: user.id,
+          followingId: userToFollow.id,
+          createdAt: faker.date
+            .between({
+              from: user.createdAt,
+              to: new Date(),
+            })
+            .toISOString(),
+        });
+      } catch {
+        // Ignore duplicate follows
+        continue;
+      }
     }
   }
 }

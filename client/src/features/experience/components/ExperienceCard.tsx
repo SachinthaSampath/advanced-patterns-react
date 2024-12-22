@@ -5,9 +5,10 @@ import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import Button from "@/features/shared/components/ui/Button";
 import Link from "@/features/shared/components/ui/Link";
 import { useToast } from "@/features/shared/hooks/useToast";
-import { getExperienceQueries } from "@/features/shared/lib/utils/mutationHelpers";
 import UserAvatar from "@/features/user/components/UserAvatar";
 import { trpc } from "@/router";
+
+import { getExperienceQueries } from "../utils/mutations";
 
 type ExperienceCardProps = {
   experience: Experience & {

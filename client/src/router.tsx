@@ -8,6 +8,7 @@ import {
   createTRPCReact,
   getQueryKey,
 } from "@trpc/react-query";
+import { inferRouterOutputs } from "@trpc/server";
 import { observable } from "@trpc/server/observable";
 
 import { env } from "@/lib/utils/env";
@@ -17,6 +18,8 @@ import { routeTree } from "./routeTree.gen";
 export const queryClient = new QueryClient();
 
 export const trpc = createTRPCReact<AppRouter>();
+
+export type RouterOutputs = inferRouterOutputs<AppRouter>;
 
 export const customLink: TRPCLink<AppRouter> = () => {
   return ({ next, op }) => {

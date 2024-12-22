@@ -11,7 +11,10 @@ import {
   userFollowsTable,
 } from "../../database/schema";
 import { protectedProcedure, publicProcedure, router } from "../../trpc";
-import { DEFAULT_EXPERIENCE_LIMIT } from "../../utils/constants";
+import {
+  DEFAULT_EXPERIENCE_LIMIT,
+  DEFAULT_USER_LIMIT,
+} from "../../utils/constants";
 import { cleanUserSelectSchema, usersTable } from "../auth/models";
 
 export const userRouter = router({
@@ -20,6 +23,7 @@ export const userRouter = router({
     .output(
       cleanUserSelectSchema.extend({
         followersCount: z.number(),
+        followingCount: z.number(),
         isFollowing: z.boolean(),
       }),
     )
@@ -42,10 +46,18 @@ export const userRouter = router({
         });
       }
 
-      const [followersCount] = await db
-        .select({ count: count() })
-        .from(userFollowsTable)
-        .where(eq(userFollowsTable.followingId, input.id));
+      const [followersCount, followingCount] = await Promise.all([
+        db
+          .select({ count: count() })
+          .from(userFollowsTable)
+          .where(eq(userFollowsTable.followingId, input.id))
+          .then((res) => res[0]?.count ?? 0),
+        db
+          .select({ count: count() })
+          .from(userFollowsTable)
+          .where(eq(userFollowsTable.followerId, input.id))
+          .then((res) => res[0]?.count ?? 0),
+      ]);
 
       const isFollowing = ctx.user
         ? await db.query.userFollowsTable
@@ -60,7 +72,8 @@ export const userRouter = router({
 
       return {
         ...user,
-        followersCount: followersCount?.count ?? 0,
+        followersCount,
+        followingCount,
         isFollowing,
       };
     }),
@@ -199,5 +212,159 @@ export const userRouter = router({
         );
 
       return { success: true };
+    }),
+
+  followers: publicProcedure
+    .input(
+      z.object({
+        userId: z.number(),
+        cursor: z.number().optional(),
+        limit: z.number().optional(),
+      }),
+    )
+    .output(
+      z.object({
+        items: z.array(
+          cleanUserSelectSchema.extend({
+            followersCount: z.number(),
+            followingCount: z.number(),
+            isFollowing: z.boolean(),
+          }),
+        ),
+        nextCursor: z.number().optional(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const limit = input.limit ?? DEFAULT_USER_LIMIT;
+      const cursor = input.cursor ?? 0;
+
+      const followers = await db
+        .select({
+          follower: usersTable,
+          createdAt: userFollowsTable.createdAt,
+        })
+        .from(userFollowsTable)
+        .where(eq(userFollowsTable.followingId, input.userId))
+        .innerJoin(usersTable, eq(userFollowsTable.followerId, usersTable.id))
+        .orderBy(desc(userFollowsTable.createdAt))
+        .limit(limit + 1)
+        .offset(cursor);
+
+      const items = await Promise.all(
+        followers.slice(0, limit).map(async (f) => {
+          const [followersCount, followingCount] = await Promise.all([
+            db
+              .select({ count: count() })
+              .from(userFollowsTable)
+              .where(eq(userFollowsTable.followingId, f.follower.id))
+              .then((res) => res[0]?.count ?? 0),
+            db
+              .select({ count: count() })
+              .from(userFollowsTable)
+              .where(eq(userFollowsTable.followerId, f.follower.id))
+              .then((res) => res[0]?.count ?? 0),
+          ]);
+
+          return {
+            ...f.follower,
+            followersCount,
+            followingCount,
+            isFollowing: ctx.user
+              ? await db.query.userFollowsTable
+                  .findFirst({
+                    where: and(
+                      eq(userFollowsTable.followerId, ctx.user.id),
+                      eq(userFollowsTable.followingId, f.follower.id),
+                    ),
+                  })
+                  .then(Boolean)
+              : false,
+          };
+        }),
+      );
+
+      const nextCursor = followers.length > limit ? cursor + limit : undefined;
+
+      return {
+        items,
+        nextCursor,
+      };
+    }),
+
+  following: publicProcedure
+    .input(
+      z.object({
+        userId: z.number(),
+        cursor: z.number().optional(),
+        limit: z.number().optional(),
+      }),
+    )
+    .output(
+      z.object({
+        items: z.array(
+          cleanUserSelectSchema.extend({
+            followersCount: z.number(),
+            followingCount: z.number(),
+            isFollowing: z.boolean(),
+          }),
+        ),
+        nextCursor: z.number().optional(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const limit = input.limit ?? DEFAULT_USER_LIMIT;
+      const cursor = input.cursor ?? 0;
+
+      const following = await db
+        .select({
+          following: usersTable,
+          createdAt: userFollowsTable.createdAt,
+        })
+        .from(userFollowsTable)
+        .where(eq(userFollowsTable.followerId, input.userId))
+        .innerJoin(usersTable, eq(userFollowsTable.followingId, usersTable.id))
+        .orderBy(desc(userFollowsTable.createdAt))
+        .limit(limit + 1)
+        .offset(cursor);
+
+      const items = await Promise.all(
+        following.slice(0, limit).map(async (f) => {
+          const [followersCount, followingCount] = await Promise.all([
+            db
+              .select({ count: count() })
+              .from(userFollowsTable)
+              .where(eq(userFollowsTable.followingId, f.following.id))
+              .then((res) => res[0]?.count ?? 0),
+            db
+              .select({ count: count() })
+              .from(userFollowsTable)
+              .where(eq(userFollowsTable.followerId, f.following.id))
+              .then((res) => res[0]?.count ?? 0),
+          ]);
+
+          return {
+            ...f.following,
+            followersCount,
+            followingCount,
+            isFollowing: ctx.user
+              ? await db.query.userFollowsTable
+                  .findFirst({
+                    where: and(
+                      eq(userFollowsTable.followerId, ctx.user.id),
+                      eq(userFollowsTable.followingId, f.following.id),
+                    ),
+                  })
+                  .then(Boolean)
+              : false,
+          };
+        }),
+      );
+
+      const nextCursor = following.length > limit ? cursor + limit : undefined;
+
+      return {
+        items,
+        nextCursor,
+      };
     }),
 });
