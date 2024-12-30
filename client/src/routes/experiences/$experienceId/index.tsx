@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 
 import CommentsSection from "@/features/comment/components/CommentsSection";
-import ExperienceCard from "@/features/experience/components/ExperienceCard";
+import ExperienceDetails from "@/features/experience/components/ExperienceDetails";
 import { trpc } from "@/router";
 
 export const Route = createFileRoute("/experiences/$experienceId/")({
@@ -16,10 +16,10 @@ export const Route = createFileRoute("/experiences/$experienceId/")({
       id: params.experienceId,
     });
   },
-  component: ExperienceDetails,
+  component: ExperiencePage,
 });
 
-function ExperienceDetails() {
+function ExperiencePage() {
   const { experienceId } = Route.useParams();
 
   const experienceQuery = trpc.experiences.byId.useQuery({ id: experienceId });
@@ -35,8 +35,11 @@ function ExperienceDetails() {
   return (
     <div className="container mx-auto p-4">
       <div className="max-w-feed mx-auto space-y-4">
-        <ExperienceCard experience={experienceQuery.data} />
-        <CommentsSection experienceId={experienceId} />
+        <ExperienceDetails experience={experienceQuery.data} />
+        <CommentsSection
+          experienceId={experienceId}
+          commentsCount={experienceQuery.data.commentsCount}
+        />
       </div>
     </div>
   );

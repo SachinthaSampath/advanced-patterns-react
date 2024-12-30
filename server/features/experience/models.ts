@@ -10,11 +10,14 @@ import { createSelectSchema } from "drizzle-zod";
 import { usersTable } from "../auth/models";
 
 export const experiencesTable = sqliteTable(
-  "experiences_table",
+  "experiences",
   {
     id: int().primaryKey({ autoIncrement: true }),
     title: text("title").notNull(),
     content: text("content").notNull(),
+    scheduledAt: text("scheduled_at").notNull(),
+    url: text("url"),
+    imageUrl: text("image_url"),
 
     userId: int("user_id")
       .notNull()
@@ -33,7 +36,7 @@ export const experienceSelectSchema = createSelectSchema(experiencesTable);
 export type Experience = typeof experiencesTable.$inferSelect;
 
 export const experienceAttendeesTable = sqliteTable(
-  "experience_attendees_table",
+  "experience_attendees",
   {
     experienceId: int("experience_id")
       .notNull()

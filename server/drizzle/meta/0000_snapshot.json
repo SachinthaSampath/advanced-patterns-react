@@ -1,11 +1,11 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "e1ccc25f-e7a2-45a5-b238-18d624737a30",
+  "id": "2018f84c-c798-45d1-94b2-915eaa9a5f02",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
-    "user_follows_table": {
-      "name": "user_follows_table",
+    "user_follows": {
+      "name": "user_follows",
       "columns": {
         "follower_id": {
           "name": "follower_id",
@@ -31,10 +31,10 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "user_follows_table_follower_id_users_table_id_fk": {
-          "name": "user_follows_table_follower_id_users_table_id_fk",
-          "tableFrom": "user_follows_table",
-          "tableTo": "users_table",
+        "user_follows_follower_id_users_id_fk": {
+          "name": "user_follows_follower_id_users_id_fk",
+          "tableFrom": "user_follows",
+          "tableTo": "users",
           "columnsFrom": [
             "follower_id"
           ],
@@ -44,10 +44,10 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "user_follows_table_following_id_users_table_id_fk": {
-          "name": "user_follows_table_following_id_users_table_id_fk",
-          "tableFrom": "user_follows_table",
-          "tableTo": "users_table",
+        "user_follows_following_id_users_id_fk": {
+          "name": "user_follows_following_id_users_id_fk",
+          "tableFrom": "user_follows",
+          "tableTo": "users",
           "columnsFrom": [
             "following_id"
           ],
@@ -59,19 +59,19 @@
         }
       },
       "compositePrimaryKeys": {
-        "user_follows_table_follower_id_following_id_pk": {
+        "user_follows_follower_id_following_id_pk": {
           "columns": [
             "follower_id",
             "following_id"
           ],
-          "name": "user_follows_table_follower_id_following_id_pk"
+          "name": "user_follows_follower_id_following_id_pk"
         }
       },
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "users_table": {
-      "name": "users_table",
+    "users": {
+      "name": "users",
       "columns": {
         "id": {
           "name": "id",
@@ -124,8 +124,8 @@
         }
       },
       "indexes": {
-        "users_table_email_unique": {
-          "name": "users_table_email_unique",
+        "users_email_unique": {
+          "name": "users_email_unique",
           "columns": [
             "email"
           ],
@@ -137,8 +137,8 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "comments_table": {
-      "name": "comments_table",
+    "comments": {
+      "name": "comments",
       "columns": {
         "id": {
           "name": "id",
@@ -193,10 +193,10 @@
         }
       },
       "foreignKeys": {
-        "comments_table_experience_id_experiences_table_id_fk": {
-          "name": "comments_table_experience_id_experiences_table_id_fk",
-          "tableFrom": "comments_table",
-          "tableTo": "experiences_table",
+        "comments_experience_id_experiences_id_fk": {
+          "name": "comments_experience_id_experiences_id_fk",
+          "tableFrom": "comments",
+          "tableTo": "experiences",
           "columnsFrom": [
             "experience_id"
           ],
@@ -206,10 +206,10 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "comments_table_user_id_users_table_id_fk": {
-          "name": "comments_table_user_id_users_table_id_fk",
-          "tableFrom": "comments_table",
-          "tableTo": "users_table",
+        "comments_user_id_users_id_fk": {
+          "name": "comments_user_id_users_id_fk",
+          "tableFrom": "comments",
+          "tableTo": "users",
           "columnsFrom": [
             "user_id"
           ],
@@ -224,8 +224,8 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "experience_attendees_table": {
-      "name": "experience_attendees_table",
+    "experience_attendees": {
+      "name": "experience_attendees",
       "columns": {
         "experience_id": {
           "name": "experience_id",
@@ -266,10 +266,10 @@
         }
       },
       "foreignKeys": {
-        "experience_attendees_table_experience_id_experiences_table_id_fk": {
-          "name": "experience_attendees_table_experience_id_experiences_table_id_fk",
-          "tableFrom": "experience_attendees_table",
-          "tableTo": "experiences_table",
+        "experience_attendees_experience_id_experiences_id_fk": {
+          "name": "experience_attendees_experience_id_experiences_id_fk",
+          "tableFrom": "experience_attendees",
+          "tableTo": "experiences",
           "columnsFrom": [
             "experience_id"
           ],
@@ -279,10 +279,10 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "experience_attendees_table_user_id_users_table_id_fk": {
-          "name": "experience_attendees_table_user_id_users_table_id_fk",
-          "tableFrom": "experience_attendees_table",
-          "tableTo": "users_table",
+        "experience_attendees_user_id_users_id_fk": {
+          "name": "experience_attendees_user_id_users_id_fk",
+          "tableFrom": "experience_attendees",
+          "tableTo": "users",
           "columnsFrom": [
             "user_id"
           ],
@@ -294,19 +294,19 @@
         }
       },
       "compositePrimaryKeys": {
-        "experience_attendees_table_experience_id_user_id_pk": {
+        "experience_attendees_experience_id_user_id_pk": {
           "columns": [
             "experience_id",
             "user_id"
           ],
-          "name": "experience_attendees_table_experience_id_user_id_pk"
+          "name": "experience_attendees_experience_id_user_id_pk"
         }
       },
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "experiences_table": {
-      "name": "experiences_table",
+    "experiences": {
+      "name": "experiences",
       "columns": {
         "id": {
           "name": "id",
@@ -327,6 +327,27 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
+          "autoincrement": false
+        },
+        "scheduled_at": {
+          "name": "scheduled_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "url": {
+          "name": "url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "image_url": {
+          "name": "image_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
           "autoincrement": false
         },
         "user_id": {
@@ -361,10 +382,10 @@
         }
       },
       "foreignKeys": {
-        "experiences_table_user_id_users_table_id_fk": {
-          "name": "experiences_table_user_id_users_table_id_fk",
-          "tableFrom": "experiences_table",
-          "tableTo": "users_table",
+        "experiences_user_id_users_id_fk": {
+          "name": "experiences_user_id_users_id_fk",
+          "tableFrom": "experiences",
+          "tableTo": "users",
           "columnsFrom": [
             "user_id"
           ],

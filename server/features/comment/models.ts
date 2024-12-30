@@ -5,7 +5,7 @@ import { usersTable } from "../auth/models";
 import { experiencesTable } from "../experience/models";
 
 export const commentsTable = sqliteTable(
-  "comments_table",
+  "comments",
   {
     id: int("id").primaryKey({ autoIncrement: true }),
     content: text("content").notNull(),

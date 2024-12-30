@@ -1,7 +1,7 @@
 import { int, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { createSelectSchema } from "drizzle-zod";
 
-export const usersTable = sqliteTable("users_table", {
+export const usersTable = sqliteTable("users", {
   id: int().primaryKey({ autoIncrement: true }),
   name: text().notNull(),
   avatarUrl: text(),
@@ -19,7 +19,7 @@ export const cleanUserSelectSchema = userSelectSchema.omit({
 });
 
 export const userFollowsTable = sqliteTable(
-  "user_follows_table",
+  "user_follows",
   {
     followerId: int("follower_id")
       .notNull()

@@ -25,7 +25,7 @@ export const experienceRouter = router({
         attendees: z.array(cleanUserSelectSchema),
       }),
     )
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const experience = await db.query.experiencesTable.findFirst({
         where: eq(experiencesTable.id, input.id),
         with: {
@@ -68,11 +68,23 @@ export const experienceRouter = router({
         },
       });
 
+      const currentUserAttendance = ctx.user
+        ? await db.query.experienceAttendeesTable.findFirst({
+            where: and(
+              eq(experienceAttendeesTable.experienceId, input.id),
+              eq(experienceAttendeesTable.userId, ctx.user.id),
+            ),
+          })
+        : null;
+
       return {
         ...experience,
         commentsCount: commentCount?.count ?? 0,
         attendeesCount: attendeesCount?.count ?? 0,
-        attendees: attendees.map((a) => a.user),
+        attendees: [
+          ...(currentUserAttendance && ctx.user ? [ctx.user] : []),
+          ...attendees.map((a) => a.user),
+        ],
       };
     }),
 
@@ -96,7 +108,7 @@ export const experienceRouter = router({
         nextCursor: z.number().optional(),
       }),
     )
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const limit = input?.limit ?? DEFAULT_EXPERIENCE_LIMIT;
       const cursor = input?.cursor ?? 0;
 
@@ -140,6 +152,14 @@ export const experienceRouter = router({
               },
             },
           }),
+          ctx.user
+            ? db.query.experienceAttendeesTable.findFirst({
+                where: and(
+                  eq(experienceAttendeesTable.experienceId, experience.id),
+                  eq(experienceAttendeesTable.userId, ctx.user.id),
+                ),
+              })
+            : undefined,
         ]),
       );
 
@@ -149,7 +169,10 @@ export const experienceRouter = router({
         ...experience,
         commentsCount: counts[index][0]?.count ?? 0,
         attendeesCount: attendeeResults[index][0][0]?.count ?? 0,
-        attendees: attendeeResults[index][1].map((a) => a.user),
+        attendees: [
+          ...(attendeeResults[index][2] && ctx.user ? [ctx.user] : []),
+          ...attendeeResults[index][1].map((a) => a.user),
+        ],
       }));
 
       return {
