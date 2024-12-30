@@ -3,4 +3,6 @@ import { z } from "zod";
 export const experienceValidationSchema = z.object({
   title: z.string().min(1, "Title is required"),
   content: z.string().min(1, "Content is required"),
+  scheduledAt: z.string().datetime("Invalid date"),
+  url: z.string().url("Invalid link").nullable(),
 });

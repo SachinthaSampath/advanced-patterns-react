@@ -1,15 +1,13 @@
 import { cn } from "@/lib/utils/cn";
 
-export interface TextAreaProps
-  extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
-  error?: boolean;
-}
+import { useFormField } from "./form";
 
-export default function TextArea({
-  className,
-  error,
-  ...props
-}: TextAreaProps) {
+export interface TextAreaProps
+  extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {}
+
+export default function TextArea({ className, ...props }: TextAreaProps) {
+  const { error } = useFormField();
+
   return (
     <textarea
       {...props}

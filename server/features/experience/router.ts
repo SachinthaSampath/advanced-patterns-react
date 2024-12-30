@@ -212,6 +212,8 @@ export const experienceRouter = router({
         .set({
           title: input.title,
           content: input.content,
+          url: input.url,
+          scheduledAt: input.scheduledAt,
           updatedAt: new Date().toISOString(),
         })
         .where(eq(experiencesTable.id, input.id))

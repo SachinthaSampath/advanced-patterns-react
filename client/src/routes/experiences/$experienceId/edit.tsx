@@ -48,6 +48,7 @@ function EditExperience() {
           onSuccess={() => {
             router.history.back();
           }}
+          onCancel={() => router.history.back()}
         />
       </div>
     </div>

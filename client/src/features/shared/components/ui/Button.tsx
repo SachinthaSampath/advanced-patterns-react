@@ -24,7 +24,7 @@ export default function Button({
   );
 }
 
-const buttonVariants = cva(
+export const buttonVariants = cva(
   "flex flex-row items-center justify-center gap-2 rounded-md font-semibold disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
@@ -33,6 +33,8 @@ const buttonVariants = cva(
           "from-primary-500 to-secondary-500 hover:from-primary-500/70 hover:to-secondary-500/70 bg-gradient-to-r text-neutral-900 hover:bg-gradient-to-r",
         outline:
           "border border-neutral-200 hover:bg-neutral-100 hover:text-neutral-900 dark:border-neutral-800 dark:hover:bg-neutral-800 dark:hover:text-neutral-50",
+        ghost:
+          "bg-transparent hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-50",
         link: "bg-transparent hover:opacity-70",
         destructive: "bg-red-500 p-4 text-white hover:bg-red-500/70",
         "destructive-link": "text-red-500 hover:text-red-500/70",

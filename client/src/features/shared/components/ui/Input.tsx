@@ -1,11 +1,13 @@
 import { cn } from "@/lib/utils/cn";
 
-export interface InputProps
-  extends React.InputHTMLAttributes<HTMLInputElement> {
-  error?: boolean;
-}
+import { useFormField } from "./form";
 
-export default function Input({ className, error, ...props }: InputProps) {
+export interface InputProps
+  extends React.InputHTMLAttributes<HTMLInputElement> {}
+
+export default function Input({ className, ...props }: InputProps) {
+  const { error } = useFormField();
+
   return (
     <input
       {...props}
