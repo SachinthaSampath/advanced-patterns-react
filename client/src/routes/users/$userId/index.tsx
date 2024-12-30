@@ -18,7 +18,7 @@ export const Route = createFileRoute("/users/$userId/")({
       trpcQueryUtils.users.byId.ensureData({ id: params.userId }),
       // TODO: This currently doesn't work due to a bug in TRPC
       // https://github.com/trpc/trpc/discussions/5833
-      // trpcQueryUtils.users.experiences.ensureData({ userId: params.userId }),
+      // trpcQueryUtils.users.experiences.ensureData({ id: params.userId }),
     ]);
   },
   component: UserProfile,
@@ -30,7 +30,7 @@ function UserProfile() {
   const userQuery = trpc.users.byId.useQuery({ id: userId });
 
   const experiencesQuery = trpc.users.experiences.useInfiniteQuery(
-    { userId },
+    { id: userId },
     {
       getNextPageParam: (lastPage) => lastPage.nextCursor,
     },
@@ -66,7 +66,7 @@ function UserProfile() {
 
         <div className="flex justify-center">
           <FollowButton
-            userId={userQuery.data.id}
+            targetUserId={userQuery.data.id}
             isFollowing={userQuery.data.isFollowing}
           />
         </div>

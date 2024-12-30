@@ -81,7 +81,7 @@ export const userRouter = router({
   experiences: publicProcedure
     .input(
       z.object({
-        userId: z.number(),
+        id: z.number(),
         cursor: z.number().optional(),
         limit: z.number().optional(),
       }),
@@ -106,7 +106,7 @@ export const userRouter = router({
       const experiences = await db.query.experiencesTable.findMany({
         limit,
         offset: cursor,
-        where: eq(experiencesTable.userId, input.userId),
+        where: eq(experiencesTable.userId, input.id),
         orderBy: desc(experiencesTable.createdAt),
         with: {
           user: {
@@ -167,9 +167,9 @@ export const userRouter = router({
     }),
 
   follow: protectedProcedure
-    .input(z.object({ userId: z.number() }))
+    .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      if (ctx.user.id === input.userId) {
+      if (ctx.user.id === input.id) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "You cannot follow yourself",
@@ -179,7 +179,7 @@ export const userRouter = router({
       const existingFollow = await db.query.userFollowsTable.findFirst({
         where: and(
           eq(userFollowsTable.followerId, ctx.user.id),
-          eq(userFollowsTable.followingId, input.userId),
+          eq(userFollowsTable.followingId, input.id),
         ),
       });
 
@@ -192,7 +192,7 @@ export const userRouter = router({
 
       await db.insert(userFollowsTable).values({
         followerId: ctx.user.id,
-        followingId: input.userId,
+        followingId: input.id,
         createdAt: new Date().toISOString(),
       });
 
@@ -200,14 +200,14 @@ export const userRouter = router({
     }),
 
   unfollow: protectedProcedure
-    .input(z.object({ userId: z.number() }))
+    .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       await db
         .delete(userFollowsTable)
         .where(
           and(
             eq(userFollowsTable.followerId, ctx.user.id),
-            eq(userFollowsTable.followingId, input.userId),
+            eq(userFollowsTable.followingId, input.id),
           ),
         );
 
@@ -217,7 +217,7 @@ export const userRouter = router({
   followers: publicProcedure
     .input(
       z.object({
-        userId: z.number(),
+        id: z.number(),
         cursor: z.number().optional(),
         limit: z.number().optional(),
       }),
@@ -244,7 +244,7 @@ export const userRouter = router({
           createdAt: userFollowsTable.createdAt,
         })
         .from(userFollowsTable)
-        .where(eq(userFollowsTable.followingId, input.userId))
+        .where(eq(userFollowsTable.followingId, input.id))
         .innerJoin(usersTable, eq(userFollowsTable.followerId, usersTable.id))
         .orderBy(desc(userFollowsTable.createdAt))
         .limit(limit + 1)
@@ -294,7 +294,7 @@ export const userRouter = router({
   following: publicProcedure
     .input(
       z.object({
-        userId: z.number(),
+        id: z.number(),
         cursor: z.number().optional(),
         limit: z.number().optional(),
       }),
@@ -321,7 +321,7 @@ export const userRouter = router({
           createdAt: userFollowsTable.createdAt,
         })
         .from(userFollowsTable)
-        .where(eq(userFollowsTable.followerId, input.userId))
+        .where(eq(userFollowsTable.followerId, input.id))
         .innerJoin(usersTable, eq(userFollowsTable.followingId, usersTable.id))
         .orderBy(desc(userFollowsTable.createdAt))
         .limit(limit + 1)

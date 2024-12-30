@@ -22,7 +22,7 @@ function UserFollowers() {
   const { userId } = Route.useParams();
 
   const followersQuery = trpc.users.followers.useInfiniteQuery(
-    { userId },
+    { id: userId },
     {
       getNextPageParam: (lastPage) => lastPage.nextCursor,
     },

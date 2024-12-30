@@ -32,35 +32,36 @@ export default function CommentEditForm({
   });
 
   const editMutation = trpc.comments.edit.useMutation({
-    onMutate: async (data) => {
+    onMutate: async ({ id, content }) => {
       setIsEditing(false);
 
-      await utils.comments.byExperienceId.cancel();
-
-      const previousComments = utils.comments.byExperienceId.getData({
+      await utils.comments.byExperienceId.cancel({
         experienceId: comment.experienceId,
       });
 
+      const previousData = {
+        byExperienceId: utils.comments.byExperienceId.getData({
+          experienceId: comment.experienceId,
+        }),
+      };
+
       utils.comments.byExperienceId.setData(
         { experienceId: comment.experienceId },
-        (oldData) =>
-          oldData?.map((c) =>
-            c.id === comment.id ? { ...c, content: data.content } : c,
-          ),
+        (oldData) => {
+          if (!oldData) {
+            return;
+          }
+
+          return oldData.map((c) => (c.id === id ? { ...c, content } : c));
+        },
       );
 
-      return { previousComments };
+      return { previousData };
     },
-    onSuccess: () => {
-      toast({
-        title: "Comment updated",
-        description: "Your comment has been updated",
-      });
-    },
-    onError: (error, __, context) => {
+    onError: (error, _, context) => {
       utils.comments.byExperienceId.setData(
         { experienceId: comment.experienceId },
-        context?.previousComments,
+        context?.previousData.byExperienceId,
       );
 
       toast({

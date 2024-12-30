@@ -15,13 +15,14 @@ type ExperienceFormData = z.infer<typeof experienceValidationSchema>;
 
 type ExperienceEditFormProps = {
   experience: Experience;
+  onSuccess?: () => void;
 };
 
 export default function ExperienceEditForm({
   experience,
+  onSuccess,
 }: ExperienceEditFormProps) {
   const { toast } = useToast();
-  const utils = trpc.useUtils();
 
   const form = useForm<ExperienceFormData>({
     resolver: zodResolver(experienceValidationSchema),
@@ -30,14 +31,7 @@ export default function ExperienceEditForm({
 
   const editMutation = trpc.experiences.edit.useMutation({
     onSuccess: async () => {
-      await Promise.all([
-        utils.experiences.feed.invalidate(),
-        utils.experiences.byId.invalidate({
-          id: experience.id,
-        }),
-      ]);
-
-      router.history.back();
+      onSuccess?.();
     },
     onError: (error) => {
       toast({

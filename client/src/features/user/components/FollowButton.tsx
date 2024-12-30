@@ -5,15 +5,13 @@ import Button from "@/features/shared/components/ui/Button";
 import { useToast } from "@/features/shared/hooks/useToast";
 import { trpc } from "@/router";
 
-import { getUserQueries } from "../utils/mutations";
-
 type FollowButtonProps = {
-  userId: number;
+  targetUserId: number;
   isFollowing: boolean;
 };
 
 export default function FollowButton({
-  userId,
+  targetUserId,
   isFollowing,
 }: FollowButtonProps) {
   const { currentUser } = useCurrentUser();
@@ -23,81 +21,91 @@ export default function FollowButton({
   const { userId: pathUserId } = useParams({ strict: false });
 
   const followMutation = trpc.users.follow.useMutation({
-    onMutate: async () => {
+    onMutate: async ({ id }) => {
       if (!currentUser || !pathUserId) {
         return;
       }
 
-      const { byId, lists } = getUserQueries(utils);
+      function updateUser<
+        T extends { isFollowing: boolean; followersCount: number },
+      >(oldData: T) {
+        return {
+          ...oldData,
+          isFollowing: true,
+          followersCount: oldData.followersCount + 1,
+        };
+      }
 
       await Promise.all([
-        ...byId.map((query) => query.cancel()),
-        ...lists.map((query) => query.cancel()),
+        utils.users.byId.cancel({ id: targetUserId }),
+        utils.users.followers.cancel({ id: pathUserId }),
+        utils.users.following.cancel({ id: pathUserId }),
       ]);
 
       const previousData = {
-        byId: byId.map((query) => ({
-          query,
-          data: query.getData({ id: userId }),
-        })),
-        lists: lists.map((query) => ({
-          query,
-          data: query.getInfiniteData({ userId: pathUserId }),
-        })),
+        byId: utils.users.byId.getData({ id }),
+        followers: utils.users.followers.getInfiniteData({ id: pathUserId }),
+        following: utils.users.following.getInfiniteData({ id: pathUserId }),
       };
 
-      lists.forEach((query) =>
-        query.setInfiniteData({ userId: pathUserId }, (oldData) => {
-          if (!oldData) {
-            return { pages: [], pageParams: [] };
-          }
+      utils.users.byId.setData({ id }, (oldData) => {
+        if (!oldData) {
+          return;
+        }
 
-          return {
-            ...oldData,
-            pages: oldData.pages.map((page) => ({
-              ...page,
-              items: page.items.map((user) =>
-                user.id === userId
-                  ? {
-                      ...user,
-                      isFollowing: true,
-                      followersCount: user.followersCount + 1,
-                    }
-                  : user,
-              ),
-            })),
-          };
-        }),
-      );
+        return updateUser(oldData);
+      });
 
-      byId.forEach((query) =>
-        query.setData({ id: userId }, (oldData) => {
-          if (!oldData) {
-            return;
-          }
+      utils.users.followers.setInfiniteData({ id: pathUserId }, (oldData) => {
+        if (!oldData) {
+          return { pages: [], pageParams: [] };
+        }
 
-          return {
-            ...oldData,
-            isFollowing: true,
-            followersCount: oldData.followersCount + 1,
-          };
-        }),
-      );
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page) => ({
+            ...page,
+            items: page.items.map((user) =>
+              user.id === id ? updateUser(user) : user,
+            ),
+          })),
+        };
+      });
+
+      utils.users.following.setInfiniteData({ id: pathUserId }, (oldData) => {
+        if (!oldData) {
+          return { pages: [], pageParams: [] };
+        }
+
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page) => ({
+            ...page,
+            items: page.items.map((user) =>
+              user.id === id ? updateUser(user) : user,
+            ),
+          })),
+        };
+      });
 
       return { previousData };
     },
-    onError: (error, _, context) => {
-      if (!pathUserId) {
+    onError: (error, { id }, context) => {
+      if (!currentUser || !pathUserId) {
         return;
       }
 
-      context?.previousData.byId.forEach(({ query, data }) => {
-        query.setData({ id: userId }, data);
-      });
+      utils.users.byId.setData({ id }, context?.previousData.byId);
 
-      context?.previousData.lists.forEach(({ query, data }) => {
-        query.setInfiniteData({ userId: pathUserId }, data);
-      });
+      utils.users.followers.setInfiniteData(
+        { id: pathUserId },
+        context?.previousData.followers,
+      );
+
+      utils.users.following.setInfiniteData(
+        { id: pathUserId },
+        context?.previousData.following,
+      );
 
       toast({
         title: "Failed to follow user",
@@ -108,81 +116,91 @@ export default function FollowButton({
   });
 
   const unfollowMutation = trpc.users.unfollow.useMutation({
-    onMutate: async () => {
+    onMutate: async ({ id }) => {
       if (!currentUser || !pathUserId) {
         return;
       }
 
-      const { byId, lists } = getUserQueries(utils);
+      function updateUser<
+        T extends { isFollowing: boolean; followersCount: number },
+      >(oldData: T) {
+        return {
+          ...oldData,
+          isFollowing: false,
+          followersCount: Math.max(0, oldData.followersCount - 1),
+        };
+      }
 
       await Promise.all([
-        ...byId.map((query) => query.cancel()),
-        ...lists.map((query) => query.cancel()),
+        utils.users.byId.cancel({ id }),
+        utils.users.followers.cancel({ id: pathUserId }),
+        utils.users.following.cancel({ id: pathUserId }),
       ]);
 
       const previousData = {
-        byId: byId.map((query) => ({
-          query,
-          data: query.getData({ id: userId }),
-        })),
-        lists: lists.map((query) => ({
-          query,
-          data: query.getInfiniteData({ userId: pathUserId }),
-        })),
+        byId: utils.users.byId.getData({ id }),
+        followers: utils.users.followers.getInfiniteData({ id: pathUserId }),
+        following: utils.users.following.getInfiniteData({ id: pathUserId }),
       };
 
-      lists.forEach((query) =>
-        query.setInfiniteData({ userId: pathUserId }, (oldData) => {
-          if (!oldData) {
-            return { pages: [], pageParams: [] };
-          }
+      utils.users.byId.setData({ id }, (oldData) => {
+        if (!oldData) {
+          return;
+        }
 
-          return {
-            ...oldData,
-            pages: oldData.pages.map((page) => ({
-              ...page,
-              items: page.items.map((user) =>
-                user.id === userId
-                  ? {
-                      ...user,
-                      isFollowing: false,
-                      followersCount: user.followersCount - 1,
-                    }
-                  : user,
-              ),
-            })),
-          };
-        }),
-      );
+        return updateUser(oldData);
+      });
 
-      byId.forEach((query) =>
-        query.setData({ id: userId }, (oldData) => {
-          if (!oldData) {
-            return;
-          }
+      utils.users.followers.setInfiniteData({ id: pathUserId }, (oldData) => {
+        if (!oldData) {
+          return { pages: [], pageParams: [] };
+        }
 
-          return {
-            ...oldData,
-            isFollowing: false,
-            followersCount: Math.max(0, oldData.followersCount - 1),
-          };
-        }),
-      );
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page) => ({
+            ...page,
+            items: page.items.map((user) =>
+              user.id === id ? updateUser(user) : user,
+            ),
+          })),
+        };
+      });
+
+      utils.users.following.setInfiniteData({ id: pathUserId }, (oldData) => {
+        if (!oldData) {
+          return { pages: [], pageParams: [] };
+        }
+
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page) => ({
+            ...page,
+            items: page.items.map((user) =>
+              user.id === id ? updateUser(user) : user,
+            ),
+          })),
+        };
+      });
 
       return { previousData };
     },
-    onError: (error, _, context) => {
-      if (!pathUserId) {
+    onError: (error, { id }, context) => {
+      if (!currentUser || !pathUserId) {
         return;
       }
 
-      context?.previousData.byId.forEach(({ query, data }) => {
-        query.setData({ id: userId }, data);
-      });
+      utils.users.byId.setData({ id }, context?.previousData.byId);
 
-      context?.previousData.lists.forEach(({ query, data }) => {
-        query.setInfiniteData({ userId: pathUserId }, data);
-      });
+      utils.users.followers.setInfiniteData(
+        { id: pathUserId },
+        context?.previousData.followers,
+      );
+
+      utils.users.following.setInfiniteData(
+        { id: pathUserId },
+        context?.previousData.following,
+      );
 
       toast({
         title: "Failed to unfollow user",
@@ -192,7 +210,7 @@ export default function FollowButton({
     },
   });
 
-  if (!currentUser || currentUser.id === userId) {
+  if (!currentUser || currentUser.id === targetUserId) {
     return null;
   }
 
@@ -203,9 +221,9 @@ export default function FollowButton({
         e.preventDefault();
 
         if (isFollowing) {
-          unfollowMutation.mutate({ userId });
+          unfollowMutation.mutate({ id: targetUserId });
         } else {
-          followMutation.mutate({ userId });
+          followMutation.mutate({ id: targetUserId });
         }
       }}
       disabled={followMutation.isPending || unfollowMutation.isPending}

@@ -70,17 +70,24 @@ function CommentCardOwnerButtons({
         utils.experiences.byId.cancel(),
       ]);
 
-      const previousComments = utils.comments.byExperienceId.getData({
-        experienceId: comment.experienceId,
-      });
-
-      const previousExperience = utils.experiences.byId.getData({
-        id: comment.experienceId,
-      });
+      const previousData = {
+        byExperienceId: utils.comments.byExperienceId.getData({
+          experienceId: comment.experienceId,
+        }),
+        experienceById: utils.experiences.byId.getData({
+          id: comment.experienceId,
+        }),
+      };
 
       utils.comments.byExperienceId.setData(
         { experienceId: comment.experienceId },
-        (oldData) => oldData?.filter((c) => c.id !== id),
+        (oldData) => {
+          if (!oldData) {
+            return;
+          }
+
+          return oldData.filter((c) => c.id !== id);
+        },
       );
 
       utils.experiences.byId.setData(
@@ -97,27 +104,17 @@ function CommentCardOwnerButtons({
         },
       );
 
-      return { previousComments, previousExperience };
+      return { previousData };
     },
-    onSuccess: async () => {
-      await Promise.all([
-        utils.comments.byExperienceId.invalidate({
-          experienceId: comment.experienceId,
-        }),
-        utils.experiences.byId.invalidate({
-          id: comment.experienceId,
-        }),
-      ]);
-    },
-    onError: (error, __, context) => {
+    onError: (error, _, context) => {
       utils.comments.byExperienceId.setData(
         { experienceId: comment.experienceId },
-        context?.previousComments,
+        context?.previousData.byExperienceId,
       );
 
       utils.experiences.byId.setData(
         { id: comment.experienceId },
-        context?.previousExperience,
+        context?.previousData.experienceById,
       );
 
       toast({

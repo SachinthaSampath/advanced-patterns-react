@@ -11,11 +11,7 @@ type UserListProps = {
 };
 
 export default function UserList({ users, isLoading }: UserListProps) {
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
-
-  if (users.length === 0) {
+  if (!isLoading && users.length === 0) {
     return <div>No users found</div>;
   }
 
@@ -29,9 +25,14 @@ export default function UserList({ users, isLoading }: UserListProps) {
           <Link key={user.id} to="/users/$userId" params={{ userId: user.id }}>
             <UserAvatar user={user} />
           </Link>
-          <FollowButton userId={user.id} isFollowing={user.isFollowing} />
+          <FollowButton targetUserId={user.id} isFollowing={user.isFollowing} />
         </div>
       ))}
+      {isLoading && (
+        <div className="flex justify-center py-4">
+          <div>Loading...</div>
+        </div>
+      )}
     </div>
   );
 }

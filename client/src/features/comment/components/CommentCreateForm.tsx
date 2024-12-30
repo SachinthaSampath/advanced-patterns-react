@@ -39,17 +39,14 @@ export default function CommentCreateForm({
       form.reset();
 
       await Promise.all([
-        utils.comments.byExperienceId.cancel(),
-        utils.experiences.byId.cancel(),
+        utils.comments.byExperienceId.cancel({ experienceId }),
+        utils.experiences.byId.cancel({ id: experienceId }),
       ]);
 
-      const previousComments = utils.comments.byExperienceId.getData({
-        experienceId,
-      });
-
-      const previousExperience = utils.experiences.byId.getData({
-        id: experienceId,
-      });
+      const previousData = {
+        byExperienceId: utils.comments.byExperienceId.getData({ experienceId }),
+        experienceById: utils.experiences.byId.getData({ id: experienceId }),
+      };
 
       const optimisticComment: OptimisticComment = {
         id: Math.random(),
@@ -81,30 +78,20 @@ export default function CommentCreateForm({
         };
       });
 
-      return {
-        previousComments,
-        previousExperience,
-      };
+      return { previousData };
     },
     onSuccess: async () => {
-      await Promise.all([
-        utils.comments.byExperienceId.invalidate({
-          experienceId,
-        }),
-        utils.experiences.byId.invalidate({
-          id: experienceId,
-        }),
-      ]);
+      await utils.comments.byExperienceId.invalidate({ experienceId });
     },
-    onError: (error, __, context) => {
+    onError: (error, _, context) => {
       utils.comments.byExperienceId.setData(
         { experienceId },
-        context?.previousComments,
+        context?.previousData.byExperienceId,
       );
 
       utils.experiences.byId.setData(
         { id: experienceId },
-        context?.previousExperience,
+        context?.previousData.experienceById,
       );
 
       toast({
@@ -142,7 +129,9 @@ export default function CommentCreateForm({
             />
           )}
         </FormField>
-        <Button type="submit">Add Comment</Button>
+        <Button type="submit" disabled={addCommentMutation.isPending}>
+          Add Comment
+        </Button>
       </form>
     </FormProvider>
   );

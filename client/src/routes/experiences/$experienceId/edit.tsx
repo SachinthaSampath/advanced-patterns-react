@@ -3,7 +3,7 @@ import { redirect } from "@tanstack/react-router";
 import { z } from "zod";
 
 import ExperienceEditForm from "@/features/experience/components/ExperienceEditForm";
-import { trpc } from "@/router";
+import { router, trpc } from "@/router";
 
 export const Route = createFileRoute("/experiences/$experienceId/edit")({
   parseParams: (params) => ({
@@ -43,7 +43,12 @@ function EditExperience() {
     <div className="container mx-auto p-4">
       <div className="max-w-feed mx-auto">
         <h1 className="mb-4 text-2xl font-bold">Edit Experience</h1>
-        <ExperienceEditForm experience={experienceQuery.data} />
+        <ExperienceEditForm
+          experience={experienceQuery.data}
+          onSuccess={() => {
+            router.history.back();
+          }}
+        />
       </div>
     </div>
   );

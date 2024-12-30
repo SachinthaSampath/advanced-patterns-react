@@ -49,6 +49,16 @@ export default function Navbar() {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>{currentUser.name}</DropdownMenuLabel>
               <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link
+                  to="/users/$userId"
+                  params={{ userId: currentUser.id }}
+                  className="flex items-center gap-2"
+                >
+                  <User className="h-4 w-4" />
+                  Profile
+                </Link>
+              </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={async () => {
                   try {
