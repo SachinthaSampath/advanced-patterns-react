@@ -39,16 +39,21 @@ function EditExperience() {
     return <div>Experience not found</div>;
   }
 
+  function navigateToExperience() {
+    router.navigate({
+      to: "/experiences/$experienceId",
+      params: { experienceId: experienceId },
+    });
+  }
+
   return (
     <div className="container mx-auto p-4">
       <div className="max-w-feed mx-auto">
         <h1 className="mb-4 text-2xl font-bold">Edit Experience</h1>
         <ExperienceEditForm
           experience={experienceQuery.data}
-          onSuccess={() => {
-            router.history.back();
-          }}
-          onCancel={() => router.history.back()}
+          onSuccess={navigateToExperience}
+          onCancel={navigateToExperience}
         />
       </div>
     </div>

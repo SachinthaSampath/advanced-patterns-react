@@ -1,8 +1,11 @@
 import { z } from "zod";
+import { zfd } from "zod-form-data";
 
-export const experienceValidationSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  content: z.string().min(1, "Content is required"),
-  scheduledAt: z.string().datetime("Invalid date"),
-  url: z.string().url("Invalid link").nullable(),
+export const experienceValidationSchema = zfd.formData({
+  id: zfd.numeric(z.number()),
+  title: zfd.text(z.string().min(1, "Title is required")),
+  content: zfd.text(z.string().min(1, "Content is required")),
+  scheduledAt: zfd.text(z.string().datetime("Invalid date")),
+  url: zfd.text(z.string().url("Invalid link").nullable()),
+  image: zfd.file().optional(),
 });

@@ -13,6 +13,7 @@ import {
 } from "../../database/schema";
 import { protectedProcedure, publicProcedure, router } from "../../trpc";
 import { DEFAULT_EXPERIENCE_LIMIT } from "../../utils/constants";
+import { writeFile } from "../../utils/files";
 
 export const experienceRouter = router({
   byId: publicProcedure
@@ -182,12 +183,7 @@ export const experienceRouter = router({
     }),
 
   edit: protectedProcedure
-    .input(
-      z.object({
-        id: experienceSelectSchema.shape.id,
-        ...experienceValidationSchema.shape,
-      }),
-    )
+    .input(experienceValidationSchema)
     .mutation(async ({ ctx, input }) => {
       const experience = await db.query.experiencesTable.findFirst({
         where: eq(experiencesTable.id, input.id),
@@ -207,19 +203,23 @@ export const experienceRouter = router({
         });
       }
 
-      const updatedExperience = await db
+      let imagePath = experience.imageUrl;
+      if (input.image) {
+        imagePath = await writeFile(input.image);
+      }
+
+      return await db
         .update(experiencesTable)
         .set({
           title: input.title,
           content: input.content,
-          url: input.url,
           scheduledAt: input.scheduledAt,
+          url: input.url,
+          imageUrl: imagePath,
           updatedAt: new Date().toISOString(),
         })
         .where(eq(experiencesTable.id, input.id))
         .returning();
-
-      return updatedExperience[0];
     }),
 
   delete: protectedProcedure

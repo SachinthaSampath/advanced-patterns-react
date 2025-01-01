@@ -1,7 +1,12 @@
 import { AppRouter } from "@advanced-react/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter as createTanStackRouter } from "@tanstack/react-router";
-import { TRPCLink } from "@trpc/client";
+import {
+  httpLink,
+  isNonJsonSerializable,
+  splitLink,
+  TRPCLink,
+} from "@trpc/client";
 import { httpBatchLink } from "@trpc/client";
 import {
   createTRPCQueryUtils,
@@ -48,27 +53,44 @@ export const customLink: TRPCLink<AppRouter> = () => {
   };
 };
 
+function getHeaders() {
+  const queryKey = getQueryKey(trpc.auth.currentUser);
+  const token = queryClient.getQueryData<{ accessToken: string }>(
+    queryKey,
+  )?.accessToken;
+
+  return {
+    Authorization: token ? `Bearer ${token}` : undefined,
+  };
+}
+
 export const trpcClient = trpc.createClient({
   links: [
     customLink,
-    httpBatchLink({
-      url: env.VITE_SERVER_BASE_URL,
-      fetch(url, options) {
-        return fetch(url, {
-          ...options,
-          credentials: "include",
-        });
+    splitLink({
+      condition(op) {
+        return isNonJsonSerializable(op.input);
       },
-      headers() {
-        const queryKey = getQueryKey(trpc.auth.currentUser);
-        const token = queryClient.getQueryData<{ accessToken: string }>(
-          queryKey,
-        )?.accessToken;
-
-        return {
-          Authorization: token ? `Bearer ${token}` : undefined,
-        };
-      },
+      true: httpLink({
+        url: env.VITE_SERVER_BASE_URL,
+        fetch(url, options) {
+          return fetch(url, {
+            ...options,
+            credentials: "include",
+          });
+        },
+        headers: getHeaders(),
+      }),
+      false: httpBatchLink({
+        url: env.VITE_SERVER_BASE_URL,
+        fetch(url, options) {
+          return fetch(url, {
+            ...options,
+            credentials: "include",
+          });
+        },
+        headers: getHeaders(),
+      }),
     }),
   ],
 });

@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import Button from "@/features/shared/components/ui/Button";
 import { DateTimePicker } from "@/features/shared/components/ui/DateTimePicker";
+import FileInput from "@/features/shared/components/ui/FileInput";
 import {
   Form,
   FormControl,
@@ -53,10 +54,15 @@ export default function ExperienceEditForm({
   });
 
   function onSubmit(data: ExperienceFormData) {
-    editMutation.mutate({
-      id: experience.id,
-      ...data,
-    });
+    const formData = new FormData();
+
+    for (const [key, value] of Object.entries(data)) {
+      if (value !== undefined && value !== null) {
+        formData.append(key, value as string | Blob);
+      }
+    }
+
+    editMutation.mutate(formData);
   }
 
   return (
@@ -112,6 +118,26 @@ export default function ExperienceEditForm({
               <FormLabel>Event Date</FormLabel>
               <FormControl>
                 <DateTimePicker {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="image"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Image</FormLabel>
+              <FormControl>
+                <FileInput
+                  accept="image/*"
+                  value={undefined}
+                  onChange={(event) => {
+                    field.onChange(event.target?.files?.[0]);
+                  }}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

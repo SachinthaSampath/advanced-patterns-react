@@ -11,6 +11,9 @@ importers:
       zod:
         specifier: ^3.23.8
         version: 3.23.8
+      zod-form-data:
+        specifier: ^2.0.5
+        version: 2.0.5(zod@3.23.8)
     devDependencies:
       '@types/node':
         specifier: ^22.9.1
@@ -6424,6 +6427,14 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
     dev: true
+
+  /zod-form-data@2.0.5(zod@3.23.8):
+    resolution: {integrity: sha512-T7dV6lTBCwkd8PyvJVCnjXKpgXomU8gEm/TcvEZY7qNdRhIo9T17HrdlHIK68PzTAYaV2HxR9rgwpTSWv0L+QQ==}
+    peerDependencies:
+      zod: '>= 3.11.0'
+    dependencies:
+      zod: 3.23.8
+    dev: false
 
   /zod-validation-error@3.4.0(zod@3.23.8):
     resolution: {integrity: sha512-ZOPR9SVY6Pb2qqO5XHt+MkkTRxGXb4EVtnjc9JpXUOtUB1T9Ru7mZOT361AN3MsetVe7R0a1KZshJDZdgp9miQ==}
