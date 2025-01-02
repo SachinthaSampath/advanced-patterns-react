@@ -1,6 +1,9 @@
-import { experienceValidationSchema } from "@advanced-react/shared/schema/experience";
+import {
+  experienceFiltersSchema,
+  experienceValidationSchema,
+} from "@advanced-react/shared/schema/experience";
 import { TRPCError } from "@trpc/server";
-import { and, count, eq } from "drizzle-orm";
+import { and, count, eq, like } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "../../database";
@@ -91,10 +94,12 @@ export const experienceRouter = router({
 
   feed: publicProcedure
     .input(
-      z.object({
-        limit: z.number().optional(),
-        cursor: z.number().optional(),
-      }),
+      z
+        .object({
+          limit: z.number().optional(),
+          cursor: z.number().optional(),
+        })
+        .merge(experienceFiltersSchema),
     )
     .output(
       z.object({
@@ -116,6 +121,9 @@ export const experienceRouter = router({
       const experiences = await db.query.experiencesTable.findMany({
         limit,
         offset: cursor,
+        where: input.q
+          ? like(experiencesTable.title, `%${input.q}%`)
+          : undefined,
         with: {
           user: {
             columns: {

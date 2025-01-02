@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils/cn";
 
-import { useFormField } from "./form";
+import { useFormField } from "./Form";
 
 export type InputProps = React.InputHTMLAttributes<HTMLInputElement> & {
   ref?:

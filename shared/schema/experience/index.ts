@@ -9,3 +9,9 @@ export const experienceValidationSchema = zfd.formData({
   url: zfd.text(z.string().url("Invalid link").nullable()),
   image: zfd.file().optional(),
 });
+
+export const experienceFiltersSchema = z.object({
+  q: z.string().default(""),
+});
+
+export type ExperienceFilterParams = z.infer<typeof experienceFiltersSchema>;
