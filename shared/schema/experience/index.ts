@@ -11,7 +11,8 @@ export const experienceValidationSchema = zfd.formData({
 });
 
 export const experienceFiltersSchema = z.object({
-  q: z.string().default(""),
+  q: z.string().optional(),
+  scheduledAt: z.string().datetime().optional(),
 });
 
 export type ExperienceFilterParams = z.infer<typeof experienceFiltersSchema>;

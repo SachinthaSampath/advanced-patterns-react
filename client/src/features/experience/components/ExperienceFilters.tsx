@@ -3,9 +3,11 @@ import {
   experienceFiltersSchema,
 } from "@advanced-react/shared/schema/experience";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useState } from "react";
+import { Search } from "lucide-react";
 import { useForm } from "react-hook-form";
 
+import Button from "@/features/shared/components/ui/Button";
+import { DateTimePicker } from "@/features/shared/components/ui/DateTimePicker";
 import {
   Form,
   FormControl,
@@ -14,7 +16,6 @@ import {
   FormMessage,
 } from "@/features/shared/components/ui/Form";
 import Input from "@/features/shared/components/ui/Input";
-import { useDebounce } from "@/features/shared/hooks/useDebounce";
 
 type ExperienceFiltersProps = {
   onFiltersChange: (filters: ExperienceFilterParams) => void;
@@ -23,30 +24,30 @@ type ExperienceFiltersProps = {
 
 export default function ExperienceFilters({
   onFiltersChange,
-  initialFilters = { q: "" },
+  initialFilters,
 }: ExperienceFiltersProps) {
-  const form = useForm({
+  const form = useForm<ExperienceFilterParams>({
     resolver: zodResolver(experienceFiltersSchema),
     defaultValues: initialFilters,
   });
 
-  const [filters, setFilters] = useState(initialFilters);
-  const debouncedFilters = useDebounce(filters, 300);
+  function handleSubmit(values: ExperienceFilterParams) {
+    const filters: ExperienceFilterParams = {};
 
-  useEffect(() => {
-    const { unsubscribe } = form.watch((value) => {
-      setFilters({ q: value.q ?? "" });
-    });
-    return () => unsubscribe();
-  }, [form]);
+    if (values.q?.trim()) {
+      filters.q = values.q.trim();
+    }
 
-  useEffect(() => {
-    onFiltersChange(debouncedFilters);
-  }, [debouncedFilters, onFiltersChange]);
+    if (values.scheduledAt) {
+      filters.scheduledAt = values.scheduledAt;
+    }
+
+    onFiltersChange(filters);
+  }
 
   return (
     <Form {...form}>
-      <form className="flex gap-4">
+      <form className="flex gap-4" onSubmit={form.handleSubmit(handleSubmit)}>
         <FormField
           control={form.control}
           name="q"
@@ -58,12 +59,31 @@ export default function ExperienceFilters({
                   placeholder="Search experiences..."
                   className="max-w-sm"
                   {...field}
+                  value={field.value ?? ""}
                 />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+
+        <FormField
+          control={form.control}
+          name="scheduledAt"
+          render={({ field }) => (
+            <FormItem className="flex-1">
+              <FormControl>
+                <DateTimePicker {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <Button type="submit">
+          <Search className="h-4 w-4" />
+          Filter
+        </Button>
       </form>
     </Form>
   );

@@ -1,7 +1,8 @@
 // Based on https://github.com/rudrodip/shadcn-date-time-picker
 
 import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, X } from "lucide-react";
+import { useState } from "react";
 
 import { cn } from "@/lib/utils/cn";
 
@@ -11,19 +12,29 @@ import { Popover, PopoverContent, PopoverTrigger } from "./Popover";
 import { ScrollArea, ScrollBar } from "./ScrollArea";
 
 type DateTimePickerProps = {
-  value: string;
-  onChange: (value: string) => void;
+  value: string | undefined;
+  onChange: (value: string | undefined) => void;
 };
 
 export function DateTimePicker({ value, onChange }: DateTimePickerProps) {
-  const date = value ? new Date(value) : new Date();
+  const [localValue, setLocalValue] = useState(value);
+
+  const date = localValue ? new Date(localValue) : new Date();
 
   function handleChange(newDate: Date | undefined) {
     if (!newDate || !onChange) {
       return;
     }
 
+    setLocalValue(newDate.toISOString());
     onChange(newDate.toISOString());
+  }
+
+  function handleClear(e: React.MouseEvent) {
+    e.stopPropagation();
+
+    setLocalValue(undefined);
+    onChange(undefined);
   }
 
   return (
@@ -32,15 +43,20 @@ export function DateTimePicker({ value, onChange }: DateTimePickerProps) {
         <Button
           type="button"
           variant="outline"
-          className={cn(
-            "w-full pl-3 text-left font-normal dark:bg-neutral-900",
-            !value && "text-muted-foreground",
-          )}
+          className={cn("relative w-full pl-3 font-normal")}
         >
-          {value ? (
-            format(date, "MM/dd/yyyy hh:mm aa")
+          {localValue ? (
+            <>
+              {format(date, "MM/dd/yyyy hh:mm aa")}
+              <X
+                className="absolute right-10 h-6 w-6 rounded-full p-1 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                onClick={handleClear}
+              />
+            </>
           ) : (
-            <span>Select a date and time</span>
+            <span className="text-neutral-500 dark:text-neutral-400">
+              Select a date and time
+            </span>
           )}
           <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
         </Button>

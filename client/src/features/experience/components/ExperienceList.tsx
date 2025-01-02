@@ -26,6 +26,9 @@ export default function ExperienceList({
           <div>Loading...</div>
         </div>
       )}
+      {!isLoading && experiences.length === 0 && (
+        <div className="flex justify-center py-4">No experiences found</div>
+      )}
     </div>
   );
 }
