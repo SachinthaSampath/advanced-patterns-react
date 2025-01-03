@@ -9,6 +9,8 @@ import {
   experienceAttendeesTable,
   experienceSelectSchema,
   experiencesTable,
+  experienceTagsTable,
+  tagSelectSchema,
   userFollowsTable,
 } from "../../database/schema";
 import { protectedProcedure, publicProcedure, router } from "../../trpc";
@@ -104,6 +106,7 @@ export const userRouter = router({
             user: cleanUserSelectSchema,
             attendeesCount: z.number(),
             attendees: z.array(cleanUserSelectSchema),
+            tags: z.array(tagSelectSchema),
           }),
         ),
         nextCursor: z.number().optional(),
@@ -160,19 +163,26 @@ export const userRouter = router({
 
       const attendeeCounts = await Promise.all(attendeeQueries);
 
-      const experiencesWithCounts = experiences.map((experience, i) => ({
-        ...experience,
-        commentsCount: counts[i][0].count,
-        attendeesCount: attendeeCounts[i][0][0].count,
-        attendees: attendeeCounts[i][1].map((a) => a.user),
-      }));
+      const tagQueries = experiences.map((experience) =>
+        db.query.experienceTagsTable.findMany({
+          where: eq(experienceTagsTable.experienceId, experience.id),
+          with: {
+            tag: true,
+          },
+        }),
+      );
 
-      const nextCursor =
-        experiences.length === limit ? cursor + limit : undefined;
+      const tagResults = await Promise.all(tagQueries);
 
       return {
-        experiences: experiencesWithCounts,
-        nextCursor,
+        experiences: experiences.map((experience, i) => ({
+          ...experience,
+          commentsCount: counts[i][0].count,
+          attendeesCount: attendeeCounts[i][0][0].count,
+          attendees: attendeeCounts[i][1].map((a) => a.user),
+          tags: tagResults[i].map((t) => t.tag),
+        })),
+        nextCursor: experiences.length === limit ? cursor + limit : undefined,
       };
     }),
 

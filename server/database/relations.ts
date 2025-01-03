@@ -4,6 +4,8 @@ import {
   commentsTable,
   experienceAttendeesTable,
   experiencesTable,
+  experienceTagsTable,
+  tagsTable,
   userFollowsTable,
   usersTable,
 } from "./schema";
@@ -11,25 +13,15 @@ import {
 export const experiencesRelations = relations(
   experiencesTable,
   ({ many, one }) => ({
+    attendees: many(experienceAttendeesTable),
     comments: many(commentsTable),
+    tags: many(experienceTagsTable),
     user: one(usersTable, {
       fields: [experiencesTable.userId],
       references: [usersTable.id],
     }),
-    attendees: many(experienceAttendeesTable),
   }),
 );
-
-export const commentsRelations = relations(commentsTable, ({ one }) => ({
-  experience: one(experiencesTable, {
-    fields: [commentsTable.experienceId],
-    references: [experiencesTable.id],
-  }),
-  user: one(usersTable, {
-    fields: [commentsTable.userId],
-    references: [usersTable.id],
-  }),
-}));
 
 export const experienceAttendeesRelations = relations(
   experienceAttendeesTable,
@@ -44,6 +36,35 @@ export const experienceAttendeesRelations = relations(
     }),
   }),
 );
+
+export const experienceTagsRelations = relations(
+  experienceTagsTable,
+  ({ one }) => ({
+    experience: one(experiencesTable, {
+      fields: [experienceTagsTable.experienceId],
+      references: [experiencesTable.id],
+    }),
+    tag: one(tagsTable, {
+      fields: [experienceTagsTable.tagId],
+      references: [tagsTable.id],
+    }),
+  }),
+);
+
+export const commentsRelations = relations(commentsTable, ({ one }) => ({
+  experience: one(experiencesTable, {
+    fields: [commentsTable.experienceId],
+    references: [experiencesTable.id],
+  }),
+  user: one(usersTable, {
+    fields: [commentsTable.userId],
+    references: [usersTable.id],
+  }),
+}));
+
+export const tagsRelations = relations(tagsTable, ({ many }) => ({
+  experiences: many(experienceTagsTable),
+}));
 
 export const userFollowsRelations = relations(userFollowsTable, ({ one }) => ({
   follower: one(usersTable, {

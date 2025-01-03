@@ -8,6 +8,7 @@ import {
 import { createSelectSchema } from "drizzle-zod";
 
 import { usersTable } from "../auth/models";
+import { tagsTable } from "../tag/models";
 
 export const experiencesTable = sqliteTable(
   "experiences",
@@ -60,3 +61,30 @@ export const experienceAttendeesTable = sqliteTable(
 );
 
 export type ExperienceAttendee = typeof experienceAttendeesTable.$inferSelect;
+
+export const experienceTagsTable = sqliteTable(
+  "experience_tags",
+  {
+    experienceId: int("experience_id")
+      .notNull()
+      .references(() => experiencesTable.id, { onDelete: "cascade" }),
+    tagId: int("tag_id")
+      .notNull()
+      .references(() => tagsTable.id, { onDelete: "cascade" }),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => ({
+    experience_tags_pk: primaryKey({
+      columns: [table.experienceId, table.tagId],
+    }),
+    experience_tags_experience_id_idx: index(
+      "experience_tags_experience_id_idx",
+    ).on(table.experienceId),
+    experience_tags_tag_id_idx: index("experience_tags_tag_id_idx").on(
+      table.tagId,
+    ),
+  }),
+);
+export const experienceTagSelectSchema =
+  createSelectSchema(experienceTagsTable);
+export type ExperienceTag = typeof experienceTagsTable.$inferSelect;

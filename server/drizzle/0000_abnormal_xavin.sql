@@ -41,6 +41,17 @@ CREATE TABLE `experience_attendees` (
 --> statement-breakpoint
 CREATE INDEX `experience_attendees_experience_id_idx` ON `experience_attendees` (`experience_id`);--> statement-breakpoint
 CREATE INDEX `experience_attendees_user_id_idx` ON `experience_attendees` (`user_id`);--> statement-breakpoint
+CREATE TABLE `experience_tags` (
+	`experience_id` integer NOT NULL,
+	`tag_id` integer NOT NULL,
+	`created_at` text NOT NULL,
+	PRIMARY KEY(`experience_id`, `tag_id`),
+	FOREIGN KEY (`experience_id`) REFERENCES `experiences`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`tag_id`) REFERENCES `tags`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE INDEX `experience_tags_experience_id_idx` ON `experience_tags` (`experience_id`);--> statement-breakpoint
+CREATE INDEX `experience_tags_tag_id_idx` ON `experience_tags` (`tag_id`);--> statement-breakpoint
 CREATE TABLE `experiences` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`title` text NOT NULL,
@@ -54,4 +65,13 @@ CREATE TABLE `experiences` (
 	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
-CREATE INDEX `experiences_user_id_idx` ON `experiences` (`user_id`);
+CREATE INDEX `experiences_user_id_idx` ON `experiences` (`user_id`);--> statement-breakpoint
+CREATE TABLE `tags` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`name` text NOT NULL,
+	`created_at` text NOT NULL,
+	`updated_at` text NOT NULL
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `tags_name_unique` ON `tags` (`name`);--> statement-breakpoint
+CREATE INDEX `tags_name_idx` ON `tags` (`name`);

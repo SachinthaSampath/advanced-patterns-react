@@ -20,6 +20,7 @@ export function useExperienceMutations(
   const { toast } = useToast();
 
   const { userId: pathUserId } = useParams({ strict: false });
+  const { tagId: pathTagId } = useParams({ strict: false });
 
   const attendMutation = trpc.experiences.attend.useMutation({
     onMutate: async ({ id }) => {
@@ -43,6 +44,9 @@ export function useExperienceMutations(
         pathUserId
           ? utils.users.experiences.cancel({ id: pathUserId })
           : undefined,
+        pathTagId
+          ? utils.tags.experiences.cancel({ id: pathTagId })
+          : undefined,
       ]);
 
       const previousData = {
@@ -50,6 +54,9 @@ export function useExperienceMutations(
         feed: utils.experiences.feed.getInfiniteData(),
         byUserId: pathUserId
           ? utils.users.experiences.getInfiniteData({ id: pathUserId })
+          : undefined,
+        byTagId: pathTagId
+          ? utils.tags.experiences.getInfiniteData({ id: pathTagId })
           : undefined,
       };
 
@@ -98,6 +105,24 @@ export function useExperienceMutations(
         );
       }
 
+      if (pathTagId) {
+        utils.tags.experiences.setInfiniteData({ id: pathTagId }, (oldData) => {
+          if (!oldData) {
+            return { pages: [], pageParams: [] };
+          }
+
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page) => ({
+              ...page,
+              experiences: page.experiences.map((e) =>
+                e.id === experienceId ? updateExperience(e) : e,
+              ),
+            })),
+          };
+        });
+      }
+
       return { previousData };
     },
     onError: (error, { id }, context) => {
@@ -109,6 +134,13 @@ export function useExperienceMutations(
         utils.users.experiences.setInfiniteData(
           { id: pathUserId },
           context?.previousData.byUserId,
+        );
+      }
+
+      if (pathTagId) {
+        utils.tags.experiences.setInfiniteData(
+          { id: pathTagId },
+          context?.previousData.byTagId,
         );
       }
 
@@ -142,6 +174,9 @@ export function useExperienceMutations(
         pathUserId
           ? utils.users.experiences.cancel({ id: pathUserId })
           : undefined,
+        pathTagId
+          ? utils.tags.experiences.cancel({ id: pathTagId })
+          : undefined,
       ]);
 
       const previousData = {
@@ -149,6 +184,9 @@ export function useExperienceMutations(
         feed: utils.experiences.feed.getInfiniteData(),
         byUserId: pathUserId
           ? utils.users.experiences.getInfiniteData({ id: pathUserId })
+          : undefined,
+        byTagId: pathTagId
+          ? utils.tags.experiences.getInfiniteData({ id: pathTagId })
           : undefined,
       };
 
@@ -197,6 +235,24 @@ export function useExperienceMutations(
         );
       }
 
+      if (pathTagId) {
+        utils.tags.experiences.setInfiniteData({ id: pathTagId }, (oldData) => {
+          if (!oldData) {
+            return { pages: [], pageParams: [] };
+          }
+
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page) => ({
+              ...page,
+              experiences: page.experiences.map((e) =>
+                e.id === experienceId ? updateExperience(e) : e,
+              ),
+            })),
+          };
+        });
+      }
+
       return { previousData };
     },
     onError: (error, { id }, context) => {
@@ -208,6 +264,13 @@ export function useExperienceMutations(
         utils.users.experiences.setInfiniteData(
           { id: pathUserId },
           context?.previousData.byUserId,
+        );
+      }
+
+      if (pathTagId) {
+        utils.tags.experiences.setInfiniteData(
+          { id: pathTagId },
+          context?.previousData.byTagId,
         );
       }
 
@@ -227,6 +290,9 @@ export function useExperienceMutations(
         pathUserId
           ? utils.users.experiences.cancel({ id: pathUserId })
           : undefined,
+        pathTagId
+          ? utils.tags.experiences.cancel({ id: pathTagId })
+          : undefined,
       ]);
 
       const previousData = {
@@ -234,6 +300,9 @@ export function useExperienceMutations(
         feed: utils.experiences.feed.getInfiniteData(),
         byUserId: pathUserId
           ? utils.users.experiences.getInfiniteData({ id: pathUserId })
+          : undefined,
+        byTagId: pathTagId
+          ? utils.tags.experiences.getInfiniteData({ id: pathTagId })
           : undefined,
       };
 
@@ -272,6 +341,22 @@ export function useExperienceMutations(
         );
       }
 
+      if (pathTagId) {
+        utils.tags.experiences.setInfiniteData({ id: pathTagId }, (oldData) => {
+          if (!oldData) {
+            return { pages: [], pageParams: [] };
+          }
+
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page) => ({
+              ...page,
+              experiences: page.experiences.filter((e) => e.id !== id),
+            })),
+          };
+        });
+      }
+
       const { dismiss } = toast({
         title: "Experience deleted",
         description: "Your experience has been deleted",
@@ -293,6 +378,13 @@ export function useExperienceMutations(
         utils.users.experiences.setInfiniteData(
           { id: pathUserId },
           context?.previousData.byUserId,
+        );
+      }
+
+      if (pathTagId) {
+        utils.tags.experiences.setInfiniteData(
+          { id: pathTagId },
+          context?.previousData.byTagId,
         );
       }
 

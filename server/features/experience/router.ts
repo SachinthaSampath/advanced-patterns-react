@@ -13,6 +13,8 @@ import {
   experienceAttendeesTable,
   experienceSelectSchema,
   experiencesTable,
+  experienceTagsTable,
+  tagSelectSchema,
 } from "../../database/schema";
 import { protectedProcedure, publicProcedure, router } from "../../trpc";
 import { DEFAULT_EXPERIENCE_LIMIT } from "../../utils/constants";
@@ -27,6 +29,7 @@ export const experienceRouter = router({
         user: cleanUserSelectSchema,
         attendeesCount: z.number(),
         attendees: z.array(cleanUserSelectSchema),
+        tags: z.array(tagSelectSchema),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -81,6 +84,13 @@ export const experienceRouter = router({
           })
         : null;
 
+      const experienceTags = await db.query.experienceTagsTable.findMany({
+        where: eq(experienceTagsTable.experienceId, input.id),
+        with: {
+          tag: true,
+        },
+      });
+
       return {
         ...experience,
         commentsCount: commentCount?.count ?? 0,
@@ -89,6 +99,7 @@ export const experienceRouter = router({
           ...(currentUserAttendance && ctx.user ? [ctx.user] : []),
           ...attendees.map((a) => a.user),
         ],
+        tags: experienceTags.map((et) => et.tag),
       };
     }),
 
@@ -109,6 +120,7 @@ export const experienceRouter = router({
             user: cleanUserSelectSchema,
             attendeesCount: z.number(),
             attendees: z.array(cleanUserSelectSchema),
+            tags: z.array(tagSelectSchema),
           }),
         ),
         nextCursor: z.number().optional(),
@@ -184,18 +196,28 @@ export const experienceRouter = router({
 
       const attendeeResults = await Promise.all(attendeeQueries);
 
-      const experiencesWithCounts = experiences.map((experience, index) => ({
-        ...experience,
-        commentsCount: counts[index][0]?.count ?? 0,
-        attendeesCount: attendeeResults[index][0][0]?.count ?? 0,
-        attendees: [
-          ...(attendeeResults[index][2] && ctx.user ? [ctx.user] : []),
-          ...attendeeResults[index][1].map((a) => a.user),
-        ],
-      }));
+      const tagQueries = experiences.map((experience) =>
+        db.query.experienceTagsTable.findMany({
+          where: eq(experienceTagsTable.experienceId, experience.id),
+          with: {
+            tag: true,
+          },
+        }),
+      );
+
+      const tagResults = await Promise.all(tagQueries);
 
       return {
-        experiences: experiencesWithCounts,
+        experiences: experiences.map((experience, index) => ({
+          ...experience,
+          commentsCount: counts[index][0]?.count ?? 0,
+          attendeesCount: attendeeResults[index][0][0]?.count ?? 0,
+          attendees: [
+            ...(attendeeResults[index][2] && ctx.user ? [ctx.user] : []),
+            ...attendeeResults[index][1].map((a) => a.user),
+          ],
+          tags: tagResults[index].map((t) => t.tag),
+        })),
         nextCursor: experiences.length === limit ? cursor + limit : undefined,
       };
     }),

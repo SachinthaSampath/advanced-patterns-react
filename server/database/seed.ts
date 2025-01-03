@@ -5,6 +5,8 @@ import {
   commentsTable,
   experienceAttendeesTable,
   experiencesTable,
+  experienceTagsTable,
+  tagsTable,
   userFollowsTable,
   usersTable,
 } from "./schema";
@@ -23,6 +25,32 @@ async function seed() {
       updatedAt: new Date().toISOString(),
     })
     .returning();
+
+  // Create some tags
+  const tagNames = [
+    "Hiking",
+    "Running",
+    "Biking",
+    "Swimming",
+    "Yoga",
+    "Dinner",
+    "Movie",
+    "Concert",
+    "Party",
+    "Game Night",
+    "Book Club",
+    "Art Class",
+    "Cooking Class",
+    "Wine Tasting",
+  ];
+
+  const tags = tagNames.map((name) => ({
+    name,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  }));
+
+  const insertedTags = await db.insert(tagsTable).values(tags).returning();
 
   // Create other users and experiences
   for (let i = 0; i < 100; i++) {
@@ -44,16 +72,38 @@ async function seed() {
     // 5% chance this experience will be attributed to the demo user
     const experienceUserId = Math.random() < 0.05 ? demoUser.id : postUser.id;
 
-    await db.insert(experiencesTable).values({
-      title: faker.lorem.sentence(),
-      content: faker.lorem.paragraph(),
-      scheduledAt: faker.date.soon().toISOString(),
-      url: faker.internet.url(),
-      imageUrl: faker.image.urlPicsumPhotos(),
-      userId: experienceUserId,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    });
+    const [experience] = await db
+      .insert(experiencesTable)
+      .values({
+        title: faker.lorem.sentence(),
+        content: faker.lorem.paragraph(),
+        scheduledAt: faker.date.soon().toISOString(),
+        url: faker.internet.url(),
+        imageUrl: faker.image.urlPicsumPhotos(),
+        userId: experienceUserId,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })
+      .returning();
+
+    // Add 1-4 random tags to each experience
+    const numberOfTags = Math.floor(Math.random() * 4) + 1;
+    const shuffledTags = [...insertedTags].sort(() => Math.random() - 0.5);
+
+    for (let j = 0; j < numberOfTags && j < shuffledTags.length; j++) {
+      const tag = shuffledTags[j];
+
+      try {
+        await db.insert(experienceTagsTable).values({
+          experienceId: experience.id,
+          tagId: tag.id,
+          createdAt: new Date().toISOString(),
+        });
+      } catch {
+        // Ignore duplicate tags
+        continue;
+      }
+    }
   }
 
   // Add random attendees to experiences

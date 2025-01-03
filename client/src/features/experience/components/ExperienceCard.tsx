@@ -1,9 +1,10 @@
-import { Experience, User } from "@advanced-react/server/database/schema";
+import { Experience, Tag, User } from "@advanced-react/server/database/schema";
 import { LinkIcon, MessageSquare, Users } from "lucide-react";
 
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import Button from "@/features/shared/components/ui/Button";
 import Link from "@/features/shared/components/ui/Link";
+import TagList from "@/features/tag/components/TagList";
 import UserAvatar from "@/features/user/components/UserAvatar";
 
 import { useExperienceMutations } from "../hooks/useExperienceMutations";
@@ -15,6 +16,7 @@ type ExperienceCardProps = {
     user: User;
     attendeesCount: number;
     attendees: User[];
+    tags: Tag[];
   };
 };
 
@@ -102,7 +104,7 @@ type ExperienceCardContentProps = Pick<ExperienceCardProps, "experience">;
 
 function ExperienceCardContent({ experience }: ExperienceCardContentProps) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-4">
       <p className="line-clamp-2 text-neutral-800 dark:text-neutral-100">
         {experience.content}
       </p>
@@ -121,6 +123,7 @@ function ExperienceCardContent({ experience }: ExperienceCardContentProps) {
           </a>
         )}
       </div>
+      <TagList tags={experience.tags} />
     </div>
   );
 }

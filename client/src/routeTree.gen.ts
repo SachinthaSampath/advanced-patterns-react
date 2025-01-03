@@ -15,6 +15,7 @@ import { Route as RegisterImport } from './routes/register'
 import { Route as LoginImport } from './routes/login'
 import { Route as IndexImport } from './routes/index'
 import { Route as UsersUserIdIndexImport } from './routes/users/$userId/index'
+import { Route as TagsTagIdIndexImport } from './routes/tags/$tagId/index'
 import { Route as ExperiencesExperienceIdIndexImport } from './routes/experiences/$experienceId/index'
 import { Route as UsersUserIdFollowingImport } from './routes/users/$userId/following'
 import { Route as UsersUserIdFollowersImport } from './routes/users/$userId/followers'
@@ -44,6 +45,12 @@ const IndexRoute = IndexImport.update({
 const UsersUserIdIndexRoute = UsersUserIdIndexImport.update({
   id: '/users/$userId/',
   path: '/users/$userId/',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const TagsTagIdIndexRoute = TagsTagIdIndexImport.update({
+  id: '/tags/$tagId/',
+  path: '/tags/$tagId/',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -139,6 +146,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ExperiencesExperienceIdIndexImport
       parentRoute: typeof rootRoute
     }
+    '/tags/$tagId/': {
+      id: '/tags/$tagId/'
+      path: '/tags/$tagId'
+      fullPath: '/tags/$tagId'
+      preLoaderRoute: typeof TagsTagIdIndexImport
+      parentRoute: typeof rootRoute
+    }
     '/users/$userId/': {
       id: '/users/$userId/'
       path: '/users/$userId'
@@ -160,6 +174,7 @@ export interface FileRoutesByFullPath {
   '/users/$userId/followers': typeof UsersUserIdFollowersRoute
   '/users/$userId/following': typeof UsersUserIdFollowingRoute
   '/experiences/$experienceId': typeof ExperiencesExperienceIdIndexRoute
+  '/tags/$tagId': typeof TagsTagIdIndexRoute
   '/users/$userId': typeof UsersUserIdIndexRoute
 }
 
@@ -172,6 +187,7 @@ export interface FileRoutesByTo {
   '/users/$userId/followers': typeof UsersUserIdFollowersRoute
   '/users/$userId/following': typeof UsersUserIdFollowingRoute
   '/experiences/$experienceId': typeof ExperiencesExperienceIdIndexRoute
+  '/tags/$tagId': typeof TagsTagIdIndexRoute
   '/users/$userId': typeof UsersUserIdIndexRoute
 }
 
@@ -185,6 +201,7 @@ export interface FileRoutesById {
   '/users/$userId/followers': typeof UsersUserIdFollowersRoute
   '/users/$userId/following': typeof UsersUserIdFollowingRoute
   '/experiences/$experienceId/': typeof ExperiencesExperienceIdIndexRoute
+  '/tags/$tagId/': typeof TagsTagIdIndexRoute
   '/users/$userId/': typeof UsersUserIdIndexRoute
 }
 
@@ -199,6 +216,7 @@ export interface FileRouteTypes {
     | '/users/$userId/followers'
     | '/users/$userId/following'
     | '/experiences/$experienceId'
+    | '/tags/$tagId'
     | '/users/$userId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -210,6 +228,7 @@ export interface FileRouteTypes {
     | '/users/$userId/followers'
     | '/users/$userId/following'
     | '/experiences/$experienceId'
+    | '/tags/$tagId'
     | '/users/$userId'
   id:
     | '__root__'
@@ -221,6 +240,7 @@ export interface FileRouteTypes {
     | '/users/$userId/followers'
     | '/users/$userId/following'
     | '/experiences/$experienceId/'
+    | '/tags/$tagId/'
     | '/users/$userId/'
   fileRoutesById: FileRoutesById
 }
@@ -234,6 +254,7 @@ export interface RootRouteChildren {
   UsersUserIdFollowersRoute: typeof UsersUserIdFollowersRoute
   UsersUserIdFollowingRoute: typeof UsersUserIdFollowingRoute
   ExperiencesExperienceIdIndexRoute: typeof ExperiencesExperienceIdIndexRoute
+  TagsTagIdIndexRoute: typeof TagsTagIdIndexRoute
   UsersUserIdIndexRoute: typeof UsersUserIdIndexRoute
 }
 
@@ -246,6 +267,7 @@ const rootRouteChildren: RootRouteChildren = {
   UsersUserIdFollowersRoute: UsersUserIdFollowersRoute,
   UsersUserIdFollowingRoute: UsersUserIdFollowingRoute,
   ExperiencesExperienceIdIndexRoute: ExperiencesExperienceIdIndexRoute,
+  TagsTagIdIndexRoute: TagsTagIdIndexRoute,
   UsersUserIdIndexRoute: UsersUserIdIndexRoute,
 }
 
@@ -267,6 +289,7 @@ export const routeTree = rootRoute
         "/users/$userId/followers",
         "/users/$userId/following",
         "/experiences/$experienceId/",
+        "/tags/$tagId/",
         "/users/$userId/"
       ]
     },
@@ -293,6 +316,9 @@ export const routeTree = rootRoute
     },
     "/experiences/$experienceId/": {
       "filePath": "experiences/$experienceId/index.tsx"
+    },
+    "/tags/$tagId/": {
+      "filePath": "tags/$tagId/index.tsx"
     },
     "/users/$userId/": {
       "filePath": "users/$userId/index.tsx"

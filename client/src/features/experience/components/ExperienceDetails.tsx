@@ -1,9 +1,10 @@
-import { Experience, User } from "@advanced-react/server/database/schema";
+import { Experience, Tag, User } from "@advanced-react/server/database/schema";
 import { Link as LinkIcon } from "lucide-react";
 
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import Button from "@/features/shared/components/ui/Button";
 import Link from "@/features/shared/components/ui/Link";
+import TagList from "@/features/tag/components/TagList";
 import { router } from "@/router";
 
 import { useExperienceMutations } from "../hooks/useExperienceMutations";
@@ -16,6 +17,7 @@ type ExperienceDetailsProps = {
     user: User;
     attendeesCount: number;
     attendees: User[];
+    tags: Tag[];
   };
 };
 
@@ -99,6 +101,7 @@ function ExperienceDetailsContent({
           </div>
         )}
       </div>
+      <TagList tags={experience.tags} />
     </div>
   );
 }
