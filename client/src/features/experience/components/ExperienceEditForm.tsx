@@ -14,7 +14,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/features/shared/components/ui/form";
+} from "@/features/shared/components/ui/Form";
 import Input from "@/features/shared/components/ui/Input";
 import TextArea from "@/features/shared/components/ui/TextArea";
 import { useToast } from "@/features/shared/hooks/useToast";
@@ -41,7 +41,7 @@ export default function ExperienceEditForm({
   });
 
   const editMutation = trpc.experiences.edit.useMutation({
-    onSuccess: async () => {
+    onSuccess: () => {
       onSuccess?.();
     },
     onError: (error) => {

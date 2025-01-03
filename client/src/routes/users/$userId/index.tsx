@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 
+import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import ExperienceList from "@/features/experience/components/ExperienceList";
 import InfiniteScroll from "@/features/shared/components/InfiniteScroll";
 import { QueryErrorFallback } from "@/features/shared/components/QueryErrorFallback";
+import Button from "@/features/shared/components/ui/Button";
 import Link from "@/features/shared/components/ui/Link";
 import FollowButton from "@/features/user/components/FollowButton";
 import UserAvatar from "@/features/user/components/UserAvatar";
@@ -25,6 +27,7 @@ export const Route = createFileRoute("/users/$userId/")({
 });
 
 function UserProfile() {
+  const { currentUser } = useCurrentUser();
   const { userId } = Route.useParams();
 
   const userQuery = trpc.users.byId.useQuery({ id: userId });
@@ -48,6 +51,8 @@ function UserProfile() {
     return <div>User not found</div>;
   }
 
+  const isCurrentUser = currentUser?.id === userQuery.data.id;
+
   return (
     <div className="container mx-auto p-4">
       <div className="max-w-feed mx-auto">
@@ -65,10 +70,22 @@ function UserProfile() {
         </div>
 
         <div className="flex justify-center">
-          <FollowButton
-            targetUserId={userQuery.data.id}
-            isFollowing={userQuery.data.isFollowing}
-          />
+          {isCurrentUser ? (
+            <Button asChild>
+              <Link
+                to="/users/$userId/edit"
+                params={{ userId: userQuery.data.id }}
+                variant="ghost"
+              >
+                Edit Profile
+              </Link>
+            </Button>
+          ) : (
+            <FollowButton
+              targetUserId={userQuery.data.id}
+              isFollowing={userQuery.data.isFollowing}
+            />
+          )}
         </div>
 
         <h2 className="mb-4 text-xl font-semibold">Experiences</h2>

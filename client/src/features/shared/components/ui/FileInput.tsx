@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Input from "./Input";
 
 export type FileInputProps = React.InputHTMLAttributes<HTMLInputElement> & {
-  ref?: React.RefObject<HTMLInputElement>;
+  ref?: React.RefObject<HTMLInputElement> | React.RefCallback<HTMLInputElement>;
 };
 
 export default function FileInput({ ref, onChange, ...props }: FileInputProps) {

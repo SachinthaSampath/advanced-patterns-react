@@ -1,3 +1,4 @@
+import { userValidationSchema } from "@advanced-react/shared/schema/auth";
 import { TRPCError } from "@trpc/server";
 import { and, count, desc, eq } from "drizzle-orm";
 import { z } from "zod";
@@ -15,6 +16,7 @@ import {
   DEFAULT_EXPERIENCE_LIMIT,
   DEFAULT_USER_LIMIT,
 } from "../../utils/constants";
+import { writeFile } from "../../utils/files";
 import { cleanUserSelectSchema, usersTable } from "../auth/models";
 
 export const userRouter = router({
@@ -366,5 +368,31 @@ export const userRouter = router({
         items,
         nextCursor,
       };
+    }),
+
+  edit: protectedProcedure
+    .input(userValidationSchema)
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.user.id !== input.id) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You can only update your own profile",
+        });
+      }
+
+      let imagePath = ctx.user.avatarUrl;
+      if (input.photo) {
+        imagePath = await writeFile(input.photo);
+      }
+
+      return await db
+        .update(usersTable)
+        .set({
+          name: input.name,
+          avatarUrl: imagePath,
+          updatedAt: new Date().toISOString(),
+        })
+        .where(eq(usersTable.id, input.id))
+        .returning();
     }),
 });

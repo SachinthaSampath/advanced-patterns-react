@@ -18,6 +18,7 @@ import { Route as UsersUserIdIndexImport } from './routes/users/$userId/index'
 import { Route as ExperiencesExperienceIdIndexImport } from './routes/experiences/$experienceId/index'
 import { Route as UsersUserIdFollowingImport } from './routes/users/$userId/following'
 import { Route as UsersUserIdFollowersImport } from './routes/users/$userId/followers'
+import { Route as UsersUserIdEditImport } from './routes/users/$userId/edit'
 import { Route as ExperiencesExperienceIdEditImport } from './routes/experiences/$experienceId/edit'
 
 // Create/Update Routes
@@ -65,6 +66,12 @@ const UsersUserIdFollowersRoute = UsersUserIdFollowersImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const UsersUserIdEditRoute = UsersUserIdEditImport.update({
+  id: '/users/$userId/edit',
+  path: '/users/$userId/edit',
+  getParentRoute: () => rootRoute,
+} as any)
+
 const ExperiencesExperienceIdEditRoute =
   ExperiencesExperienceIdEditImport.update({
     id: '/experiences/$experienceId/edit',
@@ -102,6 +109,13 @@ declare module '@tanstack/react-router' {
       path: '/experiences/$experienceId/edit'
       fullPath: '/experiences/$experienceId/edit'
       preLoaderRoute: typeof ExperiencesExperienceIdEditImport
+      parentRoute: typeof rootRoute
+    }
+    '/users/$userId/edit': {
+      id: '/users/$userId/edit'
+      path: '/users/$userId/edit'
+      fullPath: '/users/$userId/edit'
+      preLoaderRoute: typeof UsersUserIdEditImport
       parentRoute: typeof rootRoute
     }
     '/users/$userId/followers': {
@@ -142,6 +156,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/experiences/$experienceId/edit': typeof ExperiencesExperienceIdEditRoute
+  '/users/$userId/edit': typeof UsersUserIdEditRoute
   '/users/$userId/followers': typeof UsersUserIdFollowersRoute
   '/users/$userId/following': typeof UsersUserIdFollowingRoute
   '/experiences/$experienceId': typeof ExperiencesExperienceIdIndexRoute
@@ -153,6 +168,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/experiences/$experienceId/edit': typeof ExperiencesExperienceIdEditRoute
+  '/users/$userId/edit': typeof UsersUserIdEditRoute
   '/users/$userId/followers': typeof UsersUserIdFollowersRoute
   '/users/$userId/following': typeof UsersUserIdFollowingRoute
   '/experiences/$experienceId': typeof ExperiencesExperienceIdIndexRoute
@@ -165,6 +181,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/experiences/$experienceId/edit': typeof ExperiencesExperienceIdEditRoute
+  '/users/$userId/edit': typeof UsersUserIdEditRoute
   '/users/$userId/followers': typeof UsersUserIdFollowersRoute
   '/users/$userId/following': typeof UsersUserIdFollowingRoute
   '/experiences/$experienceId/': typeof ExperiencesExperienceIdIndexRoute
@@ -178,6 +195,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/experiences/$experienceId/edit'
+    | '/users/$userId/edit'
     | '/users/$userId/followers'
     | '/users/$userId/following'
     | '/experiences/$experienceId'
@@ -188,6 +206,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/experiences/$experienceId/edit'
+    | '/users/$userId/edit'
     | '/users/$userId/followers'
     | '/users/$userId/following'
     | '/experiences/$experienceId'
@@ -198,6 +217,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/experiences/$experienceId/edit'
+    | '/users/$userId/edit'
     | '/users/$userId/followers'
     | '/users/$userId/following'
     | '/experiences/$experienceId/'
@@ -210,6 +230,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
   ExperiencesExperienceIdEditRoute: typeof ExperiencesExperienceIdEditRoute
+  UsersUserIdEditRoute: typeof UsersUserIdEditRoute
   UsersUserIdFollowersRoute: typeof UsersUserIdFollowersRoute
   UsersUserIdFollowingRoute: typeof UsersUserIdFollowingRoute
   ExperiencesExperienceIdIndexRoute: typeof ExperiencesExperienceIdIndexRoute
@@ -221,6 +242,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
   ExperiencesExperienceIdEditRoute: ExperiencesExperienceIdEditRoute,
+  UsersUserIdEditRoute: UsersUserIdEditRoute,
   UsersUserIdFollowersRoute: UsersUserIdFollowersRoute,
   UsersUserIdFollowingRoute: UsersUserIdFollowingRoute,
   ExperiencesExperienceIdIndexRoute: ExperiencesExperienceIdIndexRoute,
@@ -241,6 +263,7 @@ export const routeTree = rootRoute
         "/login",
         "/register",
         "/experiences/$experienceId/edit",
+        "/users/$userId/edit",
         "/users/$userId/followers",
         "/users/$userId/following",
         "/experiences/$experienceId/",
@@ -258,6 +281,9 @@ export const routeTree = rootRoute
     },
     "/experiences/$experienceId/edit": {
       "filePath": "experiences/$experienceId/edit.tsx"
+    },
+    "/users/$userId/edit": {
+      "filePath": "users/$userId/edit.tsx"
     },
     "/users/$userId/followers": {
       "filePath": "users/$userId/followers.tsx"
