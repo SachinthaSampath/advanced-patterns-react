@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { MartiniIcon } from "lucide-react";
 import { z } from "zod";
 
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
@@ -55,8 +56,8 @@ function UserProfile() {
 
   return (
     <div className="container mx-auto p-4">
-      <div className="max-w-feed mx-auto">
-        <div className="mb-8">
+      <div className="max-w-feed mx-auto space-y-4">
+        <div>
           <div className="mb-6 flex flex-col items-center">
             <UserAvatar
               user={userQuery.data}
@@ -88,7 +89,7 @@ function UserProfile() {
           )}
         </div>
 
-        <h2 className="mb-4 text-xl font-semibold">Experiences</h2>
+        <UserProfileHostStats user={userQuery.data} />
 
         <InfiniteScroll
           onLoadMore={() => {
@@ -150,6 +151,28 @@ function UserProfileStats({ user }: UserProfileStatsProps) {
             Following
           </div>
         </Link>
+      </div>
+    </div>
+  );
+}
+
+type UserProfileHostStatsProps = {
+  user: RouterOutputs["users"]["byId"];
+};
+
+function UserProfileHostStats({ user }: UserProfileHostStatsProps) {
+  if (user.hostedExperiencesCount === 0) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-2 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
+      <h3 className="text-center text-lg font-semibold">Host Stats</h3>
+      <div className="flex flex-row items-center justify-center gap-2">
+        <div className="flex flex-row items-center gap-2 text-neutral-600 dark:text-neutral-400">
+          <MartiniIcon className="h-5 w-5" />
+          {user.hostedExperiencesCount}
+        </div>
       </div>
     </div>
   );

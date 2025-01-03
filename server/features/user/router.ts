@@ -27,6 +27,7 @@ export const userRouter = router({
         followersCount: z.number(),
         followingCount: z.number(),
         isFollowing: z.boolean(),
+        hostedExperiencesCount: z.number(),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -48,18 +49,24 @@ export const userRouter = router({
         });
       }
 
-      const [followersCount, followingCount] = await Promise.all([
-        db
-          .select({ count: count() })
-          .from(userFollowsTable)
-          .where(eq(userFollowsTable.followingId, input.id))
-          .then((res) => res[0]?.count ?? 0),
-        db
-          .select({ count: count() })
-          .from(userFollowsTable)
-          .where(eq(userFollowsTable.followerId, input.id))
-          .then((res) => res[0]?.count ?? 0),
-      ]);
+      const [followersCount, followingCount, hostedExperiencesCount] =
+        await Promise.all([
+          db
+            .select({ count: count() })
+            .from(userFollowsTable)
+            .where(eq(userFollowsTable.followingId, input.id))
+            .then((res) => res[0]?.count ?? 0),
+          db
+            .select({ count: count() })
+            .from(userFollowsTable)
+            .where(eq(userFollowsTable.followerId, input.id))
+            .then((res) => res[0]?.count ?? 0),
+          db
+            .select({ count: count() })
+            .from(experiencesTable)
+            .where(eq(experiencesTable.userId, input.id))
+            .then((res) => res[0]?.count ?? 0),
+        ]);
 
       const isFollowing = ctx.user
         ? await db.query.userFollowsTable
@@ -77,6 +84,7 @@ export const userRouter = router({
         followersCount,
         followingCount,
         isFollowing,
+        hostedExperiencesCount,
       };
     }),
 
