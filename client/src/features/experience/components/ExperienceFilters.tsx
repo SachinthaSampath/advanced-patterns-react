@@ -47,42 +47,46 @@ export default function ExperienceFilters({
 
   return (
     <Form {...form}>
-      <form className="flex gap-4" onSubmit={form.handleSubmit(handleSubmit)}>
-        <FormField
-          control={form.control}
-          name="q"
-          render={({ field }) => (
-            <FormItem>
-              <FormControl>
-                <Input
-                  type="search"
-                  placeholder="Search experiences..."
-                  className="max-w-sm"
-                  {...field}
-                  value={field.value ?? ""}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      <form
+        className="flex flex-col gap-4"
+        onSubmit={form.handleSubmit(handleSubmit)}
+      >
+        <div className="flex flex-row gap-4">
+          <FormField
+            control={form.control}
+            name="q"
+            render={({ field }) => (
+              <FormItem className="flex-1">
+                <FormControl>
+                  <Input
+                    type="search"
+                    placeholder="Search experiences..."
+                    {...field}
+                    value={field.value ?? ""}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="scheduledAt"
-          render={({ field }) => (
-            <FormItem className="flex-1">
-              <FormControl>
-                <DateTimePicker {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="scheduledAt"
+            render={({ field }) => (
+              <FormItem className="flex-1">
+                <FormControl>
+                  <DateTimePicker {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <Button type="submit">
           <Search className="h-4 w-4" />
-          Filter
+          Search
         </Button>
       </form>
     </Form>

@@ -1,5 +1,5 @@
 import { User } from "@advanced-react/server/database/schema";
-import { useParams } from "@tanstack/react-router";
+import { useParams, useSearch } from "@tanstack/react-router";
 
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import { useToast } from "@/features/shared/hooks/useToast";
@@ -22,6 +22,9 @@ export function useExperienceMutations(
   const { userId: pathUserId } = useParams({ strict: false });
   const { tagId: pathTagId } = useParams({ strict: false });
 
+  const { q: pathQ } = useSearch({ strict: false });
+  const { scheduledAt: pathScheduledAt } = useSearch({ strict: false });
+
   const attendMutation = trpc.experiences.attend.useMutation({
     onMutate: async ({ id }) => {
       if (!currentUser) {
@@ -41,6 +44,12 @@ export function useExperienceMutations(
       await Promise.all([
         utils.experiences.byId.cancel({ id }),
         utils.experiences.feed.cancel(),
+        pathQ || pathScheduledAt
+          ? utils.experiences.search.cancel({
+              q: pathQ,
+              scheduledAt: pathScheduledAt,
+            })
+          : undefined,
         pathUserId
           ? utils.users.experiences.cancel({ id: pathUserId })
           : undefined,
@@ -52,6 +61,13 @@ export function useExperienceMutations(
       const previousData = {
         byId: utils.experiences.byId.getData({ id }),
         feed: utils.experiences.feed.getInfiniteData(),
+        search:
+          pathQ || pathScheduledAt
+            ? utils.experiences.search.getInfiniteData({
+                q: pathQ,
+                scheduledAt: pathScheduledAt,
+              })
+            : undefined,
         byUserId: pathUserId
           ? utils.users.experiences.getInfiniteData({ id: pathUserId })
           : undefined,
@@ -83,6 +99,30 @@ export function useExperienceMutations(
           })),
         };
       });
+
+      if (pathQ || pathScheduledAt) {
+        utils.experiences.search.setInfiniteData(
+          {
+            q: pathQ,
+            scheduledAt: pathScheduledAt,
+          },
+          (oldData) => {
+            if (!oldData) {
+              return { pages: [], pageParams: [] };
+            }
+
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page) => ({
+                ...page,
+                experiences: page.experiences.map((e) =>
+                  e.id === experienceId ? updateExperience(e) : e,
+                ),
+              })),
+            };
+          },
+        );
+      }
 
       if (pathUserId) {
         utils.users.experiences.setInfiniteData(
@@ -129,6 +169,16 @@ export function useExperienceMutations(
       utils.experiences.byId.setData({ id }, context?.previousData.byId);
 
       utils.experiences.feed.setInfiniteData({}, context?.previousData.feed);
+
+      if (pathQ || pathScheduledAt) {
+        utils.experiences.search.setInfiniteData(
+          {
+            q: pathQ,
+            scheduledAt: pathScheduledAt,
+          },
+          context?.previousData.search,
+        );
+      }
 
       if (pathUserId) {
         utils.users.experiences.setInfiniteData(
@@ -171,6 +221,12 @@ export function useExperienceMutations(
       await Promise.all([
         utils.experiences.byId.cancel({ id }),
         utils.experiences.feed.cancel(),
+        pathQ || pathScheduledAt
+          ? utils.experiences.search.cancel({
+              q: pathQ,
+              scheduledAt: pathScheduledAt,
+            })
+          : undefined,
         pathUserId
           ? utils.users.experiences.cancel({ id: pathUserId })
           : undefined,
@@ -182,6 +238,13 @@ export function useExperienceMutations(
       const previousData = {
         byId: utils.experiences.byId.getData({ id }),
         feed: utils.experiences.feed.getInfiniteData(),
+        search:
+          pathQ || pathScheduledAt
+            ? utils.experiences.search.getInfiniteData({
+                q: pathQ,
+                scheduledAt: pathScheduledAt,
+              })
+            : undefined,
         byUserId: pathUserId
           ? utils.users.experiences.getInfiniteData({ id: pathUserId })
           : undefined,
@@ -213,6 +276,30 @@ export function useExperienceMutations(
           })),
         };
       });
+
+      if (pathQ || pathScheduledAt) {
+        utils.experiences.search.setInfiniteData(
+          {
+            q: pathQ,
+            scheduledAt: pathScheduledAt,
+          },
+          (oldData) => {
+            if (!oldData) {
+              return { pages: [], pageParams: [] };
+            }
+
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page) => ({
+                ...page,
+                experiences: page.experiences.map((e) =>
+                  e.id === experienceId ? updateExperience(e) : e,
+                ),
+              })),
+            };
+          },
+        );
+      }
 
       if (pathUserId) {
         utils.users.experiences.setInfiniteData(
@@ -260,6 +347,16 @@ export function useExperienceMutations(
 
       utils.experiences.feed.setInfiniteData({}, context?.previousData.feed);
 
+      if (pathQ || pathScheduledAt) {
+        utils.experiences.search.setInfiniteData(
+          {
+            q: pathQ,
+            scheduledAt: pathScheduledAt,
+          },
+          context?.previousData.search,
+        );
+      }
+
       if (pathUserId) {
         utils.users.experiences.setInfiniteData(
           { id: pathUserId },
@@ -287,6 +384,12 @@ export function useExperienceMutations(
       await Promise.all([
         utils.experiences.byId.cancel({ id }),
         utils.experiences.feed.cancel(),
+        pathQ || pathScheduledAt
+          ? utils.experiences.search.cancel({
+              q: pathQ,
+              scheduledAt: pathScheduledAt,
+            })
+          : undefined,
         pathUserId
           ? utils.users.experiences.cancel({ id: pathUserId })
           : undefined,
@@ -298,6 +401,13 @@ export function useExperienceMutations(
       const previousData = {
         byId: utils.experiences.byId.getData({ id }),
         feed: utils.experiences.feed.getInfiniteData(),
+        search:
+          pathQ || pathScheduledAt
+            ? utils.experiences.search.getInfiniteData({
+                q: pathQ,
+                scheduledAt: pathScheduledAt,
+              })
+            : undefined,
         byUserId: pathUserId
           ? utils.users.experiences.getInfiniteData({ id: pathUserId })
           : undefined,
@@ -321,6 +431,28 @@ export function useExperienceMutations(
           })),
         };
       });
+
+      if (pathQ || pathScheduledAt) {
+        utils.experiences.search.setInfiniteData(
+          {
+            q: pathQ,
+            scheduledAt: pathScheduledAt,
+          },
+          (oldData) => {
+            if (!oldData) {
+              return { pages: [], pageParams: [] };
+            }
+
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page) => ({
+                ...page,
+                experiences: page.experiences.filter((e) => e.id !== id),
+              })),
+            };
+          },
+        );
+      }
 
       if (pathUserId) {
         utils.users.experiences.setInfiniteData(
@@ -373,6 +505,16 @@ export function useExperienceMutations(
       utils.experiences.byId.setData({ id }, context?.previousData.byId);
 
       utils.experiences.feed.setInfiniteData({}, context?.previousData.feed);
+
+      if (pathQ || pathScheduledAt) {
+        utils.experiences.search.setInfiniteData(
+          {
+            q: pathQ,
+            scheduledAt: pathScheduledAt,
+          },
+          context?.previousData.search,
+        );
+      }
 
       if (pathUserId) {
         utils.users.experiences.setInfiniteData(
