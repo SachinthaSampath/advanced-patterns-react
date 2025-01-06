@@ -66,6 +66,25 @@ CREATE TABLE `experiences` (
 );
 --> statement-breakpoint
 CREATE INDEX `experiences_user_id_idx` ON `experiences` (`user_id`);--> statement-breakpoint
+CREATE TABLE `notifications` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`type` text NOT NULL,
+	`read` integer DEFAULT false NOT NULL,
+	`comment_id` integer,
+	`experience_id` integer,
+	`from_user_id` integer NOT NULL,
+	`user_id` integer,
+	`created_at` text NOT NULL,
+	FOREIGN KEY (`comment_id`) REFERENCES `comments`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`experience_id`) REFERENCES `experiences`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`from_user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE INDEX `notifications_experience_id_idx` ON `notifications` (`experience_id`);--> statement-breakpoint
+CREATE INDEX `notifications_comment_id_idx` ON `notifications` (`comment_id`);--> statement-breakpoint
+CREATE INDEX `notifications_from_user_id_idx` ON `notifications` (`from_user_id`);--> statement-breakpoint
+CREATE INDEX `notifications_user_id_idx` ON `notifications` (`user_id`);--> statement-breakpoint
 CREATE TABLE `tags` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`name` text NOT NULL,

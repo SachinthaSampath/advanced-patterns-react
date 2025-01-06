@@ -1,2 +1,5 @@
 export const DEFAULT_EXPERIENCE_LIMIT = 10;
+
+export const DEFAULT_NOTIFICATION_LIMIT = 20;
+
 export const DEFAULT_USER_LIMIT = 20;

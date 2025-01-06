@@ -13,6 +13,7 @@
 import { Route as rootRoute } from './routes/__root'
 import { Route as SearchImport } from './routes/search'
 import { Route as RegisterImport } from './routes/register'
+import { Route as NotificationsImport } from './routes/notifications'
 import { Route as LoginImport } from './routes/login'
 import { Route as IndexImport } from './routes/index'
 import { Route as SettingsIndexImport } from './routes/settings/index'
@@ -37,6 +38,12 @@ const SearchRoute = SearchImport.update({
 const RegisterRoute = RegisterImport.update({
   id: '/register',
   path: '/register',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const NotificationsRoute = NotificationsImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -132,6 +139,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginImport
       parentRoute: typeof rootRoute
     }
+    '/notifications': {
+      id: '/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof NotificationsImport
+      parentRoute: typeof rootRoute
+    }
     '/register': {
       id: '/register'
       path: '/register'
@@ -224,6 +238,7 @@ declare module '@tanstack/react-router' {
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/notifications': typeof NotificationsRoute
   '/register': typeof RegisterRoute
   '/search': typeof SearchRoute
   '/settings/change-email': typeof SettingsChangeEmailRoute
@@ -241,6 +256,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/notifications': typeof NotificationsRoute
   '/register': typeof RegisterRoute
   '/search': typeof SearchRoute
   '/settings/change-email': typeof SettingsChangeEmailRoute
@@ -259,6 +275,7 @@ export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/notifications': typeof NotificationsRoute
   '/register': typeof RegisterRoute
   '/search': typeof SearchRoute
   '/settings/change-email': typeof SettingsChangeEmailRoute
@@ -278,6 +295,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/notifications'
     | '/register'
     | '/search'
     | '/settings/change-email'
@@ -294,6 +312,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/notifications'
     | '/register'
     | '/search'
     | '/settings/change-email'
@@ -310,6 +329,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/login'
+    | '/notifications'
     | '/register'
     | '/search'
     | '/settings/change-email'
@@ -328,6 +348,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
+  NotificationsRoute: typeof NotificationsRoute
   RegisterRoute: typeof RegisterRoute
   SearchRoute: typeof SearchRoute
   SettingsChangeEmailRoute: typeof SettingsChangeEmailRoute
@@ -345,6 +366,7 @@ export interface RootRouteChildren {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
+  NotificationsRoute: NotificationsRoute,
   RegisterRoute: RegisterRoute,
   SearchRoute: SearchRoute,
   SettingsChangeEmailRoute: SettingsChangeEmailRoute,
@@ -371,6 +393,7 @@ export const routeTree = rootRoute
       "children": [
         "/",
         "/login",
+        "/notifications",
         "/register",
         "/search",
         "/settings/change-email",
@@ -390,6 +413,9 @@ export const routeTree = rootRoute
     },
     "/login": {
       "filePath": "login.tsx"
+    },
+    "/notifications": {
+      "filePath": "notifications.tsx"
     },
     "/register": {
       "filePath": "register.tsx"

@@ -5,6 +5,7 @@ import {
   experienceAttendeesTable,
   experiencesTable,
   experienceTagsTable,
+  notificationsTable,
   tagsTable,
   userFollowsTable,
   usersTable,
@@ -15,6 +16,7 @@ export const experiencesRelations = relations(
   ({ many, one }) => ({
     attendees: many(experienceAttendeesTable),
     comments: many(commentsTable),
+    notifications: many(notificationsTable),
     tags: many(experienceTagsTable),
     user: one(usersTable, {
       fields: [experiencesTable.userId],
@@ -51,16 +53,39 @@ export const experienceTagsRelations = relations(
   }),
 );
 
-export const commentsRelations = relations(commentsTable, ({ one }) => ({
+export const commentsRelations = relations(commentsTable, ({ one, many }) => ({
   experience: one(experiencesTable, {
     fields: [commentsTable.experienceId],
     references: [experiencesTable.id],
   }),
+  notifications: many(notificationsTable),
   user: one(usersTable, {
     fields: [commentsTable.userId],
     references: [usersTable.id],
   }),
 }));
+
+export const notificationsRelations = relations(
+  notificationsTable,
+  ({ one }) => ({
+    experience: one(experiencesTable, {
+      fields: [notificationsTable.experienceId],
+      references: [experiencesTable.id],
+    }),
+    comment: one(commentsTable, {
+      fields: [notificationsTable.commentId],
+      references: [commentsTable.id],
+    }),
+    fromUser: one(usersTable, {
+      fields: [notificationsTable.fromUserId],
+      references: [usersTable.id],
+    }),
+    user: one(usersTable, {
+      fields: [notificationsTable.userId],
+      references: [usersTable.id],
+    }),
+  }),
+);
 
 export const tagsRelations = relations(tagsTable, ({ many }) => ({
   experiences: many(experienceTagsTable),
@@ -80,4 +105,8 @@ export const userFollowsRelations = relations(userFollowsTable, ({ one }) => ({
 export const usersRelations = relations(usersTable, ({ many }) => ({
   followers: many(userFollowsTable, { relationName: "following" }),
   following: many(userFollowsTable, { relationName: "follower" }),
+  notifications: many(notificationsTable),
+  notificationsFrom: many(notificationsTable, {
+    relationName: "fromUser",
+  }),
 }));

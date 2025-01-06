@@ -7,6 +7,7 @@ import { join } from "path";
 import { authRouter } from "./features/auth/router";
 import { commentRouter } from "./features/comment/router";
 import { experienceRouter } from "./features/experience/router";
+import { notificationRouter } from "./features/notification/router";
 import { tagRouter } from "./features/tag/router";
 import { userRouter } from "./features/user/router";
 import { createContext, router } from "./trpc";
@@ -16,6 +17,7 @@ const appRouter = router({
   auth: authRouter,
   comments: commentRouter,
   experiences: experienceRouter,
+  notifications: notificationRouter,
   tags: tagRouter,
   users: userRouter,
 });

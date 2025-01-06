@@ -14,6 +14,7 @@ import {
   experienceSelectSchema,
   experiencesTable,
   experienceTagsTable,
+  notificationsTable,
   tagSelectSchema,
 } from "../../database/schema";
 import { protectedProcedure, publicProcedure, router } from "../../trpc";
@@ -448,6 +449,14 @@ export const experienceRouter = router({
         createdAt: new Date().toISOString(),
       });
 
+      await db.insert(notificationsTable).values({
+        type: "user_attending_experience",
+        experienceId: input.id,
+        fromUserId: ctx.user.id,
+        userId: experience.userId,
+        createdAt: new Date().toISOString(),
+      });
+
       return { success: true };
     }),
 
@@ -473,6 +482,14 @@ export const experienceRouter = router({
             eq(experienceAttendeesTable.userId, ctx.user.id),
           ),
         );
+
+      await db.insert(notificationsTable).values({
+        type: "user_unattending_experience",
+        experienceId: input.id,
+        fromUserId: ctx.user.id,
+        userId: experience.userId,
+        createdAt: new Date().toISOString(),
+      });
 
       return { success: true };
     }),

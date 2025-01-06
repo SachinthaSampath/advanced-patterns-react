@@ -14,6 +14,7 @@ import {
   experienceSelectSchema,
   experiencesTable,
   experienceTagsTable,
+  notificationsTable,
   tagSelectSchema,
   userFollowsTable,
 } from "../../database/schema";
@@ -218,6 +219,13 @@ export const userRouter = router({
       await db.insert(userFollowsTable).values({
         followerId: ctx.user.id,
         followingId: input.id,
+        createdAt: new Date().toISOString(),
+      });
+
+      await db.insert(notificationsTable).values({
+        type: "user_followed_user",
+        fromUserId: ctx.user.id,
+        userId: input.id,
         createdAt: new Date().toISOString(),
       });
 

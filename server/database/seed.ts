@@ -6,6 +6,7 @@ import {
   experienceAttendeesTable,
   experiencesTable,
   experienceTagsTable,
+  notificationsTable,
   tagsTable,
   userFollowsTable,
   usersTable,
@@ -106,7 +107,7 @@ async function seed() {
     }
   }
 
-  // Add random attendees to experiences
+  // Add random attendees to experiences and create notifications
   const users = await db.query.usersTable.findMany();
   const experiences = await db.query.experiencesTable.findMany();
 
@@ -124,15 +125,27 @@ async function seed() {
       }
 
       try {
-        await db.insert(experienceAttendeesTable).values({
+        const [attendeeRecord] = await db
+          .insert(experienceAttendeesTable)
+          .values({
+            experienceId: experience.id,
+            userId: attendee.id,
+            createdAt: faker.date
+              .between({
+                from: experience.createdAt,
+                to: new Date(),
+              })
+              .toISOString(),
+          })
+          .returning();
+
+        // Create notification for the experience owner
+        await db.insert(notificationsTable).values({
+          type: "user_attending_experience",
           experienceId: experience.id,
-          userId: attendee.id,
-          createdAt: faker.date
-            .between({
-              from: experience.createdAt,
-              to: new Date(),
-            })
-            .toISOString(),
+          fromUserId: attendee.id,
+          userId: experience.userId,
+          createdAt: attendeeRecord.createdAt,
         });
       } catch {
         // Ignore duplicate attendees
@@ -141,21 +154,38 @@ async function seed() {
     }
   }
 
-  // Add some sample comments
+  // Add some sample comments and create notifications
   for (let experienceId = 1; experienceId <= 10; experienceId++) {
     for (let i = 0; i < 3; i++) {
       const randomUser = users[Math.floor(Math.random() * users.length)];
 
-      await db.insert(commentsTable).values({
-        experienceId,
-        content:
-          Math.random() > 0.5
-            ? faker.lorem.paragraph()
-            : faker.lorem.sentence(),
-        userId: randomUser.id,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
+      const [comment] = await db
+        .insert(commentsTable)
+        .values({
+          experienceId,
+          content:
+            Math.random() > 0.5
+              ? faker.lorem.paragraph()
+              : faker.lorem.sentence(),
+          userId: randomUser.id,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        })
+        .returning();
+
+      // Get the experience owner
+      const experience = experiences.find((e) => e.id === experienceId);
+      if (experience) {
+        // Create notification for the experience owner
+        await db.insert(notificationsTable).values({
+          type: "user_commented_experience",
+          experienceId,
+          commentId: comment.id,
+          fromUserId: randomUser.id,
+          userId: experience.userId,
+          createdAt: comment.createdAt,
+        });
+      }
     }
   }
 
@@ -183,6 +213,14 @@ async function seed() {
               to: new Date(),
             })
             .toISOString(),
+        });
+
+        // Create notification for the user being followed
+        await db.insert(notificationsTable).values({
+          type: "user_followed_user",
+          fromUserId: user.id,
+          userId: userToFollow.id,
+          createdAt: new Date().toISOString(),
         });
       } catch {
         // Ignore duplicate follows

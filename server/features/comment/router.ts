@@ -8,6 +8,7 @@ import {
   commentSelectSchema,
   commentsTable,
   experienceSelectSchema,
+  notificationsTable,
 } from "../../database/schema";
 import { protectedProcedure, publicProcedure, router } from "../../trpc";
 
@@ -55,6 +56,15 @@ export const commentRouter = router({
           updatedAt: now,
         })
         .returning();
+
+      await db.insert(notificationsTable).values({
+        type: "user_commented_experience",
+        commentId: comment[0].id,
+        experienceId: input.experienceId,
+        fromUserId: ctx.user.id,
+        userId: comment[0].userId,
+        createdAt: now,
+      });
 
       return comment[0];
     }),
