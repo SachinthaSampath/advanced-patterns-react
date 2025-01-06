@@ -1,24 +1,17 @@
-import { Link } from "@tanstack/react-router";
-import { LogOut, User } from "lucide-react";
+import { Edit, Home, LogOut, Search, User } from "lucide-react";
 
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import ThemeToggle from "@/features/shared/components/theme/ThemeToggle";
-import Button from "@/features/shared/components/ui/Button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/features/shared/components/ui/DropdownMenu";
+import Link from "@/features/shared/components/ui/Link";
+import UserAvatar from "@/features/user/components/UserAvatar";
 import { router, trpc } from "@/router";
 
 import { useToast } from "../hooks/useToast";
+import Button from "./ui/Button";
 
-export default function Navbar() {
+export default function Navigation() {
   const { toast } = useToast();
-  const { currentUser, isFetched } = useCurrentUser();
+  const { currentUser } = useCurrentUser();
 
   const utils = trpc.useUtils();
 
@@ -36,49 +29,87 @@ export default function Navbar() {
   });
 
   return (
-    <div className="flex items-center gap-4">
-      {isFetched &&
-        (currentUser ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild className="outline-none">
-              <Button variant="outline" className="gap-2 font-normal">
-                <User className="h-4 w-4" />
-                Account
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{currentUser.name}</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link
-                  to="/users/$userId"
-                  params={{ userId: currentUser.id }}
-                  className="flex items-center gap-2"
-                >
-                  <User className="h-4 w-4" />
-                  Profile
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={async () => {
-                  try {
-                    await logoutMutation.mutateAsync();
-                  } catch (error) {
-                    console.error(error);
-                  }
-                }}
-                disabled={logoutMutation.isPending}
-                className="text-red-500 dark:text-red-400"
-              >
-                <LogOut className="h-4 w-4" />
-                {logoutMutation.isPending ? "Logging out..." : "Logout"}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : (
-          <Link to="/login">Login</Link>
-        ))}
+    <nav className="flex w-64 flex-col gap-4 pt-8">
+      {currentUser && (
+        <Link
+          to="/users/$userId"
+          params={{ userId: currentUser.id }}
+          variant="ghost"
+          activeProps={{ className: undefined }}
+        >
+          <UserAvatar
+            user={currentUser}
+            showName={false}
+            className="h-16 w-16"
+          />
+        </Link>
+      )}
+
+      <Link
+        to="/"
+        variant="ghost"
+        className="flex items-center gap-2 rounded-lg p-2 text-lg hover:bg-neutral-100 dark:hover:bg-neutral-800"
+      >
+        <Home className="h-6 w-6" />
+        Home
+      </Link>
+
+      <Link
+        to="/search"
+        variant="ghost"
+        className="flex items-center gap-2 rounded-lg p-2 text-lg hover:bg-neutral-100 dark:hover:bg-neutral-800"
+      >
+        <Search className="h-6 w-6" />
+        Search
+      </Link>
+
+      {currentUser && (
+        <Link
+          to="/users/$userId"
+          params={{ userId: currentUser.id }}
+          variant="ghost"
+          className="flex items-center gap-2 rounded-lg p-2 text-lg hover:bg-neutral-100 dark:hover:bg-neutral-800"
+        >
+          <User className="h-6 w-6" />
+          Profile
+        </Link>
+      )}
+
+      {currentUser ? (
+        <Button
+          variant="destructive-link"
+          className="justify-start p-3"
+          onClick={() => logoutMutation.mutate()}
+        >
+          <LogOut className="h-6 w-6" />
+          Logout
+        </Button>
+      ) : (
+        <Link
+          to="/login"
+          variant="ghost"
+          className="flex items-center gap-2 rounded-lg p-2 text-lg hover:bg-neutral-100 dark:hover:bg-neutral-800"
+        >
+          <User className="h-6 w-6" />
+          Sign in
+        </Link>
+      )}
+
       <ThemeToggle />
-    </div>
+
+      {currentUser && (
+        <Link
+          to="/experiences/$experienceId/edit"
+          params={{ experienceId: 0 }}
+          variant="ghost"
+          asChild
+        >
+          <Button>
+            <Edit className="h-6 w-6" />
+            Create Experience
+          </Button>
+        </Link>
+      )}
+    </nav>
   );
 }

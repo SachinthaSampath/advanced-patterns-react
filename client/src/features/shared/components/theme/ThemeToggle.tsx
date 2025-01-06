@@ -1,22 +1,28 @@
 import { Moon, Sun } from "lucide-react";
 
-import Button from "@/features/shared/components/ui/Button";
-
+import Button from "../ui/Button";
 import { useTheme } from "./ThemeProvider";
 
 export default function ThemeToggle() {
   const { theme, setTheme } = useTheme();
 
-  const Icon = theme === "light" ? Sun : Moon;
-
   return (
     <Button
-      variant="outline"
-      onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-      className="p-2"
+      variant="ghost"
+      className="justify-start p-3"
+      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
     >
-      <Icon className="h-5 w-5" />
-      <span className="sr-only">Toggle theme</span>
+      {theme === "dark" ? (
+        <>
+          <Sun className="h-6 w-6" />
+          Light Mode
+        </>
+      ) : (
+        <>
+          <Moon className="h-6 w-6" />
+          Dark Mode
+        </>
+      )}
     </Button>
   );
 }

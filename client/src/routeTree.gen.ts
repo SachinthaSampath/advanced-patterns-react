@@ -11,6 +11,7 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as SearchImport } from './routes/search'
 import { Route as RegisterImport } from './routes/register'
 import { Route as LoginImport } from './routes/login'
 import { Route as IndexImport } from './routes/index'
@@ -23,6 +24,12 @@ import { Route as UsersUserIdEditImport } from './routes/users/$userId/edit'
 import { Route as ExperiencesExperienceIdEditImport } from './routes/experiences/$experienceId/edit'
 
 // Create/Update Routes
+
+const SearchRoute = SearchImport.update({
+  id: '/search',
+  path: '/search',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const RegisterRoute = RegisterImport.update({
   id: '/register',
@@ -111,6 +118,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RegisterImport
       parentRoute: typeof rootRoute
     }
+    '/search': {
+      id: '/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof SearchImport
+      parentRoute: typeof rootRoute
+    }
     '/experiences/$experienceId/edit': {
       id: '/experiences/$experienceId/edit'
       path: '/experiences/$experienceId/edit'
@@ -169,6 +183,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
+  '/search': typeof SearchRoute
   '/experiences/$experienceId/edit': typeof ExperiencesExperienceIdEditRoute
   '/users/$userId/edit': typeof UsersUserIdEditRoute
   '/users/$userId/followers': typeof UsersUserIdFollowersRoute
@@ -182,6 +197,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
+  '/search': typeof SearchRoute
   '/experiences/$experienceId/edit': typeof ExperiencesExperienceIdEditRoute
   '/users/$userId/edit': typeof UsersUserIdEditRoute
   '/users/$userId/followers': typeof UsersUserIdFollowersRoute
@@ -196,6 +212,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
+  '/search': typeof SearchRoute
   '/experiences/$experienceId/edit': typeof ExperiencesExperienceIdEditRoute
   '/users/$userId/edit': typeof UsersUserIdEditRoute
   '/users/$userId/followers': typeof UsersUserIdFollowersRoute
@@ -211,6 +228,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/register'
+    | '/search'
     | '/experiences/$experienceId/edit'
     | '/users/$userId/edit'
     | '/users/$userId/followers'
@@ -223,6 +241,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/register'
+    | '/search'
     | '/experiences/$experienceId/edit'
     | '/users/$userId/edit'
     | '/users/$userId/followers'
@@ -235,6 +254,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/register'
+    | '/search'
     | '/experiences/$experienceId/edit'
     | '/users/$userId/edit'
     | '/users/$userId/followers'
@@ -249,6 +269,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
+  SearchRoute: typeof SearchRoute
   ExperiencesExperienceIdEditRoute: typeof ExperiencesExperienceIdEditRoute
   UsersUserIdEditRoute: typeof UsersUserIdEditRoute
   UsersUserIdFollowersRoute: typeof UsersUserIdFollowersRoute
@@ -262,6 +283,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
+  SearchRoute: SearchRoute,
   ExperiencesExperienceIdEditRoute: ExperiencesExperienceIdEditRoute,
   UsersUserIdEditRoute: UsersUserIdEditRoute,
   UsersUserIdFollowersRoute: UsersUserIdFollowersRoute,
@@ -284,6 +306,7 @@ export const routeTree = rootRoute
         "/",
         "/login",
         "/register",
+        "/search",
         "/experiences/$experienceId/edit",
         "/users/$userId/edit",
         "/users/$userId/followers",
@@ -301,6 +324,9 @@ export const routeTree = rootRoute
     },
     "/register": {
       "filePath": "register.tsx"
+    },
+    "/search": {
+      "filePath": "search.tsx"
     },
     "/experiences/$experienceId/edit": {
       "filePath": "experiences/$experienceId/edit.tsx"
