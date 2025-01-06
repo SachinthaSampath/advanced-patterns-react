@@ -24,7 +24,14 @@ function Root() {
         <div className="min-h-screen w-full max-w-3xl">
           <TopLoadingBar />
           <header className="border-b border-neutral-200 p-4 dark:border-neutral-800">
-            <h1 className="text-center text-xl font-bold">Advanced React</h1>
+            <h1 className="text-center text-xl font-bold">
+              Advanced Patterns React
+            </h1>
+            <p className="text-center text-sm text-neutral-500">
+              <b>
+                <span className="text-primary-500">Cosden</span> Solutions
+              </b>
+            </p>
           </header>
           <Outlet />
           <TanStackRouterDevtools />

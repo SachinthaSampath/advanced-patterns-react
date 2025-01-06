@@ -60,7 +60,11 @@ type ExperienceCardAvatarProps = Pick<ExperienceCardProps, "experience">;
 
 function ExperienceCardAvatar({ experience }: ExperienceCardAvatarProps) {
   return (
-    <Link to="/users/$userId" params={{ userId: experience.user.id }}>
+    <Link
+      to="/users/$userId"
+      params={{ userId: experience.user.id }}
+      activeProps={{ className: undefined }}
+    >
       <UserAvatar user={experience.user} showName={false} />
     </Link>
   );
@@ -81,6 +85,7 @@ function ExperienceCardHeader({ experience }: ExperienceCardHeaderProps) {
             variant="secondary"
             to="/users/$userId"
             params={{ userId: experience.user.id }}
+            activeProps={{ className: undefined }}
           >
             <span className="font-semibold">{experience.user.name}</span>
           </Link>
@@ -89,6 +94,7 @@ function ExperienceCardHeader({ experience }: ExperienceCardHeaderProps) {
           to="/experiences/$experienceId"
           params={{ experienceId: experience.id }}
           className="block hover:no-underline"
+          activeProps={{ className: undefined }}
         >
           <h2 className="text-xl font-bold hover:underline">
             {experience.title}
@@ -143,6 +149,7 @@ function ExperienceCardButtons({ experience }: ExperienceCardButtonsProps) {
           to="/experiences/$experienceId"
           params={{ experienceId: experience.id }}
           variant="ghost"
+          activeProps={{ className: undefined }}
         >
           <MessageSquare className="h-5 w-5" />
           <span>{experience.commentsCount}</span>

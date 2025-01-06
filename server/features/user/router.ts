@@ -1,4 +1,8 @@
 import { userValidationSchema } from "@advanced-react/shared/schema/auth";
+import {
+  changeEmailSchema,
+  changePasswordSchema,
+} from "@advanced-react/shared/schema/auth/settings";
 import { TRPCError } from "@trpc/server";
 import { and, count, desc, eq } from "drizzle-orm";
 import { z } from "zod";
@@ -19,6 +23,7 @@ import {
   DEFAULT_USER_LIMIT,
 } from "../../utils/constants";
 import { writeFile } from "../../utils/files";
+import { auth } from "../auth";
 import { cleanUserSelectSchema, usersTable } from "../auth/models";
 
 export const userRouter = router({
@@ -412,5 +417,53 @@ export const userRouter = router({
         })
         .where(eq(usersTable.id, input.id))
         .returning();
+    }),
+
+  changeEmail: protectedProcedure
+    .input(changeEmailSchema)
+    .mutation(async ({ ctx, input }) => {
+      const isPasswordValid = await auth.verifyPassword(
+        input.password,
+        ctx.user.password,
+      );
+
+      if (!isPasswordValid) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Invalid password",
+        });
+      }
+
+      await db
+        .update(usersTable)
+        .set({ email: input.email, updatedAt: new Date().toISOString() })
+        .where(eq(usersTable.id, ctx.user.id));
+
+      return { success: true };
+    }),
+
+  changePassword: protectedProcedure
+    .input(changePasswordSchema)
+    .mutation(async ({ ctx, input }) => {
+      const isPasswordValid = await auth.verifyPassword(
+        input.currentPassword,
+        ctx.user.password,
+      );
+
+      if (!isPasswordValid) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Invalid current password",
+        });
+      }
+
+      const hashedPassword = await auth.hashPassword(input.newPassword);
+
+      await db
+        .update(usersTable)
+        .set({ password: hashedPassword, updatedAt: new Date().toISOString() })
+        .where(eq(usersTable.id, ctx.user.id));
+
+      return { success: true };
     }),
 });
