@@ -22,14 +22,7 @@ export default function Link({
 }: LinkProps) {
   const Comp = asChild ? Slot : TanStackLink;
   return (
-    <Comp
-      {...props}
-      className={cn(linkVariants({ variant }), className)}
-      activeProps={{
-        className: "bg-neutral-100 dark:bg-neutral-800",
-        ...props.activeProps,
-      }}
-    />
+    <Comp {...props} className={cn(linkVariants({ variant }), className)} />
   );
 }
 

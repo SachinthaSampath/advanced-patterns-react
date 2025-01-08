@@ -16,6 +16,8 @@ import {
   FormMessage,
 } from "@/features/shared/components/ui/Form";
 import Input from "@/features/shared/components/ui/Input";
+import { MultiSelect } from "@/features/shared/components/ui/MultiSelect";
+import { trpc } from "@/router";
 
 type ExperienceFiltersProps = {
   onFiltersChange: (filters: ExperienceFilterParams) => void;
@@ -31,6 +33,8 @@ export default function ExperienceFilters({
     defaultValues: initialFilters,
   });
 
+  const tagsQuery = trpc.tags.list.useQuery();
+
   function handleSubmit(values: ExperienceFilterParams) {
     const filters: ExperienceFilterParams = {};
 
@@ -40,6 +44,10 @@ export default function ExperienceFilters({
 
     if (values.scheduledAt) {
       filters.scheduledAt = values.scheduledAt;
+    }
+
+    if (values.tags?.length) {
+      filters.tags = values.tags;
     }
 
     onFiltersChange(filters);
@@ -83,6 +91,26 @@ export default function ExperienceFilters({
             )}
           />
         </div>
+
+        {tagsQuery.data && (
+          <FormField
+            control={form.control}
+            name="tags"
+            render={({ field }) => (
+              <MultiSelect
+                options={tagsQuery.data.map((tag) => ({
+                  value: tag.id.toString(),
+                  label: tag.name,
+                }))}
+                onValueChange={(tags) => {
+                  field.onChange(tags.map(Number));
+                }}
+                defaultValue={field.value?.map((tag) => tag.toString())}
+                placeholder="Select tags..."
+              />
+            )}
+          />
+        )}
 
         <Button type="submit">
           <Search className="h-4 w-4" />

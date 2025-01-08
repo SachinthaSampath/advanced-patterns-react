@@ -17,6 +17,11 @@ import {
 import { tagSelectSchema } from "./models";
 
 export const tagRouter = router({
+  list: publicProcedure.output(z.array(tagSelectSchema)).query(async () => {
+    return db.query.tagsTable.findMany({
+      orderBy: desc(tagsTable.name),
+    });
+  }),
   byId: publicProcedure
     .input(z.object({ id: z.number() }))
     .output(tagSelectSchema)

@@ -9,6 +9,9 @@ import { trpc } from "@/router";
 export const Route = createFileRoute("/search")({
   component: Search,
   validateSearch: experienceFiltersSchema,
+  loader: async ({ context: { trpcQueryUtils } }) => {
+    await trpcQueryUtils.tags.list.ensureData();
+  },
 });
 
 function Search() {
@@ -21,7 +24,7 @@ function Search() {
     },
     {
       getNextPageParam: (lastPage) => lastPage.nextCursor,
-      enabled: !!search.q || !!search.scheduledAt,
+      enabled: !!search.q || !!search.scheduledAt || !!search.tags,
     },
   );
 
@@ -57,7 +60,7 @@ function Search() {
               experiencesQuery.isLoading || experiencesQuery.isFetchingNextPage
             }
             noExperiencesMessage={
-              !!search.q || !!search.scheduledAt
+              !!search.q || !!search.scheduledAt || !!search.tags
                 ? "No experiences found"
                 : "Search by name or date to find experiences"
             }

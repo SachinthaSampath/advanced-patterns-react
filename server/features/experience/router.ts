@@ -3,7 +3,7 @@ import {
   experienceValidationSchema,
 } from "@advanced-react/shared/schema/experience";
 import { TRPCError } from "@trpc/server";
-import { and, count, eq, gte, like } from "drizzle-orm";
+import { and, count, eq, gte, inArray, like } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "../../database";
@@ -232,8 +232,8 @@ export const experienceRouter = router({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const limit = input?.limit ?? DEFAULT_EXPERIENCE_LIMIT;
-      const cursor = input?.cursor ?? 0;
+      const limit = input.limit ?? DEFAULT_EXPERIENCE_LIMIT;
+      const cursor = input.cursor ?? 0;
 
       const whereConditions = [];
 
@@ -245,6 +245,17 @@ export const experienceRouter = router({
         whereConditions.push(
           gte(experiencesTable.scheduledAt, input.scheduledAt),
         );
+      }
+
+      if (input.tags?.length) {
+        const taggedExperiences = await db
+          .select({ experienceId: experienceTagsTable.experienceId })
+          .from(experienceTagsTable)
+          .where(inArray(experienceTagsTable.tagId, input.tags));
+
+        const experienceIds = taggedExperiences.map((e) => e.experienceId);
+
+        whereConditions.push(inArray(experiencesTable.id, experienceIds));
       }
 
       const experiences = await db.query.experiencesTable.findMany({

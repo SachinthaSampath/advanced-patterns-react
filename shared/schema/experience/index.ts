@@ -13,6 +13,7 @@ export const experienceValidationSchema = zfd.formData({
 export const experienceFiltersSchema = z.object({
   q: z.string().optional(),
   scheduledAt: z.string().datetime().optional(),
+  tags: z.array(z.number()).optional(),
 });
 
 export type ExperienceFilterParams = z.infer<typeof experienceFiltersSchema>;
