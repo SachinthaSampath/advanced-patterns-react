@@ -13,8 +13,12 @@ export const Route = createFileRoute("/settings/")({
 function SettingsPage() {
   const { toast } = useToast();
 
+  const utils = trpc.useUtils();
+
   const logoutMutation = trpc.auth.logout.useMutation({
     onSuccess: async () => {
+      await utils.auth.invalidate();
+
       router.navigate({ to: "/login" });
 
       toast({
@@ -50,11 +54,12 @@ function SettingsPage() {
 
         <Button
           variant="destructive-link"
+          disabled={logoutMutation.isPending}
           className="justify-start rounded-lg border border-neutral-200 p-4 text-lg hover:bg-neutral-100 dark:border-neutral-800 dark:hover:bg-neutral-800"
           onClick={() => logoutMutation.mutate()}
         >
           <LogOut className="h-6 w-6" />
-          Logout
+          {logoutMutation.isPending ? "Logging out..." : "Logout"}
         </Button>
       </div>
     </div>

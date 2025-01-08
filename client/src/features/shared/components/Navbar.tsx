@@ -103,17 +103,12 @@ export default function Navigation() {
       <ThemeToggle />
 
       {currentUser && (
-        <Link
-          to="/experiences/$experienceId/edit"
-          params={{ experienceId: 0 }}
-          variant="ghost"
-          asChild
-        >
-          <Button>
+        <Button asChild>
+          <Link to="/experiences/new" variant="ghost">
             <Edit className="h-6 w-6" />
             Create Experience
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       )}
     </nav>
   );

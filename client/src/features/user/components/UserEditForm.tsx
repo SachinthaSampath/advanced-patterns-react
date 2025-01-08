@@ -22,7 +22,7 @@ type UserFormData = z.infer<typeof userValidationSchema>;
 
 type UserEditFormProps = {
   user: User;
-  onSuccess?: () => void;
+  onSuccess?: (id: User["id"]) => void;
   onCancel?: () => void;
 };
 
@@ -38,8 +38,8 @@ function UserEditForm({ user, onSuccess, onCancel }: UserEditFormProps) {
   });
 
   const updateUserMutation = trpc.users.edit.useMutation({
-    onSuccess: () => {
-      onSuccess?.();
+    onSuccess: (data) => {
+      onSuccess?.(data[0].id);
     },
     onError: (error) => {
       toast({

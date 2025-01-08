@@ -2,7 +2,7 @@ import { z } from "zod";
 import { zfd } from "zod-form-data";
 
 export const experienceValidationSchema = zfd.formData({
-  id: zfd.numeric(z.number()),
+  id: zfd.numeric(z.number()).optional(),
   title: zfd.text(z.string().min(1, "Title is required")),
   content: zfd.text(z.string().min(1, "Content is required")),
   scheduledAt: zfd.text(z.string().datetime("Invalid date")),

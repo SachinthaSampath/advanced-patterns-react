@@ -33,23 +33,12 @@ function EditProfile() {
 
   const userQuery = trpc.users.byId.useQuery({ id: userId });
 
-  if (userQuery.isLoading) {
+  if (userQuery.isPending) {
     return <div>Loading...</div>;
   }
 
   if (userQuery.error) {
     return <div>Error: {userQuery.error.message}</div>;
-  }
-
-  if (!userQuery.data) {
-    return <div>User not found</div>;
-  }
-
-  function navigateToUser() {
-    router.navigate({
-      to: "/users/$userId",
-      params: { userId: userId },
-    });
   }
 
   return (
@@ -58,8 +47,13 @@ function EditProfile() {
         <h1 className="mb-4 text-2xl font-bold">Edit Profile</h1>
         <UserEditForm
           user={userQuery.data}
-          onSuccess={navigateToUser}
-          onCancel={navigateToUser}
+          onSuccess={(id) =>
+            router.navigate({
+              to: "/users/$userId",
+              params: { userId: id },
+            })
+          }
+          onCancel={() => router.history.back()}
         />
       </div>
     </div>

@@ -24,7 +24,7 @@ function ExperiencePage() {
 
   const experienceQuery = trpc.experiences.byId.useQuery({ id: experienceId });
 
-  if (experienceQuery.isLoading) {
+  if (experienceQuery.isPending) {
     return <div>Loading...</div>;
   }
 

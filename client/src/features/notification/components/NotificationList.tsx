@@ -19,10 +19,49 @@ export default function NotificationList({
   const utils = trpc.useUtils();
 
   const markAsRead = trpc.notifications.markAsRead.useMutation({
-    onSuccess: async () => {
-      await utils.notifications.unreadCount.invalidate();
+    onMutate: async ({ id }) => {
+      await utils.notifications.feed.cancel();
+      await utils.notifications.unreadCount.cancel();
+
+      const previousData = {
+        feed: utils.notifications.feed.getInfiniteData(),
+        unreadCount: utils.notifications.unreadCount.getData(),
+      };
+
+      utils.notifications.feed.setInfiniteData({}, (oldData) => {
+        if (!oldData) {
+          return { pages: [], pageParams: [] };
+        }
+
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page) => ({
+            ...page,
+            notifications: page.notifications.map((n) =>
+              n.id === id ? { ...n, read: true } : n,
+            ),
+          })),
+        };
+      });
+
+      utils.notifications.unreadCount.setData(undefined, (prevData) => {
+        if (!prevData) {
+          return;
+        }
+
+        return Math.max(prevData - 1, 0);
+      });
+
+      return { previousData };
     },
-    onError: (error) => {
+    onError: (error, _, context) => {
+      utils.notifications.feed.setInfiniteData({}, context?.previousData.feed);
+
+      utils.notifications.unreadCount.setData(
+        undefined,
+        context?.previousData.unreadCount,
+      );
+
       toast({
         title: "Error marking as read",
         description: error.message,

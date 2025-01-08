@@ -40,7 +40,7 @@ function UserProfile() {
     },
   );
 
-  if (userQuery.isLoading) {
+  if (userQuery.isPending) {
     return <div>Loading...</div>;
   }
 

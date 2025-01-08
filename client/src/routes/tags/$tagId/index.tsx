@@ -36,7 +36,7 @@ function TagPage() {
     },
   );
 
-  if (tagQuery.isLoading || experiencesQuery.isLoading) {
+  if (tagQuery.isPending || experiencesQuery.isPending) {
     return <div>Loading...</div>;
   }
 
@@ -68,7 +68,7 @@ function TagPage() {
               ) ?? []
             }
             isLoading={
-              experiencesQuery.isLoading || experiencesQuery.isFetchingNextPage
+              experiencesQuery.isPending || experiencesQuery.isFetchingNextPage
             }
           />
         </InfiniteScroll>

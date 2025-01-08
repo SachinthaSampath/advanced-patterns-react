@@ -15,7 +15,7 @@ export default function CommentsSection({
 }: CommentsSectionProps) {
   const commentsQuery = trpc.comments.byExperienceId.useQuery({ experienceId });
 
-  if (commentsQuery.isLoading) {
+  if (commentsQuery.isPending) {
     return <div>Loading comments...</div>;
   }
 

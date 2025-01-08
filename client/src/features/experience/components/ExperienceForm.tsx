@@ -22,17 +22,17 @@ import { trpc } from "@/router";
 
 type ExperienceFormData = z.infer<typeof experienceValidationSchema>;
 
-type ExperienceEditFormProps = {
-  experience: Experience;
-  onSuccess?: () => void;
+type ExperienceFormProps = {
+  experience?: Experience;
+  onSuccess?: (id: Experience["id"]) => void;
   onCancel?: () => void;
 };
 
-export default function ExperienceEditForm({
+export default function ExperienceForm({
   experience,
   onSuccess,
   onCancel,
-}: ExperienceEditFormProps) {
+}: ExperienceFormProps) {
   const { toast } = useToast();
 
   const form = useForm<ExperienceFormData>({
@@ -41,8 +41,8 @@ export default function ExperienceEditForm({
   });
 
   const editMutation = trpc.experiences.edit.useMutation({
-    onSuccess: () => {
-      onSuccess?.();
+    onSuccess: (data) => {
+      onSuccess?.(data[0].id);
     },
     onError: (error) => {
       toast({
@@ -53,6 +53,21 @@ export default function ExperienceEditForm({
     },
   });
 
+  const addMutation = trpc.experiences.add.useMutation({
+    onSuccess: (data) => {
+      onSuccess?.(data[0].id);
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to create experience",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const mutation = experience ? editMutation : addMutation;
+
   function onSubmit(data: ExperienceFormData) {
     const formData = new FormData();
 
@@ -62,7 +77,7 @@ export default function ExperienceEditForm({
       }
     }
 
-    editMutation.mutate(formData);
+    mutation.mutate(formData);
   }
 
   return (
@@ -145,8 +160,8 @@ export default function ExperienceEditForm({
         />
 
         <div className="flex gap-2">
-          <Button type="submit" disabled={editMutation.isPending}>
-            {editMutation.isPending ? "Saving..." : "Save"}
+          <Button type="submit" disabled={mutation.isPending}>
+            {mutation.isPending ? "Saving..." : experience ? "Save" : "Create"}
           </Button>
           <Button type="button" variant="outline" onClick={onCancel}>
             Cancel

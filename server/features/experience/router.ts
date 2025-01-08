@@ -327,9 +327,39 @@ export const experienceRouter = router({
       };
     }),
 
+  add: protectedProcedure
+    .input(experienceValidationSchema)
+    .mutation(async ({ ctx, input }) => {
+      let imagePath = null;
+      if (input.image) {
+        imagePath = await writeFile(input.image);
+      }
+
+      return await db
+        .insert(experiencesTable)
+        .values({
+          title: input.title,
+          content: input.content,
+          scheduledAt: input.scheduledAt,
+          url: input.url,
+          imageUrl: imagePath,
+          userId: ctx.user.id,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        })
+        .returning();
+    }),
+
   edit: protectedProcedure
     .input(experienceValidationSchema)
     .mutation(async ({ ctx, input }) => {
+      if (!input.id) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Experience ID is required",
+        });
+      }
+
       const experience = await db.query.experiencesTable.findFirst({
         where: eq(experiencesTable.id, input.id),
       });

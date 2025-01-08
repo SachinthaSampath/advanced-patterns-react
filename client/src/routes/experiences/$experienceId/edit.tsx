@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { redirect } from "@tanstack/react-router";
 import { z } from "zod";
 
-import ExperienceEditForm from "@/features/experience/components/ExperienceEditForm";
+import ExperienceForm from "@/features/experience/components/ExperienceForm";
+import { QueryErrorFallback } from "@/features/shared/components/QueryErrorFallback";
 import { router, trpc } from "@/router";
 
 export const Route = createFileRoute("/experiences/$experienceId/edit")({
@@ -31,29 +32,27 @@ function EditExperience() {
 
   const experienceQuery = trpc.experiences.byId.useQuery({ id: experienceId });
 
-  if (experienceQuery.isLoading) {
+  if (experienceQuery.isPending) {
     return <div>Loading...</div>;
   }
 
-  if (!experienceQuery.data) {
-    return <div>Experience not found</div>;
-  }
-
-  function navigateToExperience() {
-    router.navigate({
-      to: "/experiences/$experienceId",
-      params: { experienceId: experienceId },
-    });
+  if (experienceQuery.isError) {
+    return <QueryErrorFallback refetch={experienceQuery.refetch} />;
   }
 
   return (
     <div className="container mx-auto p-4">
       <div className="max-w-feed mx-auto">
         <h1 className="mb-4 text-2xl font-bold">Edit Experience</h1>
-        <ExperienceEditForm
+        <ExperienceForm
           experience={experienceQuery.data}
-          onSuccess={navigateToExperience}
-          onCancel={navigateToExperience}
+          onSuccess={(id) =>
+            router.navigate({
+              to: "/experiences/$experienceId",
+              params: { experienceId: id },
+            })
+          }
+          onCancel={() => router.history.back()}
         />
       </div>
     </div>

@@ -19,6 +19,7 @@ import { Route as IndexImport } from './routes/index'
 import { Route as SettingsIndexImport } from './routes/settings/index'
 import { Route as SettingsChangePasswordImport } from './routes/settings/change-password'
 import { Route as SettingsChangeEmailImport } from './routes/settings/change-email'
+import { Route as ExperiencesNewImport } from './routes/experiences/new'
 import { Route as UsersUserIdIndexImport } from './routes/users/$userId/index'
 import { Route as TagsTagIdIndexImport } from './routes/tags/$tagId/index'
 import { Route as ExperiencesExperienceIdIndexImport } from './routes/experiences/$experienceId/index'
@@ -74,6 +75,12 @@ const SettingsChangePasswordRoute = SettingsChangePasswordImport.update({
 const SettingsChangeEmailRoute = SettingsChangeEmailImport.update({
   id: '/settings/change-email',
   path: '/settings/change-email',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const ExperiencesNewRoute = ExperiencesNewImport.update({
+  id: '/experiences/new',
+  path: '/experiences/new',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -160,6 +167,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SearchImport
       parentRoute: typeof rootRoute
     }
+    '/experiences/new': {
+      id: '/experiences/new'
+      path: '/experiences/new'
+      fullPath: '/experiences/new'
+      preLoaderRoute: typeof ExperiencesNewImport
+      parentRoute: typeof rootRoute
+    }
     '/settings/change-email': {
       id: '/settings/change-email'
       path: '/settings/change-email'
@@ -241,6 +255,7 @@ export interface FileRoutesByFullPath {
   '/notifications': typeof NotificationsRoute
   '/register': typeof RegisterRoute
   '/search': typeof SearchRoute
+  '/experiences/new': typeof ExperiencesNewRoute
   '/settings/change-email': typeof SettingsChangeEmailRoute
   '/settings/change-password': typeof SettingsChangePasswordRoute
   '/settings': typeof SettingsIndexRoute
@@ -259,6 +274,7 @@ export interface FileRoutesByTo {
   '/notifications': typeof NotificationsRoute
   '/register': typeof RegisterRoute
   '/search': typeof SearchRoute
+  '/experiences/new': typeof ExperiencesNewRoute
   '/settings/change-email': typeof SettingsChangeEmailRoute
   '/settings/change-password': typeof SettingsChangePasswordRoute
   '/settings': typeof SettingsIndexRoute
@@ -278,6 +294,7 @@ export interface FileRoutesById {
   '/notifications': typeof NotificationsRoute
   '/register': typeof RegisterRoute
   '/search': typeof SearchRoute
+  '/experiences/new': typeof ExperiencesNewRoute
   '/settings/change-email': typeof SettingsChangeEmailRoute
   '/settings/change-password': typeof SettingsChangePasswordRoute
   '/settings/': typeof SettingsIndexRoute
@@ -298,6 +315,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/register'
     | '/search'
+    | '/experiences/new'
     | '/settings/change-email'
     | '/settings/change-password'
     | '/settings'
@@ -315,6 +333,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/register'
     | '/search'
+    | '/experiences/new'
     | '/settings/change-email'
     | '/settings/change-password'
     | '/settings'
@@ -332,6 +351,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/register'
     | '/search'
+    | '/experiences/new'
     | '/settings/change-email'
     | '/settings/change-password'
     | '/settings/'
@@ -351,6 +371,7 @@ export interface RootRouteChildren {
   NotificationsRoute: typeof NotificationsRoute
   RegisterRoute: typeof RegisterRoute
   SearchRoute: typeof SearchRoute
+  ExperiencesNewRoute: typeof ExperiencesNewRoute
   SettingsChangeEmailRoute: typeof SettingsChangeEmailRoute
   SettingsChangePasswordRoute: typeof SettingsChangePasswordRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
@@ -369,6 +390,7 @@ const rootRouteChildren: RootRouteChildren = {
   NotificationsRoute: NotificationsRoute,
   RegisterRoute: RegisterRoute,
   SearchRoute: SearchRoute,
+  ExperiencesNewRoute: ExperiencesNewRoute,
   SettingsChangeEmailRoute: SettingsChangeEmailRoute,
   SettingsChangePasswordRoute: SettingsChangePasswordRoute,
   SettingsIndexRoute: SettingsIndexRoute,
@@ -396,6 +418,7 @@ export const routeTree = rootRoute
         "/notifications",
         "/register",
         "/search",
+        "/experiences/new",
         "/settings/change-email",
         "/settings/change-password",
         "/settings/",
@@ -422,6 +445,9 @@ export const routeTree = rootRoute
     },
     "/search": {
       "filePath": "search.tsx"
+    },
+    "/experiences/new": {
+      "filePath": "experiences/new.tsx"
     },
     "/settings/change-email": {
       "filePath": "settings/change-email.tsx"
