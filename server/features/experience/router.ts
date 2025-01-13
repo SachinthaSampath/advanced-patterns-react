@@ -354,6 +354,7 @@ export const experienceRouter = router({
           scheduledAt: input.scheduledAt,
           url: input.url,
           imageUrl: imagePath,
+          location: JSON.stringify(input.location),
           userId: ctx.user.id,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -402,6 +403,7 @@ export const experienceRouter = router({
           scheduledAt: input.scheduledAt,
           url: input.url,
           imageUrl: imagePath,
+          location: JSON.stringify(input.location),
           updatedAt: new Date().toISOString(),
         })
         .where(eq(experiencesTable.id, input.id))

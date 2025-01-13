@@ -1,3 +1,4 @@
+import { LocationData } from "@advanced-react/shared/schema/experience";
 import { faker } from "@faker-js/faker";
 
 import { auth } from "../features/auth";
@@ -53,6 +54,58 @@ async function seed() {
 
   const insertedTags = await db.insert(tagsTable).values(tags).returning();
 
+  // Creates some locations
+  const locations: LocationData[] = [
+    {
+      displayName:
+        "HIDE, 85 - 87, Piccadilly, St. James's, Mayfair, London, Greater London, England, W1J 7NB, United Kingdom",
+      lat: 51.5061753,
+      lon: -0.1443366,
+    },
+    {
+      displayName:
+        "Fallow, 52, Haymarket, Seven Dials, Bloomsbury, City of Westminster, Greater London, England, SW1Y 4RP, United Kingdom",
+      lat: 51.5094184,
+      lon: -0.1327361,
+    },
+    {
+      displayName:
+        "The Ledbury, 127, Ledbury Road, Westbourne Green, Maida Hill, Royal Borough of Kensington and Chelsea, London, Greater London, England, W11 2AQ, United Kingdom",
+      lat: 51.5166794,
+      lon: -0.2000637,
+    },
+    {
+      displayName:
+        "Ave Mario, Henrietta Street, Covent Garden, Bloomsbury, City of Westminster, Greater London, England, WC2E 8QH, United Kingdom",
+      lat: 51.5108935,
+      lon: -0.1238784,
+    },
+    {
+      displayName:
+        "Pink Mamma, 20b, Rue de Douai, Quartier Saint-Georges, 9th Arrondissement, Paris, Ile-de-France, Metropolitan France, 75009, France",
+      lat: 48.8819128,
+      lon: 2.3344849,
+    },
+    {
+      displayName:
+        "le Ju, 16, Rue des Archives, Quartier Saint-Gervais, 4th Arrondissement, Paris, Ile-de-France, Metropolitan France, 75004, France",
+      lat: 48.8577054,
+      lon: 2.3547735,
+    },
+    {
+      displayName:
+        "Chez Loulou, Rue Rambuteau, Quartier Saint-Merri, 4th Arrondissement, Paris, Ile-de-France, Metropolitan France, 75004, France",
+      lat: 48.8616342,
+      lon: 2.3513346,
+    },
+    {
+      displayName:
+        "Epicure, Rue du Faubourg Saint-Honoré, Quartier de la Madeleine, 8th Arrondissement of Paris, Paris, Ile-de-France, Metropolitan France, 75008, France",
+      lat: 48.8717179,
+      lon: 2.3148011,
+    },
+  ];
+
   // Create other users and experiences
   for (let i = 0; i < 100; i++) {
     // Creates fake user
@@ -73,6 +126,10 @@ async function seed() {
     // 5% chance this experience will be attributed to the demo user
     const experienceUserId = Math.random() < 0.05 ? demoUser.id : postUser.id;
 
+    // Add random location to each experience
+    const randomLocation =
+      locations[Math.floor(Math.random() * locations.length)];
+
     const [experience] = await db
       .insert(experiencesTable)
       .values({
@@ -81,6 +138,7 @@ async function seed() {
         scheduledAt: faker.date.soon().toISOString(),
         url: faker.internet.url(),
         imageUrl: faker.image.urlPicsumPhotos(),
+        location: JSON.stringify(randomLocation),
         userId: experienceUserId,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),

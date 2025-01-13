@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
+import LocationPicker from "@/features/shared/components/map/LocationPicker";
 import Button from "@/features/shared/components/ui/Button";
 import { DateTimePicker } from "@/features/shared/components/ui/DateTimePicker";
 import FileInput from "@/features/shared/components/ui/FileInput";
@@ -37,7 +38,12 @@ export default function ExperienceForm({
 
   const form = useForm<ExperienceFormData>({
     resolver: zodResolver(experienceValidationSchema),
-    defaultValues: experience,
+    defaultValues: {
+      ...experience,
+      location: experience?.location
+        ? JSON.parse(experience.location)
+        : undefined,
+    },
   });
 
   const editMutation = trpc.experiences.edit.useMutation({
@@ -73,7 +79,11 @@ export default function ExperienceForm({
 
     for (const [key, value] of Object.entries(data)) {
       if (value !== undefined && value !== null) {
-        formData.append(key, value as string | Blob);
+        if (key === "location") {
+          formData.append(key, JSON.stringify(value));
+        } else {
+          formData.append(key, value as string | Blob);
+        }
       }
     }
 
@@ -133,6 +143,20 @@ export default function ExperienceForm({
               <FormLabel>Event Date</FormLabel>
               <FormControl>
                 <DateTimePicker {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="location"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Venue</FormLabel>
+              <FormControl>
+                <LocationPicker value={field.value} onChange={field.onChange} />
               </FormControl>
               <FormMessage />
             </FormItem>

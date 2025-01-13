@@ -33,3 +33,7 @@
     @apply bg-neutral-400 dark:bg-neutral-500;
   }
 }
+
+.leaflet-container {
+  z-index: 0 !important;
+}

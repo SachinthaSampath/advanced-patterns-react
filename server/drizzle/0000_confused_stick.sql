@@ -59,6 +59,7 @@ CREATE TABLE `experiences` (
 	`scheduled_at` text NOT NULL,
 	`url` text,
 	`image_url` text,
+	`location` text,
 	`user_id` integer NOT NULL,
 	`created_at` text NOT NULL,
 	`updated_at` text NOT NULL,

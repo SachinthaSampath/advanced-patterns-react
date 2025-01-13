@@ -19,6 +19,7 @@ export const experiencesTable = sqliteTable(
     scheduledAt: text("scheduled_at").notNull(),
     url: text("url"),
     imageUrl: text("image_url"),
+    location: text("location"),
 
     userId: int("user_id")
       .notNull()

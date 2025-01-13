@@ -1,7 +1,9 @@
 import { Experience, Tag, User } from "@advanced-react/server/database/schema";
+import { LocationData } from "@advanced-react/shared/schema/experience";
 import { Link as LinkIcon } from "lucide-react";
 
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
+import LocationDisplay from "@/features/shared/components/map/LocationDisplay";
 import Button from "@/features/shared/components/ui/Button";
 import Link from "@/features/shared/components/ui/Link";
 import TagList from "@/features/tag/components/TagList";
@@ -70,11 +72,17 @@ type ExperienceDetailsContentProps = Pick<ExperienceDetailsProps, "experience">;
 function ExperienceDetailsContent({
   experience,
 }: ExperienceDetailsContentProps) {
+  const location = experience.location
+    ? (JSON.parse(experience.location) as LocationData)
+    : null;
+
   return (
     <div className="space-y-4">
       <p className="text-lg text-neutral-600 dark:text-neutral-400">
         {experience.content}
       </p>
+
+      <TagList tags={experience.tags} />
 
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
@@ -101,7 +109,8 @@ function ExperienceDetailsContent({
           </div>
         )}
       </div>
-      <TagList tags={experience.tags} />
+
+      {location && <LocationDisplay location={location} />}
     </div>
   );
 }
