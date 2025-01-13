@@ -19,10 +19,11 @@ export default function FollowButton({
   const { toast } = useToast();
 
   const { userId: pathUserId } = useParams({ strict: false });
+  const { experienceId: pathExperienceId } = useParams({ strict: false });
 
   const followMutation = trpc.users.follow.useMutation({
     onMutate: async ({ id }) => {
-      if (!currentUser || !pathUserId) {
+      if (!currentUser) {
         return;
       }
 
@@ -38,14 +39,40 @@ export default function FollowButton({
 
       await Promise.all([
         utils.users.byId.cancel({ id: targetUserId }),
-        utils.users.followers.cancel({ id: pathUserId }),
-        utils.users.following.cancel({ id: pathUserId }),
+        ...(pathUserId
+          ? [
+              utils.users.followers.cancel({ id: pathUserId }),
+              utils.users.following.cancel({ id: pathUserId }),
+            ]
+          : []),
+        ...(pathExperienceId
+          ? [
+              utils.experiences.attendees.cancel({
+                experienceId: pathExperienceId,
+              }),
+            ]
+          : []),
       ]);
 
       const previousData = {
         byId: utils.users.byId.getData({ id }),
-        followers: utils.users.followers.getInfiniteData({ id: pathUserId }),
-        following: utils.users.following.getInfiniteData({ id: pathUserId }),
+        ...(pathUserId
+          ? {
+              followers: utils.users.followers.getInfiniteData({
+                id: pathUserId,
+              }),
+              following: utils.users.following.getInfiniteData({
+                id: pathUserId,
+              }),
+            }
+          : {}),
+        ...(pathExperienceId
+          ? {
+              attendees: utils.experiences.attendees.getInfiniteData({
+                experienceId: pathExperienceId,
+              }),
+            }
+          : {}),
       };
 
       utils.users.byId.setData({ id }, (oldData) => {
@@ -56,56 +83,88 @@ export default function FollowButton({
         return updateUser(oldData);
       });
 
-      utils.users.followers.setInfiniteData({ id: pathUserId }, (oldData) => {
-        if (!oldData) {
-          return { pages: [], pageParams: [] };
-        }
+      if (pathUserId) {
+        utils.users.followers.setInfiniteData({ id: pathUserId }, (oldData) => {
+          if (!oldData) {
+            return { pages: [], pageParams: [] };
+          }
 
-        return {
-          ...oldData,
-          pages: oldData.pages.map((page) => ({
-            ...page,
-            items: page.items.map((user) =>
-              user.id === id ? updateUser(user) : user,
-            ),
-          })),
-        };
-      });
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page) => ({
+              ...page,
+              items: page.items.map((user) =>
+                user.id === id ? updateUser(user) : user,
+              ),
+            })),
+          };
+        });
 
-      utils.users.following.setInfiniteData({ id: pathUserId }, (oldData) => {
-        if (!oldData) {
-          return { pages: [], pageParams: [] };
-        }
+        utils.users.following.setInfiniteData({ id: pathUserId }, (oldData) => {
+          if (!oldData) {
+            return { pages: [], pageParams: [] };
+          }
 
-        return {
-          ...oldData,
-          pages: oldData.pages.map((page) => ({
-            ...page,
-            items: page.items.map((user) =>
-              user.id === id ? updateUser(user) : user,
-            ),
-          })),
-        };
-      });
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page) => ({
+              ...page,
+              items: page.items.map((user) =>
+                user.id === id ? updateUser(user) : user,
+              ),
+            })),
+          };
+        });
+      }
+
+      if (pathExperienceId) {
+        utils.experiences.attendees.setInfiniteData(
+          { experienceId: pathExperienceId },
+          (oldData) => {
+            if (!oldData) {
+              return { pages: [], pageParams: [] };
+            }
+
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page) => ({
+                ...page,
+                attendees: page.attendees.map((attendee) =>
+                  attendee.id === id ? updateUser(attendee) : attendee,
+                ),
+              })),
+            };
+          },
+        );
+      }
 
       return { previousData };
     },
     onError: (error, { id }, context) => {
-      if (!currentUser || !pathUserId) {
+      if (!currentUser) {
         return;
       }
 
       utils.users.byId.setData({ id }, context?.previousData.byId);
 
-      utils.users.followers.setInfiniteData(
-        { id: pathUserId },
-        context?.previousData.followers,
-      );
+      if (pathUserId) {
+        utils.users.followers.setInfiniteData(
+          { id: pathUserId },
+          context?.previousData.followers,
+        );
 
-      utils.users.following.setInfiniteData(
-        { id: pathUserId },
-        context?.previousData.following,
-      );
+        utils.users.following.setInfiniteData(
+          { id: pathUserId },
+          context?.previousData.following,
+        );
+      }
+
+      if (pathExperienceId) {
+        utils.experiences.attendees.setInfiniteData(
+          { experienceId: pathExperienceId },
+          context?.previousData.attendees,
+        );
+      }
 
       toast({
         title: "Failed to follow user",
@@ -117,7 +176,7 @@ export default function FollowButton({
 
   const unfollowMutation = trpc.users.unfollow.useMutation({
     onMutate: async ({ id }) => {
-      if (!currentUser || !pathUserId) {
+      if (!currentUser) {
         return;
       }
 
@@ -133,14 +192,40 @@ export default function FollowButton({
 
       await Promise.all([
         utils.users.byId.cancel({ id }),
-        utils.users.followers.cancel({ id: pathUserId }),
-        utils.users.following.cancel({ id: pathUserId }),
+        ...(pathUserId
+          ? [
+              utils.users.followers.cancel({ id: pathUserId }),
+              utils.users.following.cancel({ id: pathUserId }),
+            ]
+          : []),
+        ...(pathExperienceId
+          ? [
+              utils.experiences.attendees.cancel({
+                experienceId: pathExperienceId,
+              }),
+            ]
+          : []),
       ]);
 
       const previousData = {
         byId: utils.users.byId.getData({ id }),
-        followers: utils.users.followers.getInfiniteData({ id: pathUserId }),
-        following: utils.users.following.getInfiniteData({ id: pathUserId }),
+        ...(pathUserId
+          ? {
+              followers: utils.users.followers.getInfiniteData({
+                id: pathUserId,
+              }),
+              following: utils.users.following.getInfiniteData({
+                id: pathUserId,
+              }),
+            }
+          : {}),
+        ...(pathExperienceId
+          ? {
+              attendees: utils.experiences.attendees.getInfiniteData({
+                experienceId: pathExperienceId,
+              }),
+            }
+          : {}),
       };
 
       utils.users.byId.setData({ id }, (oldData) => {
@@ -151,56 +236,88 @@ export default function FollowButton({
         return updateUser(oldData);
       });
 
-      utils.users.followers.setInfiniteData({ id: pathUserId }, (oldData) => {
-        if (!oldData) {
-          return { pages: [], pageParams: [] };
-        }
+      if (pathUserId) {
+        utils.users.followers.setInfiniteData({ id: pathUserId }, (oldData) => {
+          if (!oldData) {
+            return { pages: [], pageParams: [] };
+          }
 
-        return {
-          ...oldData,
-          pages: oldData.pages.map((page) => ({
-            ...page,
-            items: page.items.map((user) =>
-              user.id === id ? updateUser(user) : user,
-            ),
-          })),
-        };
-      });
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page) => ({
+              ...page,
+              items: page.items.map((user) =>
+                user.id === id ? updateUser(user) : user,
+              ),
+            })),
+          };
+        });
 
-      utils.users.following.setInfiniteData({ id: pathUserId }, (oldData) => {
-        if (!oldData) {
-          return { pages: [], pageParams: [] };
-        }
+        utils.users.following.setInfiniteData({ id: pathUserId }, (oldData) => {
+          if (!oldData) {
+            return { pages: [], pageParams: [] };
+          }
 
-        return {
-          ...oldData,
-          pages: oldData.pages.map((page) => ({
-            ...page,
-            items: page.items.map((user) =>
-              user.id === id ? updateUser(user) : user,
-            ),
-          })),
-        };
-      });
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page) => ({
+              ...page,
+              items: page.items.map((user) =>
+                user.id === id ? updateUser(user) : user,
+              ),
+            })),
+          };
+        });
+      }
+
+      if (pathExperienceId) {
+        utils.experiences.attendees.setInfiniteData(
+          { experienceId: pathExperienceId },
+          (oldData) => {
+            if (!oldData) {
+              return { pages: [], pageParams: [] };
+            }
+
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page) => ({
+                ...page,
+                attendees: page.attendees.map((attendee) =>
+                  attendee.id === id ? updateUser(attendee) : attendee,
+                ),
+              })),
+            };
+          },
+        );
+      }
 
       return { previousData };
     },
     onError: (error, { id }, context) => {
-      if (!currentUser || !pathUserId) {
+      if (!currentUser) {
         return;
       }
 
       utils.users.byId.setData({ id }, context?.previousData.byId);
 
-      utils.users.followers.setInfiniteData(
-        { id: pathUserId },
-        context?.previousData.followers,
-      );
+      if (pathUserId) {
+        utils.users.followers.setInfiniteData(
+          { id: pathUserId },
+          context?.previousData.followers,
+        );
 
-      utils.users.following.setInfiniteData(
-        { id: pathUserId },
-        context?.previousData.following,
-      );
+        utils.users.following.setInfiniteData(
+          { id: pathUserId },
+          context?.previousData.following,
+        );
+      }
+
+      if (pathExperienceId) {
+        utils.experiences.attendees.setInfiniteData(
+          { experienceId: pathExperienceId },
+          context?.previousData.attendees,
+        );
+      }
 
       toast({
         title: "Failed to unfollow user",

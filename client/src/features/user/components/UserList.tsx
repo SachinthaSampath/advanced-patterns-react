@@ -2,15 +2,19 @@ import { User } from "@advanced-react/server/database/schema";
 
 import Link from "@/features/shared/components/ui/Link";
 
-import FollowButton from "./FollowButton";
 import UserAvatar from "./UserAvatar";
 
 type UserListProps = {
   users: (User & { isFollowing: boolean })[];
   isLoading?: boolean;
+  rightComponent?: (user: User & { isFollowing: boolean }) => React.ReactNode;
 };
 
-export default function UserList({ users, isLoading }: UserListProps) {
+export default function UserList({
+  users,
+  isLoading,
+  rightComponent,
+}: UserListProps) {
   if (!isLoading && users.length === 0) {
     return <div>No users found</div>;
   }
@@ -25,7 +29,7 @@ export default function UserList({ users, isLoading }: UserListProps) {
           <Link key={user.id} to="/users/$userId" params={{ userId: user.id }}>
             <UserAvatar user={user} />
           </Link>
-          <FollowButton targetUserId={user.id} isFollowing={user.isFollowing} />
+          {rightComponent?.(user)}
         </div>
       ))}
       {isLoading && (

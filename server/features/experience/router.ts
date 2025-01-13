@@ -16,6 +16,7 @@ import {
   experienceTagsTable,
   notificationsTable,
   tagSelectSchema,
+  userFollowsTable,
 } from "../../database/schema";
 import { protectedProcedure, publicProcedure, router } from "../../trpc";
 import { DEFAULT_EXPERIENCE_LIMIT } from "../../utils/constants";
@@ -531,6 +532,144 @@ export const experienceRouter = router({
         experienceId: input.id,
         fromUserId: ctx.user.id,
         userId: experience.userId,
+        createdAt: new Date().toISOString(),
+      });
+
+      return { success: true };
+    }),
+
+  attendees: publicProcedure
+    .input(
+      z.object({
+        experienceId: experienceSelectSchema.shape.id,
+        limit: z.number().optional(),
+        cursor: z.number().optional(),
+      }),
+    )
+    .output(
+      z.object({
+        attendees: z.array(
+          cleanUserSelectSchema.extend({
+            isFollowing: z.boolean(),
+            followersCount: z.number(),
+            followingCount: z.number(),
+          }),
+        ),
+        attendeesCount: z.number(),
+        nextCursor: z.number().optional(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const limit = input.limit ?? DEFAULT_EXPERIENCE_LIMIT;
+      const cursor = input.cursor ?? 0;
+
+      const [attendeesCount] = await db
+        .select({ count: count() })
+        .from(experienceAttendeesTable)
+        .where(eq(experienceAttendeesTable.experienceId, input.experienceId));
+
+      const attendees = await db.query.experienceAttendeesTable.findMany({
+        where: eq(experienceAttendeesTable.experienceId, input.experienceId),
+        limit,
+        offset: cursor,
+        with: {
+          user: true,
+        },
+      });
+
+      const attendeeFollowQueries = attendees.map((attendee) =>
+        ctx.user
+          ? db.query.userFollowsTable
+              .findFirst({
+                where: and(
+                  eq(userFollowsTable.followerId, ctx.user.id),
+                  eq(userFollowsTable.followingId, attendee.user.id),
+                ),
+              })
+              .then(Boolean)
+          : false,
+      );
+
+      const attendeeFollowResults = await Promise.all(attendeeFollowQueries);
+
+      const attendeeFollowCountQueries = attendees.map((attendee) =>
+        Promise.all([
+          db
+            .select({ count: count() })
+            .from(userFollowsTable)
+            .where(eq(userFollowsTable.followingId, attendee.user.id))
+            .then((res) => res[0]?.count ?? 0),
+          db
+            .select({ count: count() })
+            .from(userFollowsTable)
+            .where(eq(userFollowsTable.followerId, attendee.user.id))
+            .then((res) => res[0]?.count ?? 0),
+        ]),
+      );
+
+      const attendeeFollowCounts = await Promise.all(
+        attendeeFollowCountQueries,
+      );
+
+      return {
+        attendees: attendees.map((attendee, index) => ({
+          ...attendee.user,
+          isFollowing: attendeeFollowResults[index],
+          followersCount: attendeeFollowCounts[index][0],
+          followingCount: attendeeFollowCounts[index][1],
+        })),
+        attendeesCount: attendeesCount?.count ?? 0,
+        nextCursor: attendees.length === limit ? cursor + limit : undefined,
+      };
+    }),
+
+  kickAttendee: protectedProcedure
+    .input(
+      z.object({
+        experienceId: experienceSelectSchema.shape.id,
+        userId: z.number(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const experience = await db.query.experiencesTable.findFirst({
+        where: eq(experiencesTable.id, input.experienceId),
+      });
+
+      if (!experience) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Experience not found",
+        });
+      }
+
+      if (experience.userId !== ctx.user.id) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only the experience owner can kick attendees",
+        });
+      }
+
+      if (experience.userId === input.userId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Cannot kick the experience owner",
+        });
+      }
+
+      await db
+        .delete(experienceAttendeesTable)
+        .where(
+          and(
+            eq(experienceAttendeesTable.experienceId, input.experienceId),
+            eq(experienceAttendeesTable.userId, input.userId),
+          ),
+        );
+
+      await db.insert(notificationsTable).values({
+        type: "user_kicked_experience",
+        experienceId: input.experienceId,
+        fromUserId: ctx.user.id,
+        userId: input.userId,
         createdAt: new Date().toISOString(),
       });
 

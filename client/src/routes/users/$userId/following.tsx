@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import InfiniteScroll from "@/features/shared/components/InfiniteScroll";
 import { QueryErrorFallback } from "@/features/shared/components/QueryErrorFallback";
+import FollowButton from "@/features/user/components/FollowButton";
 import UserList from "@/features/user/components/UserList";
 import { trpc } from "@/router";
 
@@ -55,6 +56,12 @@ function UserFollowing() {
             isLoading={
               followingQuery.isLoading || followingQuery.isFetchingNextPage
             }
+            rightComponent={(user) => (
+              <FollowButton
+                targetUserId={user.id}
+                isFollowing={user.isFollowing}
+              />
+            )}
           />
         </InfiniteScroll>
       </div>

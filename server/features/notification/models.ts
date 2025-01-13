@@ -11,6 +11,7 @@ const notificationTypeEnum = [
   "user_unattending_experience",
   "user_commented_experience",
   "user_followed_user",
+  "user_kicked_experience",
 ] as const;
 
 export const notificationsTable = sqliteTable(

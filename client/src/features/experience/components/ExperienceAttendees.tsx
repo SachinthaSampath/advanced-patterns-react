@@ -1,5 +1,6 @@
 import { Experience, User } from "@advanced-react/server/database/schema";
 
+import Link from "@/features/shared/components/ui/Link";
 import UserAvatarList from "@/features/shared/components/UserAvatarList";
 
 type ExperienceAttendeesProps = {
@@ -21,7 +22,15 @@ export default function ExperienceAttendees({
       </div>
 
       <div className="space-y-2">
-        <h3 className="font-medium">Attendees ({experience.attendeesCount})</h3>
+        <Link
+          to="/experiences/$experienceId/attendees"
+          params={{ experienceId: experience.id }}
+          variant="secondary"
+        >
+          <h3 className="font-medium">
+            Attendees ({experience.attendeesCount})
+          </h3>
+        </Link>
         {experience.attendeesCount > 0 ? (
           <UserAvatarList
             users={experience.attendees}

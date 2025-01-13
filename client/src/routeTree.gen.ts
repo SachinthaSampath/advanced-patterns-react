@@ -27,6 +27,7 @@ import { Route as UsersUserIdFollowingImport } from './routes/users/$userId/foll
 import { Route as UsersUserIdFollowersImport } from './routes/users/$userId/followers'
 import { Route as UsersUserIdEditImport } from './routes/users/$userId/edit'
 import { Route as ExperiencesExperienceIdEditImport } from './routes/experiences/$experienceId/edit'
+import { Route as ExperiencesExperienceIdAttendeesImport } from './routes/experiences/$experienceId/attendees'
 
 // Create/Update Routes
 
@@ -128,6 +129,13 @@ const ExperiencesExperienceIdEditRoute =
     getParentRoute: () => rootRoute,
   } as any)
 
+const ExperiencesExperienceIdAttendeesRoute =
+  ExperiencesExperienceIdAttendeesImport.update({
+    id: '/experiences/$experienceId/attendees',
+    path: '/experiences/$experienceId/attendees',
+    getParentRoute: () => rootRoute,
+  } as any)
+
 // Populate the FileRoutesByPath interface
 
 declare module '@tanstack/react-router' {
@@ -195,6 +203,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsIndexImport
       parentRoute: typeof rootRoute
     }
+    '/experiences/$experienceId/attendees': {
+      id: '/experiences/$experienceId/attendees'
+      path: '/experiences/$experienceId/attendees'
+      fullPath: '/experiences/$experienceId/attendees'
+      preLoaderRoute: typeof ExperiencesExperienceIdAttendeesImport
+      parentRoute: typeof rootRoute
+    }
     '/experiences/$experienceId/edit': {
       id: '/experiences/$experienceId/edit'
       path: '/experiences/$experienceId/edit'
@@ -259,6 +274,7 @@ export interface FileRoutesByFullPath {
   '/settings/change-email': typeof SettingsChangeEmailRoute
   '/settings/change-password': typeof SettingsChangePasswordRoute
   '/settings': typeof SettingsIndexRoute
+  '/experiences/$experienceId/attendees': typeof ExperiencesExperienceIdAttendeesRoute
   '/experiences/$experienceId/edit': typeof ExperiencesExperienceIdEditRoute
   '/users/$userId/edit': typeof UsersUserIdEditRoute
   '/users/$userId/followers': typeof UsersUserIdFollowersRoute
@@ -278,6 +294,7 @@ export interface FileRoutesByTo {
   '/settings/change-email': typeof SettingsChangeEmailRoute
   '/settings/change-password': typeof SettingsChangePasswordRoute
   '/settings': typeof SettingsIndexRoute
+  '/experiences/$experienceId/attendees': typeof ExperiencesExperienceIdAttendeesRoute
   '/experiences/$experienceId/edit': typeof ExperiencesExperienceIdEditRoute
   '/users/$userId/edit': typeof UsersUserIdEditRoute
   '/users/$userId/followers': typeof UsersUserIdFollowersRoute
@@ -298,6 +315,7 @@ export interface FileRoutesById {
   '/settings/change-email': typeof SettingsChangeEmailRoute
   '/settings/change-password': typeof SettingsChangePasswordRoute
   '/settings/': typeof SettingsIndexRoute
+  '/experiences/$experienceId/attendees': typeof ExperiencesExperienceIdAttendeesRoute
   '/experiences/$experienceId/edit': typeof ExperiencesExperienceIdEditRoute
   '/users/$userId/edit': typeof UsersUserIdEditRoute
   '/users/$userId/followers': typeof UsersUserIdFollowersRoute
@@ -319,6 +337,7 @@ export interface FileRouteTypes {
     | '/settings/change-email'
     | '/settings/change-password'
     | '/settings'
+    | '/experiences/$experienceId/attendees'
     | '/experiences/$experienceId/edit'
     | '/users/$userId/edit'
     | '/users/$userId/followers'
@@ -337,6 +356,7 @@ export interface FileRouteTypes {
     | '/settings/change-email'
     | '/settings/change-password'
     | '/settings'
+    | '/experiences/$experienceId/attendees'
     | '/experiences/$experienceId/edit'
     | '/users/$userId/edit'
     | '/users/$userId/followers'
@@ -355,6 +375,7 @@ export interface FileRouteTypes {
     | '/settings/change-email'
     | '/settings/change-password'
     | '/settings/'
+    | '/experiences/$experienceId/attendees'
     | '/experiences/$experienceId/edit'
     | '/users/$userId/edit'
     | '/users/$userId/followers'
@@ -375,6 +396,7 @@ export interface RootRouteChildren {
   SettingsChangeEmailRoute: typeof SettingsChangeEmailRoute
   SettingsChangePasswordRoute: typeof SettingsChangePasswordRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
+  ExperiencesExperienceIdAttendeesRoute: typeof ExperiencesExperienceIdAttendeesRoute
   ExperiencesExperienceIdEditRoute: typeof ExperiencesExperienceIdEditRoute
   UsersUserIdEditRoute: typeof UsersUserIdEditRoute
   UsersUserIdFollowersRoute: typeof UsersUserIdFollowersRoute
@@ -394,6 +416,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsChangeEmailRoute: SettingsChangeEmailRoute,
   SettingsChangePasswordRoute: SettingsChangePasswordRoute,
   SettingsIndexRoute: SettingsIndexRoute,
+  ExperiencesExperienceIdAttendeesRoute: ExperiencesExperienceIdAttendeesRoute,
   ExperiencesExperienceIdEditRoute: ExperiencesExperienceIdEditRoute,
   UsersUserIdEditRoute: UsersUserIdEditRoute,
   UsersUserIdFollowersRoute: UsersUserIdFollowersRoute,
@@ -422,6 +445,7 @@ export const routeTree = rootRoute
         "/settings/change-email",
         "/settings/change-password",
         "/settings/",
+        "/experiences/$experienceId/attendees",
         "/experiences/$experienceId/edit",
         "/users/$userId/edit",
         "/users/$userId/followers",
@@ -457,6 +481,9 @@ export const routeTree = rootRoute
     },
     "/settings/": {
       "filePath": "settings/index.tsx"
+    },
+    "/experiences/$experienceId/attendees": {
+      "filePath": "experiences/$experienceId/attendees.tsx"
     },
     "/experiences/$experienceId/edit": {
       "filePath": "experiences/$experienceId/edit.tsx"
