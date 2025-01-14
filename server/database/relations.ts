@@ -3,6 +3,7 @@ import { relations } from "drizzle-orm";
 import {
   commentsTable,
   experienceAttendeesTable,
+  experienceFavoritesTable,
   experiencesTable,
   experienceTagsTable,
   notificationsTable,
@@ -49,6 +50,16 @@ export const experienceTagsRelations = relations(
     tag: one(tagsTable, {
       fields: [experienceTagsTable.tagId],
       references: [tagsTable.id],
+    }),
+  }),
+);
+
+export const experienceFavoritesRelations = relations(
+  experienceFavoritesTable,
+  ({ one }) => ({
+    experience: one(experiencesTable, {
+      fields: [experienceFavoritesTable.experienceId],
+      references: [experiencesTable.id],
     }),
   }),
 );
@@ -103,6 +114,7 @@ export const userFollowsRelations = relations(userFollowsTable, ({ one }) => ({
 }));
 
 export const usersRelations = relations(usersTable, ({ many }) => ({
+  experienceFavorites: many(experienceFavoritesTable),
   followers: many(userFollowsTable, { relationName: "following" }),
   following: many(userFollowsTable, { relationName: "follower" }),
   notifications: many(notificationsTable),

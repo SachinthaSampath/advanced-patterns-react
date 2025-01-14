@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "5e5a18e1-4410-4aa7-ba1a-304498cadcaf",
+  "id": "adee0028-ecf6-4dbf-9284-a6146012e280",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "user_follows": {
@@ -300,6 +300,87 @@
             "user_id"
           ],
           "name": "experience_attendees_experience_id_user_id_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "experience_favorites": {
+      "name": "experience_favorites",
+      "columns": {
+        "experience_id": {
+          "name": "experience_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "experience_favorites_experience_id_idx": {
+          "name": "experience_favorites_experience_id_idx",
+          "columns": [
+            "experience_id"
+          ],
+          "isUnique": false
+        },
+        "experience_favorites_user_id_idx": {
+          "name": "experience_favorites_user_id_idx",
+          "columns": [
+            "user_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "experience_favorites_experience_id_experiences_id_fk": {
+          "name": "experience_favorites_experience_id_experiences_id_fk",
+          "tableFrom": "experience_favorites",
+          "tableTo": "experiences",
+          "columnsFrom": [
+            "experience_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "experience_favorites_user_id_users_id_fk": {
+          "name": "experience_favorites_user_id_users_id_fk",
+          "tableFrom": "experience_favorites",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "experience_favorites_experience_id_user_id_pk": {
+          "columns": [
+            "experience_id",
+            "user_id"
+          ],
+          "name": "experience_favorites_experience_id_user_id_pk"
         }
       },
       "uniqueConstraints": {},

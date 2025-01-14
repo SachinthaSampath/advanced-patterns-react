@@ -12,6 +12,7 @@ import { router } from "@/router";
 import { useExperienceMutations } from "../hooks/useExperienceMutations";
 import ExperienceAttendButton from "./ExperienceAttendButton";
 import ExperienceAttendees from "./ExperienceAttendees";
+import { FavoriteButton } from "./FavoriteButton";
 
 type ExperienceDetailsProps = {
   experience: Experience & {
@@ -20,6 +21,7 @@ type ExperienceDetailsProps = {
     attendeesCount: number;
     attendees: User[];
     tags: Tag[];
+    isFavorited: boolean;
   };
 };
 
@@ -126,7 +128,13 @@ function ExperienceButtons({ experience }: ExperienceButtonsProps) {
       {isPostOwner ? (
         <ExperienceOwnerButtons experience={experience} />
       ) : (
-        <ExperienceAttendButton experience={experience} />
+        <>
+          <FavoriteButton
+            experienceId={experience.id}
+            isFavorited={experience.isFavorited}
+          />
+          <ExperienceAttendButton experience={experience} />
+        </>
       )}
     </div>
   );

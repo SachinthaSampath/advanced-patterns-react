@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { count, desc, eq, inArray } from "drizzle-orm";
+import { and, count, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "../../database";
@@ -10,6 +10,7 @@ import { cleanUserSelectSchema } from "../auth/models";
 import { commentsTable } from "../comment/models";
 import {
   experienceAttendeesTable,
+  experienceFavoritesTable,
   experienceSelectSchema,
   experiencesTable,
   experienceTagsTable,
@@ -53,12 +54,13 @@ export const tagRouter = router({
             attendeesCount: z.number(),
             attendees: z.array(cleanUserSelectSchema),
             tags: z.array(tagSelectSchema),
+            isFavorited: z.boolean(),
           }),
         ),
         nextCursor: z.number().optional(),
       }),
     )
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const limit = input.limit ?? DEFAULT_EXPERIENCE_LIMIT;
       const cursor = input.cursor ?? 0;
 
@@ -135,6 +137,19 @@ export const tagRouter = router({
 
       const tagResults = await Promise.all(tagQueries);
 
+      const favoriteQueries = experiences.map((experience) =>
+        ctx.user
+          ? db.query.experienceFavoritesTable.findFirst({
+              where: and(
+                eq(experienceFavoritesTable.experienceId, experience.id),
+                eq(experienceFavoritesTable.userId, ctx.user.id),
+              ),
+            })
+          : Promise.resolve(null),
+      );
+
+      const favoriteResults = await Promise.all(favoriteQueries);
+
       return {
         experiences: experiences.map((experience, i) => ({
           ...experience,
@@ -142,6 +157,7 @@ export const tagRouter = router({
           attendeesCount: attendeeCounts[i][0][0].count,
           attendees: attendeeCounts[i][1].map((a) => a.user),
           tags: tagResults[i].map((t) => t.tag),
+          isFavorited: !!favoriteResults[i],
         })),
         nextCursor: experiences.length === limit ? cursor + limit : undefined,
       };

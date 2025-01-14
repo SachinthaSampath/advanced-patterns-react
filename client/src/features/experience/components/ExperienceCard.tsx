@@ -9,6 +9,7 @@ import UserAvatar from "@/features/user/components/UserAvatar";
 
 import { useExperienceMutations } from "../hooks/useExperienceMutations";
 import ExperienceAttendButton from "./ExperienceAttendButton";
+import { FavoriteButton } from "./FavoriteButton";
 
 type ExperienceCardProps = {
   experience: Experience & {
@@ -17,6 +18,7 @@ type ExperienceCardProps = {
     attendeesCount: number;
     attendees: User[];
     tags: Tag[];
+    isFavorited: boolean;
   };
 };
 
@@ -139,6 +141,10 @@ type ExperienceCardButtonsProps = Pick<ExperienceCardProps, "experience">;
 function ExperienceCardButtons({ experience }: ExperienceCardButtonsProps) {
   return (
     <div className="flex items-center gap-4">
+      <FavoriteButton
+        experienceId={experience.id}
+        isFavorited={experience.isFavorited}
+      />
       <div className="flex items-center gap-2">
         <Users className="h-5 w-5" />
         <span>{experience.attendeesCount}</span>

@@ -20,6 +20,7 @@ import { Route as SettingsIndexImport } from './routes/settings/index'
 import { Route as SettingsChangePasswordImport } from './routes/settings/change-password'
 import { Route as SettingsChangeEmailImport } from './routes/settings/change-email'
 import { Route as ExperiencesNewImport } from './routes/experiences/new'
+import { Route as ExperiencesFavoritesImport } from './routes/experiences/favorites'
 import { Route as UsersUserIdIndexImport } from './routes/users/$userId/index'
 import { Route as TagsTagIdIndexImport } from './routes/tags/$tagId/index'
 import { Route as ExperiencesExperienceIdIndexImport } from './routes/experiences/$experienceId/index'
@@ -82,6 +83,12 @@ const SettingsChangeEmailRoute = SettingsChangeEmailImport.update({
 const ExperiencesNewRoute = ExperiencesNewImport.update({
   id: '/experiences/new',
   path: '/experiences/new',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const ExperiencesFavoritesRoute = ExperiencesFavoritesImport.update({
+  id: '/experiences/favorites',
+  path: '/experiences/favorites',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -173,6 +180,13 @@ declare module '@tanstack/react-router' {
       path: '/search'
       fullPath: '/search'
       preLoaderRoute: typeof SearchImport
+      parentRoute: typeof rootRoute
+    }
+    '/experiences/favorites': {
+      id: '/experiences/favorites'
+      path: '/experiences/favorites'
+      fullPath: '/experiences/favorites'
+      preLoaderRoute: typeof ExperiencesFavoritesImport
       parentRoute: typeof rootRoute
     }
     '/experiences/new': {
@@ -270,6 +284,7 @@ export interface FileRoutesByFullPath {
   '/notifications': typeof NotificationsRoute
   '/register': typeof RegisterRoute
   '/search': typeof SearchRoute
+  '/experiences/favorites': typeof ExperiencesFavoritesRoute
   '/experiences/new': typeof ExperiencesNewRoute
   '/settings/change-email': typeof SettingsChangeEmailRoute
   '/settings/change-password': typeof SettingsChangePasswordRoute
@@ -290,6 +305,7 @@ export interface FileRoutesByTo {
   '/notifications': typeof NotificationsRoute
   '/register': typeof RegisterRoute
   '/search': typeof SearchRoute
+  '/experiences/favorites': typeof ExperiencesFavoritesRoute
   '/experiences/new': typeof ExperiencesNewRoute
   '/settings/change-email': typeof SettingsChangeEmailRoute
   '/settings/change-password': typeof SettingsChangePasswordRoute
@@ -311,6 +327,7 @@ export interface FileRoutesById {
   '/notifications': typeof NotificationsRoute
   '/register': typeof RegisterRoute
   '/search': typeof SearchRoute
+  '/experiences/favorites': typeof ExperiencesFavoritesRoute
   '/experiences/new': typeof ExperiencesNewRoute
   '/settings/change-email': typeof SettingsChangeEmailRoute
   '/settings/change-password': typeof SettingsChangePasswordRoute
@@ -333,6 +350,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/register'
     | '/search'
+    | '/experiences/favorites'
     | '/experiences/new'
     | '/settings/change-email'
     | '/settings/change-password'
@@ -352,6 +370,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/register'
     | '/search'
+    | '/experiences/favorites'
     | '/experiences/new'
     | '/settings/change-email'
     | '/settings/change-password'
@@ -371,6 +390,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/register'
     | '/search'
+    | '/experiences/favorites'
     | '/experiences/new'
     | '/settings/change-email'
     | '/settings/change-password'
@@ -392,6 +412,7 @@ export interface RootRouteChildren {
   NotificationsRoute: typeof NotificationsRoute
   RegisterRoute: typeof RegisterRoute
   SearchRoute: typeof SearchRoute
+  ExperiencesFavoritesRoute: typeof ExperiencesFavoritesRoute
   ExperiencesNewRoute: typeof ExperiencesNewRoute
   SettingsChangeEmailRoute: typeof SettingsChangeEmailRoute
   SettingsChangePasswordRoute: typeof SettingsChangePasswordRoute
@@ -412,6 +433,7 @@ const rootRouteChildren: RootRouteChildren = {
   NotificationsRoute: NotificationsRoute,
   RegisterRoute: RegisterRoute,
   SearchRoute: SearchRoute,
+  ExperiencesFavoritesRoute: ExperiencesFavoritesRoute,
   ExperiencesNewRoute: ExperiencesNewRoute,
   SettingsChangeEmailRoute: SettingsChangeEmailRoute,
   SettingsChangePasswordRoute: SettingsChangePasswordRoute,
@@ -441,6 +463,7 @@ export const routeTree = rootRoute
         "/notifications",
         "/register",
         "/search",
+        "/experiences/favorites",
         "/experiences/new",
         "/settings/change-email",
         "/settings/change-password",
@@ -469,6 +492,9 @@ export const routeTree = rootRoute
     },
     "/search": {
       "filePath": "search.tsx"
+    },
+    "/experiences/favorites": {
+      "filePath": "experiences/favorites.tsx"
     },
     "/experiences/new": {
       "filePath": "experiences/new.tsx"

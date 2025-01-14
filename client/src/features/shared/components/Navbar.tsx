@@ -1,4 +1,4 @@
-import { Bell, Edit, Home, Search, Settings, User } from "lucide-react";
+import { Bell, Edit, Heart, Home, Search, Settings, User } from "lucide-react";
 
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import ThemeToggle from "@/features/shared/components/theme/ThemeToggle";
@@ -49,6 +49,17 @@ export default function Navigation() {
         <Search className="h-6 w-6" />
         Search
       </Link>
+
+      {currentUser && (
+        <Link
+          to="/experiences/favorites"
+          variant="ghost"
+          className="flex items-center gap-2 rounded-lg p-2 text-lg hover:bg-neutral-100 dark:hover:bg-neutral-800"
+        >
+          <Heart className="h-6 w-6" />
+          Favorites
+        </Link>
+      )}
 
       {currentUser && (
         <>

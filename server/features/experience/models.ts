@@ -89,3 +89,32 @@ export const experienceTagsTable = sqliteTable(
 export const experienceTagSelectSchema =
   createSelectSchema(experienceTagsTable);
 export type ExperienceTag = typeof experienceTagsTable.$inferSelect;
+
+export const experienceFavoritesTable = sqliteTable(
+  "experience_favorites",
+  {
+    experienceId: int("experience_id")
+      .notNull()
+      .references(() => experiencesTable.id, { onDelete: "cascade" }),
+    userId: int("user_id")
+      .notNull()
+      .references(() => usersTable.id, { onDelete: "cascade" }),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => ({
+    experience_favorites_pk: primaryKey({
+      columns: [table.experienceId, table.userId],
+    }),
+    experience_favorites_experience_id_idx: index(
+      "experience_favorites_experience_id_idx",
+    ).on(table.experienceId),
+    experience_favorites_user_id_idx: index(
+      "experience_favorites_user_id_idx",
+    ).on(table.userId),
+  }),
+);
+
+export const experienceFavoriteSelectSchema = createSelectSchema(
+  experienceFavoritesTable,
+);
+export type ExperienceFavorite = typeof experienceFavoritesTable.$inferSelect;
