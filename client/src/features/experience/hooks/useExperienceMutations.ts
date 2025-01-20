@@ -1,16 +1,8 @@
-import { AppRouter } from "@advanced-react/server";
-import { User } from "@advanced-react/server/database/schema";
 import { useParams, useSearch } from "@tanstack/react-router";
-import { DecorateProcedure } from "@trpc/react-query/shared";
-import {
-  AnyQueryProcedure,
-  inferProcedureInput,
-  inferRouterInputs,
-} from "@trpc/server";
 
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import { useToast } from "@/features/shared/hooks/useToast";
-import { trpc, trpcQueryUtils } from "@/router";
+import { trpc } from "@/router";
 
 type ExperienceMutationsOptions = {
   delete?: {

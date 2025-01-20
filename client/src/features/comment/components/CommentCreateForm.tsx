@@ -57,6 +57,8 @@ export default function CommentCreateForm({
         user: currentUser,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        isLiked: false,
+        likesCount: 0,
       };
 
       utils.comments.byExperienceId.setData({ experienceId }, (oldData) => {

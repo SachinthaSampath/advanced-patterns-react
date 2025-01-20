@@ -1,10 +1,11 @@
 import { commentValidationSchema } from "@advanced-react/shared/schema/comment";
 import { TRPCError } from "@trpc/server";
-import { desc, eq } from "drizzle-orm";
+import { and, count, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "../../database";
 import {
+  commentLikesTable,
   commentSelectSchema,
   commentsTable,
   experienceSelectSchema,
@@ -19,7 +20,7 @@ export const commentRouter = router({
         experienceId: experienceSelectSchema.shape.id,
       }),
     )
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const comments = await db.query.commentsTable.findMany({
         where: eq(commentsTable.experienceId, input.experienceId),
         orderBy: desc(commentsTable.createdAt),
@@ -33,7 +34,35 @@ export const commentRouter = router({
         },
       });
 
-      return comments;
+      const likeQueries = comments.map((comment) =>
+        ctx.user
+          ? db.query.commentLikesTable.findFirst({
+              where: and(
+                eq(commentLikesTable.commentId, comment.id),
+                eq(commentLikesTable.userId, ctx.user.id),
+              ),
+            })
+          : Promise.resolve(null),
+      );
+
+      const likesCountQueries = comments.map((comment) =>
+        db
+          .select({ count: count() })
+          .from(commentLikesTable)
+          .where(eq(commentLikesTable.commentId, comment.id))
+          .then((res) => res[0]?.count ?? 0),
+      );
+
+      const [likeResults, likesCountResults] = await Promise.all([
+        Promise.all(likeQueries),
+        Promise.all(likesCountQueries),
+      ]);
+
+      return comments.map((comment, index) => ({
+        ...comment,
+        isLiked: !!likeResults[index],
+        likesCount: likesCountResults[index],
+      }));
     }),
 
   add: protectedProcedure
@@ -133,5 +162,46 @@ export const commentRouter = router({
       await db.delete(commentsTable).where(eq(commentsTable.id, input.id));
 
       return input.id;
+    }),
+
+  like: protectedProcedure
+    .input(z.object({ id: commentSelectSchema.shape.id }))
+    .mutation(async ({ ctx, input }) => {
+      const existingLike = await db.query.commentLikesTable.findFirst({
+        where: and(
+          eq(commentLikesTable.commentId, input.id),
+          eq(commentLikesTable.userId, ctx.user.id),
+        ),
+      });
+
+      if (existingLike) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Comment already liked",
+        });
+      }
+
+      await db.insert(commentLikesTable).values({
+        commentId: input.id,
+        userId: ctx.user.id,
+        createdAt: new Date().toISOString(),
+      });
+
+      return { success: true };
+    }),
+
+  unlike: protectedProcedure
+    .input(z.object({ id: commentSelectSchema.shape.id }))
+    .mutation(async ({ ctx, input }) => {
+      await db
+        .delete(commentLikesTable)
+        .where(
+          and(
+            eq(commentLikesTable.commentId, input.id),
+            eq(commentLikesTable.userId, ctx.user.id),
+          ),
+        );
+
+      return { success: true };
     }),
 });

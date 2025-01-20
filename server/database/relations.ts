@@ -1,6 +1,7 @@
 import { relations } from "drizzle-orm";
 
 import {
+  commentLikesTable,
   commentsTable,
   experienceAttendeesTable,
   experienceFavoritesTable,
@@ -61,6 +62,10 @@ export const experienceFavoritesRelations = relations(
       fields: [experienceFavoritesTable.experienceId],
       references: [experiencesTable.id],
     }),
+    user: one(usersTable, {
+      fields: [experienceFavoritesTable.userId],
+      references: [usersTable.id],
+    }),
   }),
 );
 
@@ -69,12 +74,27 @@ export const commentsRelations = relations(commentsTable, ({ one, many }) => ({
     fields: [commentsTable.experienceId],
     references: [experiencesTable.id],
   }),
+  likes: many(commentLikesTable),
   notifications: many(notificationsTable),
   user: one(usersTable, {
     fields: [commentsTable.userId],
     references: [usersTable.id],
   }),
 }));
+
+export const commentLikesRelations = relations(
+  commentLikesTable,
+  ({ one }) => ({
+    comment: one(commentsTable, {
+      fields: [commentLikesTable.commentId],
+      references: [commentsTable.id],
+    }),
+    user: one(usersTable, {
+      fields: [commentLikesTable.userId],
+      references: [usersTable.id],
+    }),
+  }),
+);
 
 export const notificationsRelations = relations(
   notificationsTable,

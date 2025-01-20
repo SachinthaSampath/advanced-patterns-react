@@ -3,6 +3,7 @@ import { faker } from "@faker-js/faker";
 
 import { auth } from "../features/auth";
 import {
+  commentLikesTable,
   commentsTable,
   experienceAttendeesTable,
   experiencesTable,
@@ -243,6 +244,35 @@ async function seed() {
           userId: experience.userId,
           createdAt: comment.createdAt,
         });
+
+        // Add random likes to the comment
+        const numberOfLikes = Math.floor(Math.random() * 6); // 0-5 likes per comment
+        const shuffledUsers = [...users].sort(() => Math.random() - 0.5);
+
+        for (let j = 0; j < numberOfLikes && j < shuffledUsers.length; j++) {
+          const liker = shuffledUsers[j];
+
+          // Don't like your own comment
+          if (liker.id === randomUser.id) {
+            continue;
+          }
+
+          try {
+            await db.insert(commentLikesTable).values({
+              commentId: comment.id,
+              userId: liker.id,
+              createdAt: faker.date
+                .between({
+                  from: comment.createdAt,
+                  to: new Date(),
+                })
+                .toISOString(),
+            });
+          } catch {
+            // Ignore duplicate likes
+            continue;
+          }
+        }
       }
     }
   }

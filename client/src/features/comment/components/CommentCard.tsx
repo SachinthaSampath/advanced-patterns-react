@@ -2,6 +2,7 @@ import { Comment, User } from "@advanced-react/server/database/schema";
 import { useState } from "react";
 
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
+import { LikeButton } from "@/features/comment/components/LikeButton";
 import Button from "@/features/shared/components/ui/Button";
 import Link from "@/features/shared/components/ui/Link";
 import { useToast } from "@/features/shared/hooks/useToast";
@@ -13,7 +14,9 @@ import { OptimisticComment } from "../types";
 import CommentEditForm from "./CommentEditForm";
 
 type CommentCardProps = {
-  comment: (Comment & { user: User }) | OptimisticComment;
+  comment:
+    | (Comment & { user: User; isLiked: boolean; likesCount: number })
+    | OptimisticComment;
 };
 
 export default function CommentCard({ comment }: CommentCardProps) {
@@ -38,9 +41,22 @@ export default function CommentCard({ comment }: CommentCardProps) {
         {comment.content}
       </p>
       <div className="mt-1 flex items-center justify-between">
-        <time className="text-xs text-neutral-500">
-          {new Date(comment.createdAt).toLocaleDateString()}
-        </time>
+        <div className="flex items-center gap-2">
+          {!(comment as OptimisticComment).optimistic && (
+            <div className="flex items-center gap-1">
+              <LikeButton
+                commentId={comment.id}
+                isLiked={(comment as Comment & { isLiked: boolean }).isLiked}
+              />
+              <span className="text-xs text-neutral-500">
+                {(comment as Comment & { likesCount: number }).likesCount}
+              </span>
+            </div>
+          )}
+          <time className="text-xs text-neutral-500">
+            {new Date(comment.createdAt).toLocaleDateString()}
+          </time>
+        </div>
         {isCommentOwner && (
           <CommentCardOwnerButtons
             comment={comment}
