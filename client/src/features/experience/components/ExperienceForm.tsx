@@ -1,11 +1,11 @@
-import type { Experience } from "@advanced-react/server/features/experience/models";
+import { Experience } from "@advanced-react/server/database/schema";
 import { experienceValidationSchema } from "@advanced-react/shared/schema/experience";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import LocationPicker from "@/features/shared/components/map/LocationPicker";
-import Button from "@/features/shared/components/ui/Button";
+import { Button } from "@/features/shared/components/ui/Button";
 import { DateTimePicker } from "@/features/shared/components/ui/DateTimePicker";
 import FileInput from "@/features/shared/components/ui/FileInput";
 import {
@@ -17,14 +17,15 @@ import {
   FormMessage,
 } from "@/features/shared/components/ui/Form";
 import Input from "@/features/shared/components/ui/Input";
-import TextArea from "@/features/shared/components/ui/TextArea";
-import { useToast } from "@/features/shared/hooks/useToast";
-import { trpc } from "@/router";
+import { TextArea } from "@/features/shared/components/ui/TextArea";
+
+import { useExperienceMutations } from "../hooks/useExperienceMutations";
+import { ExperienceForDetails } from "../types";
 
 type ExperienceFormData = z.infer<typeof experienceValidationSchema>;
 
 type ExperienceFormProps = {
-  experience?: Experience;
+  experience?: ExperienceForDetails;
   onSuccess?: (id: Experience["id"]) => void;
   onCancel?: () => void;
 };
@@ -34,41 +35,26 @@ export default function ExperienceForm({
   onSuccess,
   onCancel,
 }: ExperienceFormProps) {
-  const { toast } = useToast();
-
   const form = useForm<ExperienceFormData>({
     resolver: zodResolver(experienceValidationSchema),
     defaultValues: {
-      ...experience,
+      id: experience?.id ?? undefined,
+      title: experience?.title ?? "",
+      content: experience?.content ?? "",
+      url: experience?.url ?? "",
+      scheduledAt: experience?.scheduledAt ?? undefined,
       location: experience?.location
         ? JSON.parse(experience.location)
         : undefined,
     },
   });
 
-  const editMutation = trpc.experiences.edit.useMutation({
-    onSuccess: (data) => {
-      onSuccess?.(data[0].id);
+  const { addMutation, editMutation } = useExperienceMutations(experience?.id, {
+    add: {
+      onSuccess,
     },
-    onError: (error) => {
-      toast({
-        title: "Failed to edit experience",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const addMutation = trpc.experiences.add.useMutation({
-    onSuccess: (data) => {
-      onSuccess?.(data[0].id);
-    },
-    onError: (error) => {
-      toast({
-        title: "Failed to create experience",
-        description: error.message,
-        variant: "destructive",
-      });
+    edit: {
+      onSuccess,
     },
   });
 

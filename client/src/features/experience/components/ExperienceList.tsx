@@ -1,23 +1,18 @@
-import { Experience, Tag, User } from "@advanced-react/server/database/schema";
+import Spinner from "@/features/shared/components/ui/Spinner";
 
+import { ExperienceForList } from "../types";
 import ExperienceCard from "./ExperienceCard";
 
-interface ExperienceListProps {
-  experiences: (Experience & {
-    user: User;
-    commentsCount: number;
-    attendeesCount: number;
-    attendees: User[];
-    tags: Tag[];
-  })[];
+type ExperienceListProps = {
+  experiences: ExperienceForList[];
   isLoading?: boolean;
   noExperiencesMessage?: string;
-}
+};
 
 export default function ExperienceList({
   experiences,
   isLoading,
-  noExperiencesMessage,
+  noExperiencesMessage = "No experiences found",
 }: ExperienceListProps) {
   return (
     <div className="space-y-4">
@@ -26,13 +21,11 @@ export default function ExperienceList({
       ))}
       {isLoading && (
         <div className="flex justify-center py-4">
-          <div>Loading...</div>
+          <Spinner />
         </div>
       )}
       {!isLoading && experiences.length === 0 && (
-        <div className="flex justify-center py-4">
-          {noExperiencesMessage ?? "No experiences found"}
-        </div>
+        <div className="flex justify-center py-4">{noExperiencesMessage}</div>
       )}
     </div>
   );

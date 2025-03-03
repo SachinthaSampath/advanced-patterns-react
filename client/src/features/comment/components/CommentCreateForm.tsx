@@ -1,26 +1,32 @@
-import type { Experience } from "@advanced-react/server/features/experience/models";
 import { commentValidationSchema } from "@advanced-react/shared/schema/comment";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { FormProvider, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
-import FormField from "@/features/shared/components/FormField";
-import Button from "@/features/shared/components/ui/Button";
+import { ExperienceForDetails } from "@/features/experience/types";
+import { Button } from "@/features/shared/components/ui/Button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from "@/features/shared/components/ui/Form";
 import Input from "@/features/shared/components/ui/Input";
 import { useToast } from "@/features/shared/hooks/useToast";
 import { trpc } from "@/router";
 
-import { OptimisticComment } from "../types";
+import { CommentOptimistic } from "../types";
 
 type CommentCreateFormData = z.infer<typeof commentValidationSchema>;
 
 type CommentCreateFormProps = {
-  experienceId: Experience["id"];
+  experience: ExperienceForDetails;
 };
 
 export default function CommentCreateForm({
-  experienceId,
+  experience,
 }: CommentCreateFormProps) {
   const { toast } = useToast();
   const { currentUser } = useCurrentUser();
@@ -28,6 +34,9 @@ export default function CommentCreateForm({
 
   const form = useForm<CommentCreateFormData>({
     resolver: zodResolver(commentValidationSchema),
+    defaultValues: {
+      content: "",
+    },
   });
 
   const addCommentMutation = trpc.comments.add.useMutation({
@@ -39,20 +48,25 @@ export default function CommentCreateForm({
       form.reset();
 
       await Promise.all([
-        utils.comments.byExperienceId.cancel({ experienceId }),
-        utils.experiences.byId.cancel({ id: experienceId }),
+        utils.comments.byExperienceId.cancel({ experienceId: experience.id }),
+        utils.experiences.byId.cancel({ id: experience.id }),
       ]);
 
       const previousData = {
-        byExperienceId: utils.comments.byExperienceId.getData({ experienceId }),
-        experienceById: utils.experiences.byId.getData({ id: experienceId }),
+        byExperienceId: utils.comments.byExperienceId.getData({
+          experienceId: experience.id,
+        }),
+        experienceById: utils.experiences.byId.getData({
+          id: experience.id,
+        }),
       };
 
-      const optimisticComment: OptimisticComment = {
+      const optimisticComment: CommentOptimistic = {
         id: Math.random(),
         optimistic: true,
         content: data.content,
-        experienceId,
+        experienceId: experience.id,
+        experience,
         userId: currentUser.id,
         user: currentUser,
         createdAt: new Date().toISOString(),
@@ -61,15 +75,18 @@ export default function CommentCreateForm({
         likesCount: 0,
       };
 
-      utils.comments.byExperienceId.setData({ experienceId }, (oldData) => {
-        if (!oldData) {
-          return [optimisticComment];
-        }
+      utils.comments.byExperienceId.setData(
+        { experienceId: experience.id },
+        (oldData) => {
+          if (!oldData) {
+            return [optimisticComment];
+          }
 
-        return [optimisticComment, ...oldData];
-      });
+          return [optimisticComment, ...oldData];
+        },
+      );
 
-      utils.experiences.byId.setData({ id: experienceId }, (oldData) => {
+      utils.experiences.byId.setData({ id: experience.id }, (oldData) => {
         if (!oldData) {
           return;
         }
@@ -80,19 +97,28 @@ export default function CommentCreateForm({
         };
       });
 
-      return { previousData };
+      const { dismiss } = toast({
+        title: "Comment added",
+        description: "Your comment has been added",
+      });
+
+      return { dismiss, previousData };
     },
     onSuccess: async () => {
-      await utils.comments.byExperienceId.invalidate({ experienceId });
+      await utils.comments.byExperienceId.invalidate({
+        experienceId: experience.id,
+      });
     },
     onError: (error, _, context) => {
+      context?.dismiss?.();
+
       utils.comments.byExperienceId.setData(
-        { experienceId },
+        { experienceId: experience.id },
         context?.previousData.byExperienceId,
       );
 
       utils.experiences.byId.setData(
-        { id: experienceId },
+        { id: experience.id },
         context?.previousData.experienceById,
       );
 
@@ -107,7 +133,7 @@ export default function CommentCreateForm({
   const handleSubmit = form.handleSubmit((data) => {
     addCommentMutation.mutate({
       content: data.content,
-      experienceId,
+      experienceId: experience.id,
     });
   });
 
@@ -120,21 +146,24 @@ export default function CommentCreateForm({
   }
 
   return (
-    <FormProvider {...form}>
-      <form onSubmit={handleSubmit} className="space-y-2">
-        <FormField<CommentCreateFormData> name="content">
-          {({ error, name }) => (
-            <Input
-              {...form.register(name)}
-              placeholder="Add a comment..."
-              error={error}
-            />
+    <Form {...form}>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="content"
+          render={({ field }) => (
+            <FormItem>
+              <FormControl>
+                <Input {...field} placeholder="Add a comment..." />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
-        </FormField>
+        />
         <Button type="submit" disabled={addCommentMutation.isPending}>
           Add Comment
         </Button>
       </form>
-    </FormProvider>
+    </Form>
   );
 }

@@ -1,9 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, notFound } from "@tanstack/react-router";
 import { z } from "zod";
 
 import CommentsSection from "@/features/comment/components/CommentsSection";
 import ExperienceDetails from "@/features/experience/components/ExperienceDetails";
-import { trpc } from "@/router";
+import { isTRPCClientError, trpc } from "@/router";
 
 export const Route = createFileRoute("/experiences/$experienceId/")({
   params: {
@@ -12,9 +12,17 @@ export const Route = createFileRoute("/experiences/$experienceId/")({
     }),
   },
   loader: async ({ params, context: { trpcQueryUtils } }) => {
-    await trpcQueryUtils.experiences.byId.ensureData({
-      id: params.experienceId,
-    });
+    try {
+      await trpcQueryUtils.experiences.byId.ensureData({
+        id: params.experienceId,
+      });
+    } catch (error) {
+      if (isTRPCClientError(error) && error.data?.code === "NOT_FOUND") {
+        throw notFound();
+      }
+
+      throw error;
+    }
   },
   component: ExperiencePage,
 });
@@ -22,25 +30,17 @@ export const Route = createFileRoute("/experiences/$experienceId/")({
 function ExperiencePage() {
   const { experienceId } = Route.useParams();
 
-  const experienceQuery = trpc.experiences.byId.useQuery({ id: experienceId });
-
-  if (experienceQuery.isPending) {
-    return <div>Loading...</div>;
-  }
-
-  if (!experienceQuery.data) {
-    return <div>Experience not found</div>;
-  }
+  const [experience] = trpc.experiences.byId.useSuspenseQuery({
+    id: experienceId,
+  });
 
   return (
-    <div className="container mx-auto p-4">
-      <div className="max-w-feed mx-auto space-y-4">
-        <ExperienceDetails experience={experienceQuery.data} />
-        <CommentsSection
-          experienceId={experienceId}
-          commentsCount={experienceQuery.data.commentsCount}
-        />
-      </div>
-    </div>
+    <main className="space-y-4 pb-20">
+      <ExperienceDetails experience={experience} />
+      <CommentsSection
+        experienceId={experienceId}
+        commentsCount={experience.commentsCount}
+      />
+    </main>
   );
 }

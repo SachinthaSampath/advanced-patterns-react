@@ -4,10 +4,10 @@ import { createSelectSchema } from "drizzle-zod";
 export const usersTable = sqliteTable("users", {
   id: int().primaryKey({ autoIncrement: true }),
   name: text().notNull(),
+  bio: text(),
   avatarUrl: text(),
   email: text().notNull().unique(),
   password: text().notNull(),
-
   createdAt: text().notNull(),
   updatedAt: text().notNull(),
 });

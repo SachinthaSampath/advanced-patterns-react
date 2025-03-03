@@ -1,5 +1,4 @@
 import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/router-devtools";
 
 import Navbar from "@/features/shared/components/Navbar";
 import ThemeProvider from "@/features/shared/components/theme/ThemeProvider";
@@ -19,22 +18,21 @@ function Root() {
   return (
     <ThemeProvider defaultTheme="dark">
       <Toaster />
-      <div className="flex justify-center">
+      <div className="flex justify-center gap-8 pb-4">
         <Navbar />
-        <div className="min-h-screen w-full max-w-3xl">
+        <div className="min-h-screen w-full max-w-2xl">
           <TopLoadingBar />
-          <header className="border-b border-neutral-200 p-4 dark:border-neutral-800">
+          <header className="mb-4 border-b border-neutral-200 p-4 dark:border-neutral-800">
             <h1 className="text-center text-xl font-bold">
               Advanced Patterns React
             </h1>
             <p className="text-center text-sm text-neutral-500">
               <b>
-                <span className="text-primary-500">Cosden</span> Solutions
+                <span className="dark:text-primary-500">Cosden</span> Solutions
               </b>
             </p>
           </header>
           <Outlet />
-          <TanStackRouterDevtools />
         </div>
       </div>
     </ThemeProvider>

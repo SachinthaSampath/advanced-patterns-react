@@ -6,7 +6,7 @@ import { ButtonHTMLAttributes, ComponentType, useState } from "react";
 import { cn } from "@/lib/utils/cn";
 
 import { Badge } from "./Badge";
-import Button from "./Button";
+import { Button } from "./Button";
 import {
   Command,
   CommandGroup,
@@ -124,7 +124,7 @@ export function MultiSelect({
           onClick={handleTogglePopover}
           variant="outline"
           className={cn(
-            "flex h-auto min-h-10 w-full items-center justify-between rounded-md border bg-inherit p-1 hover:bg-inherit [&_svg]:pointer-events-auto",
+            "flex h-auto min-h-10 w-full items-center justify-between rounded-md border bg-inherit bg-neutral-200 p-1 dark:bg-neutral-950 [&_svg]:pointer-events-auto",
             className,
           )}
         >
@@ -189,7 +189,7 @@ export function MultiSelect({
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className="border-2 border-red-500 p-0"
+        className="p-0"
         align="start"
         onEscapeKeyDown={() => setIsPopoverOpen(false)}
       >

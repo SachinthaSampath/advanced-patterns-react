@@ -5,10 +5,12 @@ import { z } from "zod";
 
 import { db } from "../../database";
 import {
+  cleanUserSelectSchema,
   commentLikesTable,
   commentSelectSchema,
   commentsTable,
   experienceSelectSchema,
+  experiencesTable,
   notificationsTable,
 } from "../../database/schema";
 import { protectedProcedure, publicProcedure, router } from "../../trpc";
@@ -20,11 +22,22 @@ export const commentRouter = router({
         experienceId: experienceSelectSchema.shape.id,
       }),
     )
+    .output(
+      z.array(
+        commentSelectSchema.extend({
+          experience: experienceSelectSchema,
+          isLiked: z.boolean(),
+          likesCount: z.number(),
+          user: cleanUserSelectSchema,
+        }),
+      ),
+    )
     .query(async ({ ctx, input }) => {
       const comments = await db.query.commentsTable.findMany({
         where: eq(commentsTable.experienceId, input.experienceId),
         orderBy: desc(commentsTable.createdAt),
         with: {
+          experience: true,
           user: {
             columns: {
               password: false,
@@ -75,6 +88,17 @@ export const commentRouter = router({
     .mutation(async ({ ctx, input }) => {
       const now = new Date().toISOString();
 
+      const experience = await db.query.experiencesTable.findFirst({
+        where: eq(experiencesTable.id, input.experienceId),
+      });
+
+      if (!experience) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Experience not found",
+        });
+      }
+
       const comment = await db
         .insert(commentsTable)
         .values({
@@ -86,14 +110,16 @@ export const commentRouter = router({
         })
         .returning();
 
-      await db.insert(notificationsTable).values({
-        type: "user_commented_experience",
-        commentId: comment[0].id,
-        experienceId: input.experienceId,
-        fromUserId: ctx.user.id,
-        userId: comment[0].userId,
-        createdAt: now,
-      });
+      if (experience.userId !== ctx.user.id) {
+        await db.insert(notificationsTable).values({
+          type: "user_commented_experience",
+          commentId: comment[0].id,
+          experienceId: input.experienceId,
+          fromUserId: ctx.user.id,
+          userId: experience.userId,
+          createdAt: now,
+        });
+      }
 
       return comment[0];
     }),
@@ -152,7 +178,14 @@ export const commentRouter = router({
         });
       }
 
-      if (comment.userId !== ctx.user.id) {
+      const experience = await db.query.experiencesTable.findFirst({
+        where: eq(experiencesTable.id, comment.experienceId),
+      });
+
+      if (
+        comment.userId !== ctx.user.id &&
+        experience?.userId !== ctx.user.id
+      ) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "You can only delete your own comments",
@@ -176,8 +209,8 @@ export const commentRouter = router({
 
       if (existingLike) {
         throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Comment already liked",
+          code: "FORBIDDEN",
+          message: "You have already liked this comment",
         });
       }
 

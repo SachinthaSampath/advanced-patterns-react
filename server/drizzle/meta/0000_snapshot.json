@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "9fcc9c05-e973-41a7-a2da-0c16aefedda6",
+  "id": "fa711fc4-7eb7-4e9e-b3c7-1a543a8ec24d",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "user_follows": {
@@ -85,6 +85,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
+          "autoincrement": false
+        },
+        "bio": {
+          "name": "bio",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
           "autoincrement": false
         },
         "avatarUrl": {

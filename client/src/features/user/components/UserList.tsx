@@ -1,13 +1,12 @@
-import { User } from "@advanced-react/server/database/schema";
+import Spinner from "@/features/shared/components/ui/Spinner";
 
-import Link from "@/features/shared/components/ui/Link";
-
-import UserAvatar from "./UserAvatar";
+import { UserWithUserContext } from "../types";
+import UserCard from "./UserCard";
 
 type UserListProps = {
-  users: (User & { isFollowing: boolean })[];
+  users: UserWithUserContext[];
   isLoading?: boolean;
-  rightComponent?: (user: User & { isFollowing: boolean }) => React.ReactNode;
+  rightComponent?: (user: UserWithUserContext) => React.ReactNode;
 };
 
 export default function UserList({
@@ -22,19 +21,11 @@ export default function UserList({
   return (
     <div className="flex flex-col gap-4">
       {users.map((user) => (
-        <div
-          key={user.id}
-          className="flex items-center justify-between rounded-lg border border-neutral-200 p-4 dark:border-neutral-800"
-        >
-          <Link key={user.id} to="/users/$userId" params={{ userId: user.id }}>
-            <UserAvatar user={user} />
-          </Link>
-          {rightComponent?.(user)}
-        </div>
+        <UserCard key={user.id} user={user} rightComponent={rightComponent} />
       ))}
       {isLoading && (
         <div className="flex justify-center py-4">
-          <div>Loading...</div>
+          <Spinner />
         </div>
       )}
     </div>

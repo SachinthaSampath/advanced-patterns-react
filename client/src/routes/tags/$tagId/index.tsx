@@ -1,9 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, notFound } from "@tanstack/react-router";
 import { z } from "zod";
 
 import ExperienceList from "@/features/experience/components/ExperienceList";
 import InfiniteScroll from "@/features/shared/components/InfiniteScroll";
-import { trpc } from "@/router";
+import { isTRPCClientError, trpc } from "@/router";
 
 export const Route = createFileRoute("/tags/$tagId/")({
   params: {
@@ -12,12 +12,20 @@ export const Route = createFileRoute("/tags/$tagId/")({
     }),
   },
   loader: async ({ params, context: { trpcQueryUtils } }) => {
-    await Promise.all([
-      trpcQueryUtils.tags.byId.ensureData({ id: params.tagId }),
-      // TODO: This currently doesn't work due to a bug in TRPC
-      // https://github.com/trpc/trpc/discussions/5833
-      // trpcQueryUtils.tags.experiences.ensureData({ id: params.tagId }),
-    ]);
+    try {
+      await Promise.all([
+        trpcQueryUtils.tags.byId.ensureData({ id: params.tagId }),
+        trpcQueryUtils.experiences.byTagId.prefetchInfinite({
+          id: params.tagId,
+        }),
+      ]);
+    } catch (error) {
+      if (isTRPCClientError(error) && error.data?.code === "NOT_FOUND") {
+        throw notFound();
+      }
+
+      throw error;
+    }
   },
   component: TagPage,
 });
@@ -25,54 +33,37 @@ export const Route = createFileRoute("/tags/$tagId/")({
 function TagPage() {
   const { tagId } = Route.useParams();
 
-  const tagQuery = trpc.tags.byId.useQuery({ id: tagId });
+  const [tag] = trpc.tags.byId.useSuspenseQuery({ id: tagId });
 
-  const experiencesQuery = trpc.tags.experiences.useInfiniteQuery(
-    {
-      id: tagId,
-    },
-    {
-      getNextPageParam: (lastPage) => lastPage.nextCursor,
-    },
-  );
-
-  if (tagQuery.isPending || experiencesQuery.isPending) {
-    return <div>Loading...</div>;
-  }
-
-  if (!tagQuery.data) {
-    return <div>Tag not found</div>;
-  }
+  const [{ pages }, experiencesQuery] =
+    trpc.experiences.byTagId.useSuspenseInfiniteQuery(
+      {
+        id: tagId,
+      },
+      {
+        getNextPageParam: (lastPage) => lastPage.nextCursor,
+      },
+    );
 
   return (
-    <div className="container mx-auto p-4">
-      <div className="max-w-feed mx-auto flex flex-col gap-4">
-        <h2 className="text-2xl font-bold">
-          Experiences with "{tagQuery.data.name}"
-        </h2>
-        <InfiniteScroll
-          onLoadMore={() => {
-            if (
-              experiencesQuery.hasNextPage &&
-              !experiencesQuery.isFetchingNextPage
-            ) {
-              experiencesQuery.fetchNextPage();
-            }
-          }}
-          hasNextPage={experiencesQuery.hasNextPage}
-        >
-          <ExperienceList
-            experiences={
-              experiencesQuery.data?.pages.flatMap(
-                (page) => page.experiences,
-              ) ?? []
-            }
-            isLoading={
-              experiencesQuery.isPending || experiencesQuery.isFetchingNextPage
-            }
-          />
-        </InfiniteScroll>
-      </div>
-    </div>
+    <main className="space-y-4">
+      <h2 className="text-2xl font-bold">Experiences with "{tag.name}"</h2>
+      <InfiniteScroll
+        onLoadMore={() => {
+          if (
+            experiencesQuery.hasNextPage &&
+            !experiencesQuery.isFetchingNextPage
+          ) {
+            experiencesQuery.fetchNextPage();
+          }
+        }}
+        hasNextPage={experiencesQuery.hasNextPage}
+      >
+        <ExperienceList
+          experiences={pages.flatMap((page) => page.experiences)}
+          isLoading={experiencesQuery.isFetchingNextPage}
+        />
+      </InfiniteScroll>
+    </main>
   );
 }

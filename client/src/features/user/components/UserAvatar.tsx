@@ -32,7 +32,7 @@ export default function UserAvatar({
       {showName && (
         <span
           className={cn(
-            "text-sm text-neutral-600 dark:text-neutral-400",
+            "text-neutral-600 dark:text-neutral-400",
             nameClassName,
           )}
         >

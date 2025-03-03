@@ -26,7 +26,7 @@ export default function Link({
   );
 }
 
-const linkVariants = cva("hover:underline", {
+const linkVariants = cva("flex items-center gap-2 hover:underline", {
   variants: {
     variant: {
       default: "text-secondary-500 dark:text-primary-500",

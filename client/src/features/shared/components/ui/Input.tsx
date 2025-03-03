@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils/cn";
 import { useFormField } from "./Form";
 
 const baseInputClasses =
-  "w-full rounded border border-neutral-200 p-2 dark:border-neutral-800 focus:border-neutral-400 focus:outline-none dark:focus:border-neutral-600";
+  "w-full rounded placeholder-neutral-500 dark:placeholder-neutral-400 border border-neutral-200 p-2 dark:border-neutral-800 focus:border-neutral-400 focus:outline-none dark:focus:border-neutral-600 bg-neutral-200 dark:bg-neutral-950";
 
 export type InputProps = React.InputHTMLAttributes<HTMLInputElement> & {
   ref?:

@@ -22,6 +22,7 @@ async function seed() {
     .insert(usersTable)
     .values({
       name: "Cosden Solutions",
+      bio: "Cosden Solutions is a company that teaches people how to code in React.",
       email: "demo@cosdensolutions.io",
       password: await auth.hashPassword("cosdensolutions"),
       createdAt: new Date().toISOString(),
@@ -114,6 +115,7 @@ async function seed() {
       .insert(usersTable)
       .values({
         name: faker.person.firstName(),
+        bio: faker.person.bio(),
         avatarUrl: faker.image.avatar(),
         email: faker.internet.email(),
         password: await auth.hashPassword(faker.internet.password()),

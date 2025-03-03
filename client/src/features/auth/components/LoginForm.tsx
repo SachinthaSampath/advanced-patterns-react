@@ -1,11 +1,19 @@
 import { userCredentialsSchema } from "@advanced-react/shared/schema/auth";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { FormProvider, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 
-import FormField from "@/features/shared/components/FormField";
-import Button from "@/features/shared/components/ui/Button";
+import { Button } from "@/features/shared/components/ui/Button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/features/shared/components/ui/Form";
 import Input from "@/features/shared/components/ui/Input";
+import Link from "@/features/shared/components/ui/Link";
 import { useToast } from "@/features/shared/hooks/useToast";
 import { router, trpc } from "@/router";
 
@@ -17,7 +25,6 @@ type LoginFormData = z.infer<typeof loginCredentialsSchema>;
 
 export default function LoginForm() {
   const { toast } = useToast();
-
   const utils = trpc.useUtils();
 
   const loginMutation = trpc.auth.login.useMutation({
@@ -53,18 +60,34 @@ export default function LoginForm() {
   });
 
   return (
-    <FormProvider {...form}>
+    <Form {...form}>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <FormField<LoginFormData> name="email" label="Email">
-          {({ error, name }) => (
-            <Input {...form.register(name)} type="email" error={error} />
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input {...field} type="email" placeholder="dev@example.com" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
-        </FormField>
-        <FormField<LoginFormData> name="password" label="Password">
-          {({ error, name }) => (
-            <Input {...form.register(name)} type="password" error={error} />
+        />
+        <FormField
+          control={form.control}
+          name="password"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Password</FormLabel>
+              <FormControl>
+                <Input {...field} type="password" placeholder="********" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
-        </FormField>
+        />
         <Button
           type="submit"
           className="w-full"
@@ -72,7 +95,12 @@ export default function LoginForm() {
         >
           {loginMutation.isPending ? "Logging in..." : "Login"}
         </Button>
+        <Button asChild type="button" variant="link">
+          <Link variant="ghost" href="/register">
+            Don't have an account? Register here
+          </Link>
+        </Button>
       </form>
-    </FormProvider>
+    </Form>
   );
 }

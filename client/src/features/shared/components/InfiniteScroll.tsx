@@ -11,7 +11,7 @@ export default function InfiniteScroll({
   children,
   hasNextPage,
   onLoadMore,
-  threshold = 100,
+  threshold = 500,
 }: InfiniteScrollProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 

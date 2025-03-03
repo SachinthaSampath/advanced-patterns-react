@@ -6,7 +6,7 @@ import { useState } from "react";
 
 import { cn } from "@/lib/utils/cn";
 
-import Button from "./Button";
+import { Button } from "./Button";
 import Calendar from "./Calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "./Popover";
 import { ScrollArea, ScrollBar } from "./ScrollArea";
@@ -43,7 +43,9 @@ export function DateTimePicker({ value, onChange }: DateTimePickerProps) {
         <Button
           type="button"
           variant="outline"
-          className={cn("relative w-full pl-3 font-normal")}
+          className={cn(
+            "relative w-full bg-neutral-200 pl-3 font-normal dark:bg-neutral-950",
+          )}
         >
           {localValue ? (
             <>

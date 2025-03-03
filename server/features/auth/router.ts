@@ -1,4 +1,8 @@
-import { userCredentialsSchema } from "@advanced-react/shared/schema/auth";
+import {
+  changeEmailSchema,
+  changePasswordSchema,
+  userCredentialsSchema,
+} from "@advanced-react/shared/schema/auth";
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
@@ -6,7 +10,7 @@ import { z } from "zod";
 import { db } from "../../database";
 import { protectedProcedure, publicProcedure, router } from "../../trpc";
 import { auth } from "./index";
-import { cleanUserSelectSchema, usersTable } from "./models";
+import { userSelectSchema, usersTable } from "./models";
 
 export const authRouter = router({
   register: publicProcedure
@@ -14,7 +18,7 @@ export const authRouter = router({
     .output(
       z.object({
         accessToken: z.string(),
-        user: cleanUserSelectSchema,
+        user: userSelectSchema.omit({ password: true }),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -68,7 +72,7 @@ export const authRouter = router({
     .output(
       z.object({
         accessToken: z.string(),
-        user: cleanUserSelectSchema,
+        user: userSelectSchema.omit({ password: true }),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -120,7 +124,7 @@ export const authRouter = router({
     .output(
       z.object({
         accessToken: z.string().nullable(),
-        currentUser: cleanUserSelectSchema.nullable(),
+        currentUser: userSelectSchema.omit({ password: true }).nullable(),
       }),
     )
     .query(async ({ ctx }) => {
@@ -132,5 +136,53 @@ export const authRouter = router({
       const { password, ...cleanUser } = ctx.user;
 
       return { accessToken: ctx.accessToken, currentUser: cleanUser };
+    }),
+
+  changeEmail: protectedProcedure
+    .input(changeEmailSchema)
+    .mutation(async ({ ctx, input }) => {
+      const isPasswordValid = await auth.verifyPassword(
+        input.password,
+        ctx.user.password,
+      );
+
+      if (!isPasswordValid) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Invalid password",
+        });
+      }
+
+      await db
+        .update(usersTable)
+        .set({ email: input.email, updatedAt: new Date().toISOString() })
+        .where(eq(usersTable.id, ctx.user.id));
+
+      return { success: true };
+    }),
+
+  changePassword: protectedProcedure
+    .input(changePasswordSchema)
+    .mutation(async ({ ctx, input }) => {
+      const isPasswordValid = await auth.verifyPassword(
+        input.currentPassword,
+        ctx.user.password,
+      );
+
+      if (!isPasswordValid) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Invalid password",
+        });
+      }
+
+      const hashedPassword = await auth.hashPassword(input.newPassword);
+
+      await db
+        .update(usersTable)
+        .set({ password: hashedPassword, updatedAt: new Date().toISOString() })
+        .where(eq(usersTable.id, ctx.user.id));
+
+      return { success: true };
     }),
 });

@@ -1,3 +1,5 @@
+// Built on top of https://github.com/TanStack/router/blob/main/examples/react/with-trpc-react-query/app/router.tsx
+
 import { AppRouter } from "@advanced-react/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter as createTanStackRouter } from "@tanstack/react-router";
@@ -5,6 +7,7 @@ import {
   httpLink,
   isNonJsonSerializable,
   splitLink,
+  TRPCClientError,
   TRPCLink,
 } from "@trpc/client";
 import { httpBatchLink } from "@trpc/client";
@@ -13,18 +16,17 @@ import {
   createTRPCReact,
   getQueryKey,
 } from "@trpc/react-query";
-import { inferRouterOutputs } from "@trpc/server";
 import { observable } from "@trpc/server/observable";
 
 import { env } from "@/lib/utils/env";
 
+import { ErrorComponent } from "./features/shared/components/ErrorComponent";
+import { NotFoundComponent } from "./features/shared/components/NotFoundComponent";
 import { routeTree } from "./routeTree.gen";
 
 export const queryClient = new QueryClient();
 
 export const trpc = createTRPCReact<AppRouter>();
-
-export type RouterOutputs = inferRouterOutputs<AppRouter>;
 
 export const customLink: TRPCLink<AppRouter> = () => {
   return ({ next, op }) => {
@@ -35,7 +37,6 @@ export const customLink: TRPCLink<AppRouter> = () => {
         },
 
         error(err) {
-          // If user is not authorized, redirect to login
           if (err?.data?.code === "UNAUTHORIZED") {
             router.navigate({ to: "/login" });
           }
@@ -104,6 +105,8 @@ function createRouter() {
   const router = createTanStackRouter({
     routeTree,
     defaultPreload: "intent",
+    defaultErrorComponent: ErrorComponent,
+    defaultNotFoundComponent: NotFoundComponent,
     context: {
       trpcQueryUtils,
     },
@@ -129,4 +132,10 @@ declare module "@tanstack/react-router" {
   interface Register {
     router: ReturnType<typeof createRouter>;
   }
+}
+
+export function isTRPCClientError(
+  cause: unknown,
+): cause is TRPCClientError<AppRouter> {
+  return cause instanceof TRPCClientError;
 }

@@ -6,42 +6,38 @@ import { trpc } from "@/router";
 
 export const Route = createFileRoute("/")({
   component: Index,
+  loader: async ({ context: { trpcQueryUtils } }) => {
+    await trpcQueryUtils.experiences.feed.prefetchInfinite({});
+  },
 });
 
 function Index() {
-  const experiencesQuery = trpc.experiences.feed.useInfiniteQuery(
-    {},
-    {
-      getNextPageParam: (lastPage) => lastPage.nextCursor,
-    },
-  );
+  const [{ pages }, experiencesQuery] =
+    trpc.experiences.feed.useSuspenseInfiniteQuery(
+      {},
+      {
+        getNextPageParam: (lastPage) => lastPage.nextCursor,
+      },
+    );
 
   return (
-    <div className="container mx-auto p-4">
-      <div className="max-w-feed mx-auto flex flex-col gap-4">
-        <InfiniteScroll
-          onLoadMore={() => {
-            if (
-              experiencesQuery.hasNextPage &&
-              !experiencesQuery.isFetchingNextPage
-            ) {
-              experiencesQuery.fetchNextPage();
-            }
-          }}
-          hasNextPage={experiencesQuery.hasNextPage}
-        >
-          <ExperienceList
-            experiences={
-              experiencesQuery.data?.pages.flatMap(
-                (page) => page.experiences,
-              ) ?? []
-            }
-            isLoading={
-              experiencesQuery.isLoading || experiencesQuery.isFetchingNextPage
-            }
-          />
-        </InfiniteScroll>
-      </div>
-    </div>
+    <main className="space-y-4">
+      <InfiniteScroll
+        onLoadMore={() => {
+          if (
+            experiencesQuery.hasNextPage &&
+            !experiencesQuery.isFetchingNextPage
+          ) {
+            experiencesQuery.fetchNextPage();
+          }
+        }}
+        hasNextPage={experiencesQuery.hasNextPage}
+      >
+        <ExperienceList
+          experiences={pages.flatMap((page) => page.experiences)}
+          isLoading={experiencesQuery.isFetchingNextPage}
+        />
+      </InfiniteScroll>
+    </main>
   );
 }

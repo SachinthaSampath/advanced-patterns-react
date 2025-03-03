@@ -1,23 +1,34 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { LogOut, Settings } from "lucide-react";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
-import Button from "@/features/shared/components/ui/Button";
-import Link from "@/features/shared/components/ui/Link";
+import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
+import { Button } from "@/features/shared/components/ui/Button";
 import { useToast } from "@/features/shared/hooks/useToast";
+import { ChangeEmailDialog } from "@/features/user/components/ChangeEmailDialog";
+import { ChangePasswordDialog } from "@/features/user/components/ChangePasswordDialog";
 import { router, trpc } from "@/router";
 
 export const Route = createFileRoute("/settings/")({
   component: SettingsPage,
+  loader: async ({ context: { trpcQueryUtils } }) => {
+    const { currentUser } = await trpcQueryUtils.auth.currentUser.ensureData();
+
+    if (!currentUser) {
+      return redirect({ to: "/login" });
+    }
+  },
 });
 
 function SettingsPage() {
   const { toast } = useToast();
-
   const utils = trpc.useUtils();
+  const { currentUser } = useCurrentUser();
 
   const logoutMutation = trpc.auth.logout.useMutation({
     onSuccess: async () => {
-      await utils.auth.invalidate();
+      await utils.auth.currentUser.invalidate();
+
+      await utils.notifications.feed.reset();
+      await utils.experiences.favorites.reset();
 
       router.navigate({ to: "/login" });
 
@@ -28,40 +39,42 @@ function SettingsPage() {
     },
   });
 
-  return (
-    <div className="container mx-auto max-w-lg py-8">
-      <div className="mb-8 flex items-center gap-3">
-        <Settings className="h-8 w-8" />
-        <h1 className="text-2xl font-bold">Settings</h1>
-      </div>
-
-      <div className="flex flex-col gap-3">
-        <Link
-          to="/settings/change-email"
-          variant="ghost"
-          className="flex items-center justify-between rounded-lg border border-neutral-200 p-4 text-lg hover:bg-neutral-100 dark:border-neutral-800 dark:hover:bg-neutral-800"
-        >
-          Change Email
-        </Link>
-
-        <Link
-          to="/settings/change-password"
-          variant="ghost"
-          className="flex items-center justify-between rounded-lg border border-neutral-200 p-4 text-lg hover:bg-neutral-100 dark:border-neutral-800 dark:hover:bg-neutral-800"
-        >
-          Change Password
-        </Link>
-
+  const settings = [
+    {
+      label: currentUser?.email,
+      component: <ChangeEmailDialog />,
+    },
+    {
+      label: "Change your password",
+      component: <ChangePasswordDialog />,
+    },
+    {
+      label: "Sign out of your account",
+      component: (
         <Button
-          variant="destructive-link"
+          variant="destructive"
           disabled={logoutMutation.isPending}
-          className="justify-start rounded-lg border border-neutral-200 p-4 text-lg hover:bg-neutral-100 dark:border-neutral-800 dark:hover:bg-neutral-800"
           onClick={() => logoutMutation.mutate()}
         >
-          <LogOut className="h-6 w-6" />
           {logoutMutation.isPending ? "Logging out..." : "Logout"}
         </Button>
-      </div>
-    </div>
+      ),
+    },
+  ];
+
+  return (
+    <main className="space-y-4">
+      {settings.map((setting) => (
+        <div
+          key={setting.label}
+          className="flex items-center justify-between rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-900"
+        >
+          <span className="text-neutral-600 dark:text-neutral-400">
+            {setting.label}
+          </span>
+          {setting.component}
+        </div>
+      ))}
+    </main>
   );
 }

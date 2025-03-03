@@ -7,9 +7,11 @@ export default function TopLoadingBar() {
   const routerState = useRouterState();
 
   const [progress, setProgress] = useState(0);
+  const [hasLoaded, setHasLoaded] = useState(false);
 
   useEffect(() => {
     let progressInterval: NodeJS.Timeout | undefined;
+    let hasLoadedTimeout: NodeJS.Timeout | undefined;
 
     if (routerState.status === "pending") {
       setProgress(0);
@@ -20,27 +22,26 @@ export default function TopLoadingBar() {
             return 30;
           }
 
-          if (prev >= 90) {
-            return prev;
-          }
-
           const remaining = 90 - prev;
           const increment = Math.random() * (remaining * 0.5);
 
           return prev + increment;
         });
-      }, 400);
+      }, 500);
     } else {
       setProgress(100);
-      clearInterval(progressInterval);
+      hasLoadedTimeout = setTimeout(() => {
+        setHasLoaded(true);
+      }, 300);
     }
 
     return () => {
       clearInterval(progressInterval);
+      clearTimeout(hasLoadedTimeout);
     };
   }, [routerState.status]);
 
-  if (routerState.status === "idle" && progress === 100) {
+  if (routerState.status === "idle" && hasLoaded) {
     return null;
   }
 

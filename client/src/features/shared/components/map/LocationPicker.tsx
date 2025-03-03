@@ -1,60 +1,21 @@
 import { LocationData } from "@advanced-react/shared/schema/experience";
 import { LatLngTuple } from "leaflet";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   ScrollArea,
   ScrollBar,
 } from "@/features/shared/components/ui/ScrollArea";
+import { useDebounce } from "@/features/shared/hooks/useDebounce";
 
+import { Button } from "../ui/Button";
 import { RawInput } from "../ui/Input";
 import LocationDisplay from "./LocationDisplay";
 
-type LocationPickerProps = {
-  value?: LocationData;
-  onChange: (location: LocationData | null) => void;
+const DEFAULT_LOCATION = {
+  lat: 51.505,
+  lon: -0.09,
 };
-
-function LocationSearch({ onSearch }: { onSearch: (query: string) => void }) {
-  const [search, setSearch] = useState("");
-
-  return (
-    <RawInput
-      placeholder="Search location..."
-      value={search}
-      onChange={(e) => setSearch(e.target.value)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          onSearch(search);
-        }
-      }}
-    />
-  );
-}
-
-function SelectedLocation({
-  name,
-  onClear,
-}: {
-  name: string;
-  onClear: () => void;
-}) {
-  return (
-    <div className="mb-4">
-      <div className="rounded border border-neutral-100 p-2 dark:border-neutral-800">
-        <div className="mb-2">{name}</div>
-        <button
-          type="button"
-          className="text-sm text-red-500 hover:text-red-600"
-          onClick={onClear}
-        >
-          Clear Location
-        </button>
-      </div>
-    </div>
-  );
-}
 
 type Venue = {
   display_name: string;
@@ -62,34 +23,9 @@ type Venue = {
   lon: string;
 };
 
-function VenueList({
-  venues,
-  onSelect,
-}: {
-  venues: Venue[];
-  onSelect: (venue: Venue) => void;
-}) {
-  return (
-    <ScrollArea className="h-[160px]">
-      <div className="space-y-2 pr-4">
-        {venues.map((venue, index) => (
-          <div
-            key={index}
-            className="cursor-pointer rounded border border-neutral-100 p-2 text-neutral-600 hover:bg-neutral-100 dark:border-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-800"
-            onClick={() => onSelect(venue)}
-          >
-            {venue.display_name}
-          </div>
-        ))}
-      </div>
-      <ScrollBar />
-    </ScrollArea>
-  );
-}
-
-const DEFAULT_LOCATION = {
-  lat: 51.505,
-  lon: -0.09,
+type LocationPickerProps = {
+  value?: LocationData;
+  onChange: (location: LocationData | null) => void;
 };
 
 export default function LocationPicker({
@@ -133,12 +69,17 @@ export default function LocationPicker({
   return (
     <div className="flex flex-col gap-4">
       <div>
-        {!value && <LocationSearch onSearch={handleSearch} />}
-        {value ? (
+        {!value && (
+          <>
+            <LocationSearch onSearch={handleSearch} />
+            {venues.length > 0 && (
+              <VenueList venues={venues} onSelect={handleVenueSelect} />
+            )}
+          </>
+        )}
+        {value && (
           <SelectedLocation name={value.displayName} onClear={handleClear} />
-        ) : venues.length > 0 ? (
-          <VenueList venues={venues} onSelect={handleVenueSelect} />
-        ) : null}
+        )}
       </div>
       <LocationDisplay
         location={{
@@ -148,5 +89,66 @@ export default function LocationPicker({
         zoom={zoom}
       />
     </div>
+  );
+}
+
+function LocationSearch({ onSearch }: { onSearch: (query: string) => void }) {
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 300);
+
+  useEffect(() => {
+    if (debouncedSearch) {
+      onSearch(debouncedSearch);
+    }
+  }, [debouncedSearch, onSearch]);
+
+  return (
+    <RawInput
+      placeholder="Search location..."
+      value={search}
+      onChange={(e) => setSearch(e.target.value)}
+    />
+  );
+}
+
+type SelectedLocationProps = {
+  name: string;
+  onClear: () => void;
+};
+
+function SelectedLocation({ name, onClear }: SelectedLocationProps) {
+  return (
+    <div className="mb-4">
+      <div className="rounded border border-neutral-100 p-2 dark:border-neutral-800">
+        <div className="mb-2">{name}</div>
+        <Button type="button" variant="destructive-link" onClick={onClear}>
+          Clear Location
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+type VenueListProps = {
+  venues: Venue[];
+  onSelect: (venue: Venue) => void;
+};
+
+function VenueList({ venues, onSelect }: VenueListProps) {
+  return (
+    <ScrollArea className="h-[160px]">
+      <div className="space-y-2 pr-4">
+        {venues.map((venue, index) => (
+          <div
+            key={index}
+            className="cursor-pointer rounded border border-neutral-100 p-2 text-neutral-600 hover:bg-neutral-100 dark:border-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-800"
+            onClick={() => onSelect(venue)}
+          >
+            {venue.display_name}
+          </div>
+        ))}
+      </div>
+      <ScrollBar />
+    </ScrollArea>
   );
 }

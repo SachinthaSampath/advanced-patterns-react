@@ -1,19 +1,25 @@
-import { Comment } from "@advanced-react/server/features/comment/models";
 import { commentValidationSchema } from "@advanced-react/shared/schema/comment";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { FormProvider, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 
-import FormField from "@/features/shared/components/FormField";
-import Button from "@/features/shared/components/ui/Button";
-import TextArea from "@/features/shared/components/ui/TextArea";
+import { CommentEnhanced } from "@/features/comment/types";
+import { Button } from "@/features/shared/components/ui/Button";
+import Card from "@/features/shared/components/ui/Card";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+} from "@/features/shared/components/ui/Form";
+import { TextArea } from "@/features/shared/components/ui/TextArea";
 import { useToast } from "@/features/shared/hooks/useToast";
 import { trpc } from "@/router";
 
 type EditCommentCreateFormData = z.infer<typeof commentValidationSchema>;
 
 type CommentEditFormProps = {
-  comment: Comment;
+  comment: CommentEnhanced;
   setIsEditing: (value: boolean) => void;
 };
 
@@ -56,9 +62,16 @@ export default function CommentEditForm({
         },
       );
 
-      return { previousData };
+      const { dismiss } = toast({
+        title: "Comment updated",
+        description: "Your comment has been updated",
+      });
+
+      return { dismiss, previousData };
     },
     onError: (error, _, context) => {
+      context?.dismiss?.();
+
       utils.comments.byExperienceId.setData(
         { experienceId: comment.experienceId },
         context?.previousData.byExperienceId,
@@ -80,25 +93,30 @@ export default function CommentEditForm({
   });
 
   return (
-    <FormProvider {...form}>
-      <form
-        onSubmit={handleSubmit}
-        className="rounded bg-neutral-50 p-2 dark:bg-neutral-800"
-      >
-        <FormField<EditCommentCreateFormData> name="content" className="mb-2">
-          {({ error, name }) => (
-            <TextArea {...form.register(name)} rows={2} error={error} />
-          )}
-        </FormField>
-        <div className="flex gap-2">
-          <Button type="submit" disabled={editMutation.isPending}>
-            {editMutation.isPending ? "Saving..." : "Save"}
-          </Button>
-          <Button variant="link" onClick={() => setIsEditing(false)}>
-            Cancel
-          </Button>
-        </div>
-      </form>
-    </FormProvider>
+    <Form {...form}>
+      <Card>
+        <form onSubmit={handleSubmit} className="space-y-2">
+          <FormField
+            control={form.control}
+            name="content"
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <TextArea {...field} rows={2} />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+          <div className="flex gap-4">
+            <Button type="submit" disabled={editMutation.isPending}>
+              {editMutation.isPending ? "Saving..." : "Save"}
+            </Button>
+            <Button variant="link" onClick={() => setIsEditing(false)}>
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </Card>
+    </Form>
   );
 }

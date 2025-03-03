@@ -1,8 +1,18 @@
 import { Experience, User } from "@advanced-react/server/database/schema";
+import { useState } from "react";
 
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
-import Button from "@/features/shared/components/ui/Button";
-import { trpc } from "@/router";
+import { Button } from "@/features/shared/components/ui/Button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/features/shared/components/ui/Dialog";
+
+import { useExperienceMutations } from "../hooks/useExperienceMutations";
 
 type KickButtonProps = {
   experienceId: Experience["id"];
@@ -10,46 +20,15 @@ type KickButtonProps = {
 };
 
 export default function KickButton({ experienceId, userId }: KickButtonProps) {
-  const utils = trpc.useUtils();
   const { currentUser } = useCurrentUser();
 
-  const kickMutation = trpc.experiences.kickAttendee.useMutation({
-    onMutate: async () => {
-      await utils.experiences.attendees.cancel();
+  const [isOpen, setIsOpen] = useState(false);
 
-      const prevData = utils.experiences.attendees.getInfiniteData({
-        experienceId,
-      });
-
-      utils.experiences.attendees.setInfiniteData({ experienceId }, (old) => {
-        if (!old) {
-          return {
-            pages: [],
-            pageParams: [],
-          };
-        }
-
-        return {
-          ...old,
-          pages: old.pages.map((page) => ({
-            ...page,
-            attendees: page.attendees.filter(
-              (attendee) => attendee.id !== userId,
-            ),
-            attendeesCount: page.attendeesCount - 1,
-          })),
-        };
-      });
-
-      return { prevData };
-    },
-    onError: (_, __, context) => {
-      if (context?.prevData) {
-        utils.experiences.attendees.setInfiniteData(
-          { experienceId },
-          context.prevData,
-        );
-      }
+  const { kickMutation } = useExperienceMutations(experienceId, {
+    kick: {
+      onSuccess: () => {
+        setIsOpen(false);
+      },
     },
   });
 
@@ -58,16 +37,31 @@ export default function KickButton({ experienceId, userId }: KickButtonProps) {
   }
 
   return (
-    <Button
-      variant="destructive-link"
-      onClick={() => {
-        if (window.confirm("Are you sure you want to kick this attendee?")) {
-          kickMutation.mutate({ experienceId, userId });
-        }
-      }}
-      disabled={kickMutation.isPending}
-    >
-      Kick
-    </Button>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button variant="destructive-link">Kick</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Kick Attendee</DialogTitle>
+        </DialogHeader>
+        <p className="text-neutral-600 dark:text-neutral-400">
+          Are you sure you want to kick this attendee? This action cannot be
+          undone.
+        </p>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setIsOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={() => kickMutation.mutate({ experienceId, userId })}
+            disabled={kickMutation.isPending}
+          >
+            {kickMutation.isPending ? "Kicking..." : "Kick"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

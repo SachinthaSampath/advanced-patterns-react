@@ -4,9 +4,10 @@ import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import ThemeToggle from "@/features/shared/components/theme/ThemeToggle";
 import Link from "@/features/shared/components/ui/Link";
 import UserAvatar from "@/features/user/components/UserAvatar";
+import { cn } from "@/lib/utils/cn";
 import { trpc } from "@/router";
 
-import Button from "./ui/Button";
+import { Button } from "./ui/Button";
 
 export default function Navigation() {
   const { currentUser } = useCurrentUser();
@@ -15,6 +16,11 @@ export default function Navigation() {
     enabled: !!currentUser,
   });
 
+  const navLinkClassName =
+    "rounded-lg p-2 text-lg hover:bg-neutral-100 dark:hover:bg-neutral-800";
+
+  const activeNavLinkClassName = "bg-neutral-100 dark:bg-neutral-800";
+
   return (
     <nav className="flex w-64 flex-col gap-4 pt-8">
       {currentUser && (
@@ -22,7 +28,6 @@ export default function Navigation() {
           to="/users/$userId"
           params={{ userId: currentUser.id }}
           variant="ghost"
-          activeProps={{ className: undefined }}
         >
           <UserAvatar
             user={currentUser}
@@ -35,7 +40,8 @@ export default function Navigation() {
       <Link
         to="/"
         variant="ghost"
-        className="flex items-center gap-2 rounded-lg p-2 text-lg hover:bg-neutral-100 dark:hover:bg-neutral-800"
+        className={navLinkClassName}
+        activeProps={{ className: activeNavLinkClassName }}
       >
         <Home className="h-6 w-6" />
         Home
@@ -44,7 +50,8 @@ export default function Navigation() {
       <Link
         to="/search"
         variant="ghost"
-        className="flex items-center gap-2 rounded-lg p-2 text-lg hover:bg-neutral-100 dark:hover:bg-neutral-800"
+        className={navLinkClassName}
+        activeProps={{ className: activeNavLinkClassName }}
       >
         <Search className="h-6 w-6" />
         Search
@@ -54,7 +61,8 @@ export default function Navigation() {
         <Link
           to="/experiences/favorites"
           variant="ghost"
-          className="flex items-center gap-2 rounded-lg p-2 text-lg hover:bg-neutral-100 dark:hover:bg-neutral-800"
+          className={navLinkClassName}
+          activeProps={{ className: activeNavLinkClassName }}
         >
           <Heart className="h-6 w-6" />
           Favorites
@@ -66,24 +74,29 @@ export default function Navigation() {
           <Link
             to="/notifications"
             variant="ghost"
-            className="relative flex items-center justify-between gap-2 rounded-lg p-2 text-lg hover:bg-neutral-100 dark:hover:bg-neutral-800"
+            className={cn(
+              navLinkClassName,
+              "relative flex items-center justify-between gap-2",
+            )}
+            activeProps={{ className: activeNavLinkClassName }}
           >
             <div className="flex items-center gap-2">
               <Bell className="h-6 w-6" />
               Notifications
             </div>
-            {unreadCount.data && unreadCount.data > 0 && (
-              <div className="flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-500 px-1 text-xs text-white">
+            {unreadCount.data && unreadCount.data > 0 ? (
+              <div className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-xs text-white">
                 {unreadCount.data}
               </div>
-            )}
+            ) : undefined}
           </Link>
 
           <Link
             to="/users/$userId"
             params={{ userId: currentUser.id }}
             variant="ghost"
-            className="flex items-center gap-2 rounded-lg p-2 text-lg hover:bg-neutral-100 dark:hover:bg-neutral-800"
+            className={navLinkClassName}
+            activeProps={{ className: activeNavLinkClassName }}
           >
             <User className="h-6 w-6" />
             Profile
@@ -95,7 +108,8 @@ export default function Navigation() {
         <Link
           to="/settings"
           variant="ghost"
-          className="flex items-center gap-2 rounded-lg p-2 text-lg hover:bg-neutral-100 dark:hover:bg-neutral-800"
+          className={navLinkClassName}
+          activeProps={{ className: activeNavLinkClassName }}
         >
           <Settings className="h-6 w-6" />
           Settings
@@ -104,7 +118,8 @@ export default function Navigation() {
         <Link
           to="/login"
           variant="ghost"
-          className="flex items-center gap-2 rounded-lg p-2 text-lg hover:bg-neutral-100 dark:hover:bg-neutral-800"
+          className={navLinkClassName}
+          activeProps={{ className: activeNavLinkClassName }}
         >
           <User className="h-6 w-6" />
           Sign in

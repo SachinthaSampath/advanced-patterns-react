@@ -25,7 +25,7 @@ export default function LocationDisplay({
     <div className="space-y-4">
       {location.displayName && (
         <div className="flex flex-row items-center gap-2">
-          <MapPin className="h-6 w-6 text-neutral-600 dark:text-neutral-400" />
+          <MapPin className="text-primary-500 h-6 w-6" />
           <span className="flex-1 text-neutral-600 dark:text-neutral-400">
             {location.displayName}
           </span>

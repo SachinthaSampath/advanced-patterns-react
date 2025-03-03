@@ -3,13 +3,12 @@ import {
   experienceValidationSchema,
 } from "@advanced-react/shared/schema/experience";
 import { TRPCError } from "@trpc/server";
-import { and, count, eq, gte, inArray, like } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, like, or } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "../../database";
 import {
   cleanUserSelectSchema,
-  commentsTable,
   experienceAttendeesTable,
   experienceFavoritesTable,
   experienceSelectSchema,
@@ -17,23 +16,32 @@ import {
   experienceTagsTable,
   notificationsTable,
   tagSelectSchema,
-  userFollowsTable,
 } from "../../database/schema";
 import { protectedProcedure, publicProcedure, router } from "../../trpc";
 import { DEFAULT_EXPERIENCE_LIMIT } from "../../utils/constants";
 import { writeFile } from "../../utils/files";
+import {
+  getExperienceAttendees,
+  getExperienceAttendeesCount,
+  getExperienceCommentsCount,
+  getExperienceFavoritesCount,
+  getExperienceTags,
+  getExperienceUserContext,
+} from "./helpers";
 
 export const experienceRouter = router({
   byId: publicProcedure
     .input(z.object({ id: experienceSelectSchema.shape.id }))
     .output(
       experienceSelectSchema.extend({
-        commentsCount: z.number(),
-        user: cleanUserSelectSchema,
-        attendeesCount: z.number(),
         attendees: z.array(cleanUserSelectSchema),
-        tags: z.array(tagSelectSchema),
+        attendeesCount: z.number(),
+        commentsCount: z.number(),
+        favoritesCount: z.number(),
+        isAttending: z.boolean(),
         isFavorited: z.boolean(),
+        tags: z.array(tagSelectSchema),
+        user: cleanUserSelectSchema,
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -56,64 +64,30 @@ export const experienceRouter = router({
         });
       }
 
-      const [commentCount] = await db
-        .select({ count: count() })
-        .from(commentsTable)
-        .where(eq(commentsTable.experienceId, input.id));
-
-      const [attendeesCount] = await db
-        .select({ count: count() })
-        .from(experienceAttendeesTable)
-        .where(eq(experienceAttendeesTable.experienceId, input.id));
-
-      const attendees = await db.query.experienceAttendeesTable.findMany({
-        where: eq(experienceAttendeesTable.experienceId, input.id),
-        limit: 5,
-        with: {
-          user: {
-            columns: {
-              email: false,
-              password: false,
-            },
-          },
-        },
-      });
-
-      const currentUserAttendance = ctx.user
-        ? await db.query.experienceAttendeesTable.findFirst({
-            where: and(
-              eq(experienceAttendeesTable.experienceId, input.id),
-              eq(experienceAttendeesTable.userId, ctx.user.id),
-            ),
-          })
-        : null;
-
-      const experienceTags = await db.query.experienceTagsTable.findMany({
-        where: eq(experienceTagsTable.experienceId, input.id),
-        with: {
-          tag: true,
-        },
-      });
-
-      const isFavorited = ctx.user
-        ? await db.query.experienceFavoritesTable.findFirst({
-            where: and(
-              eq(experienceFavoritesTable.experienceId, input.id),
-              eq(experienceFavoritesTable.userId, ctx.user.id),
-            ),
-          })
-        : null;
+      const [
+        commentsCount,
+        attendeesCount,
+        favoritesCount,
+        userContext,
+        attendees,
+        tags,
+      ] = await Promise.all([
+        getExperienceCommentsCount(input.id),
+        getExperienceAttendeesCount(input.id),
+        getExperienceFavoritesCount(input.id),
+        getExperienceUserContext(input.id, ctx.user?.id),
+        getExperienceAttendees(input.id),
+        getExperienceTags(input.id),
+      ]);
 
       return {
         ...experience,
-        commentsCount: commentCount?.count ?? 0,
-        attendeesCount: attendeesCount?.count ?? 0,
-        attendees: [
-          ...(currentUserAttendance && ctx.user ? [ctx.user] : []),
-          ...attendees.map((a) => a.user),
-        ],
-        tags: experienceTags.map((et) => et.tag),
-        isFavorited: !!isFavorited,
+        commentsCount,
+        attendeesCount,
+        favoritesCount,
+        attendees,
+        tags,
+        ...userContext,
       };
     }),
 
@@ -128,12 +102,13 @@ export const experienceRouter = router({
       z.object({
         experiences: z.array(
           experienceSelectSchema.extend({
-            commentsCount: z.number(),
-            user: cleanUserSelectSchema,
             attendeesCount: z.number(),
-            attendees: z.array(cleanUserSelectSchema),
-            tags: z.array(tagSelectSchema),
+            commentsCount: z.number(),
+            favoritesCount: z.number(),
+            isAttending: z.boolean(),
             isFavorited: z.boolean(),
+            tags: z.array(tagSelectSchema),
+            user: cleanUserSelectSchema,
           }),
         ),
         nextCursor: z.number().optional(),
@@ -156,81 +131,43 @@ export const experienceRouter = router({
         },
       });
 
-      const countQueries = experiences.map((experience) =>
-        db
-          .select({ count: count() })
-          .from(commentsTable)
-          .where(eq(commentsTable.experienceId, experience.id)),
+      const commentsCountResults = await Promise.all(
+        experiences.map((experience) =>
+          getExperienceCommentsCount(experience.id),
+        ),
       );
 
-      const counts = await Promise.all(countQueries);
-
-      const attendeeQueries = experiences.map((experience) =>
-        Promise.all([
-          db
-            .select({ count: count() })
-            .from(experienceAttendeesTable)
-            .where(eq(experienceAttendeesTable.experienceId, experience.id)),
-          db.query.experienceAttendeesTable.findMany({
-            where: eq(experienceAttendeesTable.experienceId, experience.id),
-            limit: 5,
-            with: {
-              user: {
-                columns: {
-                  email: false,
-                  password: false,
-                },
-              },
-            },
-          }),
-          ctx.user
-            ? db.query.experienceAttendeesTable.findFirst({
-                where: and(
-                  eq(experienceAttendeesTable.experienceId, experience.id),
-                  eq(experienceAttendeesTable.userId, ctx.user.id),
-                ),
-              })
-            : undefined,
-        ]),
+      const attendeesCountResults = await Promise.all(
+        experiences.map((experience) =>
+          getExperienceAttendeesCount(experience.id),
+        ),
       );
 
-      const attendeeResults = await Promise.all(attendeeQueries);
-
-      const tagQueries = experiences.map((experience) =>
-        db.query.experienceTagsTable.findMany({
-          where: eq(experienceTagsTable.experienceId, experience.id),
-          with: {
-            tag: true,
-          },
-        }),
+      const userContextResults = await Promise.all(
+        experiences.map((experience) =>
+          getExperienceUserContext(experience.id, ctx.user?.id),
+        ),
       );
 
-      const tagResults = await Promise.all(tagQueries);
-
-      const favoriteQueries = experiences.map((experience) =>
-        ctx.user
-          ? db.query.experienceFavoritesTable.findFirst({
-              where: and(
-                eq(experienceFavoritesTable.experienceId, experience.id),
-                eq(experienceFavoritesTable.userId, ctx.user.id),
-              ),
-            })
-          : Promise.resolve(null),
+      const tagResults = await Promise.all(
+        experiences.map((experience) => getExperienceTags(experience.id)),
       );
 
-      const favoriteResults = await Promise.all(favoriteQueries);
+      const favoritesCountResults = await Promise.all(
+        experiences.map((experience) =>
+          getExperienceFavoritesCount(experience.id),
+        ),
+      );
 
       return {
         experiences: experiences.map((experience, index) => ({
           ...experience,
-          commentsCount: counts[index][0]?.count ?? 0,
-          attendeesCount: attendeeResults[index][0][0]?.count ?? 0,
-          attendees: [
-            ...(attendeeResults[index][2] && ctx.user ? [ctx.user] : []),
-            ...attendeeResults[index][1].map((a) => a.user),
-          ],
-          tags: tagResults[index].map((t) => t.tag),
-          isFavorited: !!favoriteResults[index],
+          commentsCount: commentsCountResults[index] ?? 0,
+          attendeesCount: attendeesCountResults[index] ?? 0,
+          isAttending: !!userContextResults[index].isAttending,
+          tags: tagResults[index],
+          isFavorited: !!userContextResults[index].isFavorited,
+          favoritesCount: favoritesCountResults[index] ?? 0,
         })),
         nextCursor: experiences.length === limit ? cursor + limit : undefined,
       };
@@ -249,12 +186,13 @@ export const experienceRouter = router({
       z.object({
         experiences: z.array(
           experienceSelectSchema.extend({
-            commentsCount: z.number(),
-            user: cleanUserSelectSchema,
             attendeesCount: z.number(),
-            attendees: z.array(cleanUserSelectSchema),
-            tags: z.array(tagSelectSchema),
+            commentsCount: z.number(),
+            favoritesCount: z.number(),
+            isAttending: z.boolean(),
             isFavorited: z.boolean(),
+            tags: z.array(tagSelectSchema),
+            user: cleanUserSelectSchema,
           }),
         ),
         nextCursor: z.number().optional(),
@@ -267,7 +205,12 @@ export const experienceRouter = router({
       const whereConditions = [];
 
       if (input.q) {
-        whereConditions.push(like(experiencesTable.title, `%${input.q}%`));
+        whereConditions.push(
+          or(
+            like(experiencesTable.title, `%${input.q}%`),
+            like(experiencesTable.content, `%${input.q}%`),
+          ),
+        );
       }
 
       if (input.scheduledAt) {
@@ -301,81 +244,227 @@ export const experienceRouter = router({
         },
       });
 
-      const countQueries = experiences.map((experience) =>
-        db
-          .select({ count: count() })
-          .from(commentsTable)
-          .where(eq(commentsTable.experienceId, experience.id)),
+      const commentsCountResults = await Promise.all(
+        experiences.map((experience) =>
+          getExperienceCommentsCount(experience.id),
+        ),
       );
 
-      const counts = await Promise.all(countQueries);
-
-      const attendeeQueries = experiences.map((experience) =>
-        Promise.all([
-          db
-            .select({ count: count() })
-            .from(experienceAttendeesTable)
-            .where(eq(experienceAttendeesTable.experienceId, experience.id)),
-          db.query.experienceAttendeesTable.findMany({
-            where: eq(experienceAttendeesTable.experienceId, experience.id),
-            limit: 5,
-            with: {
-              user: {
-                columns: {
-                  email: false,
-                  password: false,
-                },
-              },
-            },
-          }),
-          ctx.user
-            ? db.query.experienceAttendeesTable.findFirst({
-                where: and(
-                  eq(experienceAttendeesTable.experienceId, experience.id),
-                  eq(experienceAttendeesTable.userId, ctx.user.id),
-                ),
-              })
-            : undefined,
-        ]),
+      const attendeesCountResults = await Promise.all(
+        experiences.map((experience) =>
+          getExperienceAttendeesCount(experience.id),
+        ),
       );
 
-      const attendeeResults = await Promise.all(attendeeQueries);
-
-      const tagQueries = experiences.map((experience) =>
-        db.query.experienceTagsTable.findMany({
-          where: eq(experienceTagsTable.experienceId, experience.id),
-          with: {
-            tag: true,
-          },
-        }),
+      const userContextResults = await Promise.all(
+        experiences.map((experience) =>
+          getExperienceUserContext(experience.id, ctx.user?.id),
+        ),
       );
 
-      const tagResults = await Promise.all(tagQueries);
-
-      const favoriteQueries = experiences.map((experience) =>
-        ctx.user
-          ? db.query.experienceFavoritesTable.findFirst({
-              where: and(
-                eq(experienceFavoritesTable.experienceId, experience.id),
-                eq(experienceFavoritesTable.userId, ctx.user.id),
-              ),
-            })
-          : Promise.resolve(null),
+      const tagResults = await Promise.all(
+        experiences.map((experience) => getExperienceTags(experience.id)),
       );
 
-      const favoriteResults = await Promise.all(favoriteQueries);
+      const favoritesCountResults = await Promise.all(
+        experiences.map((experience) =>
+          getExperienceFavoritesCount(experience.id),
+        ),
+      );
 
       return {
         experiences: experiences.map((experience, index) => ({
           ...experience,
-          commentsCount: counts[index][0]?.count ?? 0,
-          attendeesCount: attendeeResults[index][0][0]?.count ?? 0,
-          attendees: [
-            ...(attendeeResults[index][2] && ctx.user ? [ctx.user] : []),
-            ...attendeeResults[index][1].map((a) => a.user),
-          ],
-          tags: tagResults[index].map((t) => t.tag),
-          isFavorited: !!favoriteResults[index],
+          commentsCount: commentsCountResults[index] ?? 0,
+          attendeesCount: attendeesCountResults[index] ?? 0,
+          isAttending: !!userContextResults[index].isAttending,
+          tags: tagResults[index],
+          isFavorited: !!userContextResults[index].isFavorited,
+          favoritesCount: favoritesCountResults[index] ?? 0,
+        })),
+        nextCursor: experiences.length === limit ? cursor + limit : undefined,
+      };
+    }),
+
+  byUserId: publicProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        cursor: z.number().optional(),
+        limit: z.number().optional(),
+      }),
+    )
+    .output(
+      z.object({
+        experiences: z.array(
+          experienceSelectSchema.extend({
+            attendeesCount: z.number(),
+            commentsCount: z.number(),
+            favoritesCount: z.number(),
+            isAttending: z.boolean(),
+            isFavorited: z.boolean(),
+            tags: z.array(tagSelectSchema),
+            user: cleanUserSelectSchema,
+          }),
+        ),
+        nextCursor: z.number().optional(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const limit = input.limit ?? DEFAULT_EXPERIENCE_LIMIT;
+      const cursor = input.cursor ?? 0;
+
+      const experiences = await db.query.experiencesTable.findMany({
+        limit,
+        offset: cursor,
+        where: eq(experiencesTable.userId, input.id),
+        orderBy: desc(experiencesTable.createdAt),
+        with: {
+          user: {
+            columns: {
+              password: false,
+              email: false,
+            },
+          },
+        },
+      });
+
+      const commentsCountResults = await Promise.all(
+        experiences.map((experience) =>
+          getExperienceCommentsCount(experience.id),
+        ),
+      );
+
+      const attendeesCountResults = await Promise.all(
+        experiences.map((experience) =>
+          getExperienceAttendeesCount(experience.id),
+        ),
+      );
+
+      const userContextResults = await Promise.all(
+        experiences.map((experience) =>
+          getExperienceUserContext(experience.id, ctx.user?.id),
+        ),
+      );
+
+      const tagResults = await Promise.all(
+        experiences.map((experience) => getExperienceTags(experience.id)),
+      );
+
+      const favoritesCountResults = await Promise.all(
+        experiences.map((experience) =>
+          getExperienceFavoritesCount(experience.id),
+        ),
+      );
+
+      return {
+        experiences: experiences.map((experience, index) => ({
+          ...experience,
+          commentsCount: commentsCountResults[index] ?? 0,
+          attendeesCount: attendeesCountResults[index] ?? 0,
+          isAttending: !!userContextResults[index].isAttending,
+          tags: tagResults[index],
+          isFavorited: !!userContextResults[index].isFavorited,
+          favoritesCount: favoritesCountResults[index] ?? 0,
+        })),
+        nextCursor: experiences.length === limit ? cursor + limit : undefined,
+      };
+    }),
+
+  byTagId: publicProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        cursor: z.number().optional(),
+        limit: z.number().optional(),
+      }),
+    )
+    .output(
+      z.object({
+        experiences: z.array(
+          experienceSelectSchema.extend({
+            attendeesCount: z.number(),
+            commentsCount: z.number(),
+            favoritesCount: z.number(),
+            isAttending: z.boolean(),
+            isFavorited: z.boolean(),
+            tags: z.array(tagSelectSchema),
+            user: cleanUserSelectSchema,
+          }),
+        ),
+        nextCursor: z.number().optional(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const limit = input.limit ?? DEFAULT_EXPERIENCE_LIMIT;
+      const cursor = input.cursor ?? 0;
+
+      const taggedExperiences = await db
+        .select({ experienceId: experienceTagsTable.experienceId })
+        .from(experienceTagsTable)
+        .where(eq(experienceTagsTable.tagId, input.id));
+
+      const experienceIds = taggedExperiences.map((e) => e.experienceId);
+
+      if (experienceIds.length === 0) {
+        return {
+          experiences: [],
+          nextCursor: undefined,
+        };
+      }
+
+      const experiences = await db.query.experiencesTable.findMany({
+        limit,
+        offset: cursor,
+        where: inArray(experiencesTable.id, experienceIds),
+        orderBy: desc(experiencesTable.createdAt),
+        with: {
+          user: {
+            columns: {
+              password: false,
+              email: false,
+            },
+          },
+        },
+      });
+
+      const commentsCountResults = await Promise.all(
+        experiences.map((experience) =>
+          getExperienceCommentsCount(experience.id),
+        ),
+      );
+
+      const attendeesCountResults = await Promise.all(
+        experiences.map((experience) =>
+          getExperienceAttendeesCount(experience.id),
+        ),
+      );
+
+      const userContextResults = await Promise.all(
+        experiences.map((experience) =>
+          getExperienceUserContext(experience.id, ctx.user?.id),
+        ),
+      );
+
+      const tagResults = await Promise.all(
+        experiences.map((experience) => getExperienceTags(experience.id)),
+      );
+
+      const favoritesCountResults = await Promise.all(
+        experiences.map((experience) =>
+          getExperienceFavoritesCount(experience.id),
+        ),
+      );
+
+      return {
+        experiences: experiences.map((experience, index) => ({
+          ...experience,
+          commentsCount: commentsCountResults[index] ?? 0,
+          attendeesCount: attendeesCountResults[index] ?? 0,
+          isAttending: !!userContextResults[index].isAttending,
+          tags: tagResults[index],
+          isFavorited: !!userContextResults[index].isFavorited,
+          favoritesCount: favoritesCountResults[index] ?? 0,
         })),
         nextCursor: experiences.length === limit ? cursor + limit : undefined,
       };
@@ -481,25 +570,6 @@ export const experienceRouter = router({
       return input.id;
     }),
 
-  getAttendees: publicProcedure
-    .input(z.object({ id: experienceSelectSchema.shape.id }))
-    .output(z.array(cleanUserSelectSchema))
-    .query(async ({ input }) => {
-      const attendees = await db.query.experienceAttendeesTable.findMany({
-        where: eq(experienceAttendeesTable.experienceId, input.id),
-        with: {
-          user: {
-            columns: {
-              email: false,
-              password: false,
-            },
-          },
-        },
-      });
-
-      return attendees.map((attendee) => attendee.user);
-    }),
-
   attend: protectedProcedure
     .input(z.object({ id: experienceSelectSchema.shape.id }))
     .mutation(async ({ ctx, input }) => {
@@ -524,7 +594,7 @@ export const experienceRouter = router({
 
       if (existingAttendee) {
         throw new TRPCError({
-          code: "BAD_REQUEST",
+          code: "FORBIDDEN",
           message: "You are already attending this experience",
         });
       }
@@ -560,6 +630,21 @@ export const experienceRouter = router({
         });
       }
 
+      const existingAttendee =
+        await db.query.experienceAttendeesTable.findFirst({
+          where: and(
+            eq(experienceAttendeesTable.experienceId, input.id),
+            eq(experienceAttendeesTable.userId, ctx.user.id),
+          ),
+        });
+
+      if (!existingAttendee) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You are not attending this experience",
+        });
+      }
+
       await db
         .delete(experienceAttendeesTable)
         .where(
@@ -580,96 +665,11 @@ export const experienceRouter = router({
       return { success: true };
     }),
 
-  attendees: publicProcedure
-    .input(
-      z.object({
-        experienceId: experienceSelectSchema.shape.id,
-        limit: z.number().optional(),
-        cursor: z.number().optional(),
-      }),
-    )
-    .output(
-      z.object({
-        attendees: z.array(
-          cleanUserSelectSchema.extend({
-            isFollowing: z.boolean(),
-            followersCount: z.number(),
-            followingCount: z.number(),
-          }),
-        ),
-        attendeesCount: z.number(),
-        nextCursor: z.number().optional(),
-      }),
-    )
-    .query(async ({ ctx, input }) => {
-      const limit = input.limit ?? DEFAULT_EXPERIENCE_LIMIT;
-      const cursor = input.cursor ?? 0;
-
-      const [attendeesCount] = await db
-        .select({ count: count() })
-        .from(experienceAttendeesTable)
-        .where(eq(experienceAttendeesTable.experienceId, input.experienceId));
-
-      const attendees = await db.query.experienceAttendeesTable.findMany({
-        where: eq(experienceAttendeesTable.experienceId, input.experienceId),
-        limit,
-        offset: cursor,
-        with: {
-          user: true,
-        },
-      });
-
-      const attendeeFollowQueries = attendees.map((attendee) =>
-        ctx.user
-          ? db.query.userFollowsTable
-              .findFirst({
-                where: and(
-                  eq(userFollowsTable.followerId, ctx.user.id),
-                  eq(userFollowsTable.followingId, attendee.user.id),
-                ),
-              })
-              .then(Boolean)
-          : false,
-      );
-
-      const attendeeFollowResults = await Promise.all(attendeeFollowQueries);
-
-      const attendeeFollowCountQueries = attendees.map((attendee) =>
-        Promise.all([
-          db
-            .select({ count: count() })
-            .from(userFollowsTable)
-            .where(eq(userFollowsTable.followingId, attendee.user.id))
-            .then((res) => res[0]?.count ?? 0),
-          db
-            .select({ count: count() })
-            .from(userFollowsTable)
-            .where(eq(userFollowsTable.followerId, attendee.user.id))
-            .then((res) => res[0]?.count ?? 0),
-        ]),
-      );
-
-      const attendeeFollowCounts = await Promise.all(
-        attendeeFollowCountQueries,
-      );
-
-      return {
-        attendees: attendees.map((attendee, index) => ({
-          ...attendee.user,
-          isFollowing: attendeeFollowResults[index],
-          followersCount: attendeeFollowCounts[index][0],
-          followingCount: attendeeFollowCounts[index][1],
-        })),
-        attendeesCount: attendeesCount?.count ?? 0,
-        nextCursor: attendees.length === limit ? cursor + limit : undefined,
-      };
-    }),
-
   kickAttendee: protectedProcedure
     .input(
       z.object({
         experienceId: experienceSelectSchema.shape.id,
-        userId: z.number(),
+        userId: cleanUserSelectSchema.shape.id,
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -693,7 +693,7 @@ export const experienceRouter = router({
 
       if (experience.userId === input.userId) {
         throw new TRPCError({
-          code: "BAD_REQUEST",
+          code: "FORBIDDEN",
           message: "Cannot kick the experience owner",
         });
       }
@@ -731,7 +731,7 @@ export const experienceRouter = router({
 
       if (existingFavorite) {
         throw new TRPCError({
-          code: "BAD_REQUEST",
+          code: "FORBIDDEN",
           message: "Experience already favorited",
         });
       }
@@ -771,12 +771,13 @@ export const experienceRouter = router({
       z.object({
         experiences: z.array(
           experienceSelectSchema.extend({
-            commentsCount: z.number(),
-            user: cleanUserSelectSchema,
             attendeesCount: z.number(),
-            attendees: z.array(cleanUserSelectSchema),
-            tags: z.array(tagSelectSchema),
+            commentsCount: z.number(),
+            favoritesCount: z.number(),
+            isAttending: z.boolean(),
             isFavorited: z.boolean(),
+            tags: z.array(tagSelectSchema),
+            user: cleanUserSelectSchema,
           }),
         ),
         nextCursor: z.number().optional(),
@@ -806,68 +807,43 @@ export const experienceRouter = router({
 
       const experiences = favorites.map((f) => f.experience);
 
-      const countQueries = experiences.map((experience) =>
-        db
-          .select({ count: count() })
-          .from(commentsTable)
-          .where(eq(commentsTable.experienceId, experience.id)),
+      const commentsCountResults = await Promise.all(
+        experiences.map((experience) =>
+          getExperienceCommentsCount(experience.id),
+        ),
       );
 
-      const counts = await Promise.all(countQueries);
-
-      const attendeeQueries = experiences.map((experience) =>
-        Promise.all([
-          db
-            .select({ count: count() })
-            .from(experienceAttendeesTable)
-            .where(eq(experienceAttendeesTable.experienceId, experience.id)),
-          db.query.experienceAttendeesTable.findMany({
-            where: eq(experienceAttendeesTable.experienceId, experience.id),
-            limit: 5,
-            with: {
-              user: {
-                columns: {
-                  email: false,
-                  password: false,
-                },
-              },
-            },
-          }),
-          ctx.user
-            ? db.query.experienceAttendeesTable.findFirst({
-                where: and(
-                  eq(experienceAttendeesTable.experienceId, experience.id),
-                  eq(experienceAttendeesTable.userId, ctx.user.id),
-                ),
-              })
-            : undefined,
-        ]),
+      const attendeesCountResults = await Promise.all(
+        experiences.map((experience) =>
+          getExperienceAttendeesCount(experience.id),
+        ),
       );
 
-      const attendeeResults = await Promise.all(attendeeQueries);
-
-      const tagQueries = experiences.map((experience) =>
-        db.query.experienceTagsTable.findMany({
-          where: eq(experienceTagsTable.experienceId, experience.id),
-          with: {
-            tag: true,
-          },
-        }),
+      const userContextResults = await Promise.all(
+        experiences.map((experience) =>
+          getExperienceUserContext(experience.id, ctx.user?.id),
+        ),
       );
 
-      const tagResults = await Promise.all(tagQueries);
+      const tagResults = await Promise.all(
+        experiences.map((experience) => getExperienceTags(experience.id)),
+      );
+
+      const favoritesCountResults = await Promise.all(
+        experiences.map((experience) =>
+          getExperienceFavoritesCount(experience.id),
+        ),
+      );
 
       return {
         experiences: experiences.map((experience, index) => ({
           ...experience,
-          commentsCount: counts[index][0]?.count ?? 0,
-          attendeesCount: attendeeResults[index][0][0]?.count ?? 0,
-          attendees: [
-            ...(attendeeResults[index][2] && ctx.user ? [ctx.user] : []),
-            ...attendeeResults[index][1].map((a) => a.user),
-          ],
-          tags: tagResults[index].map((t) => t.tag),
-          isFavorited: true,
+          commentsCount: commentsCountResults[index] ?? 0,
+          attendeesCount: attendeesCountResults[index] ?? 0,
+          isAttending: !!userContextResults[index].isAttending,
+          tags: tagResults[index],
+          isFavorited: !!userContextResults[index].isFavorited,
+          favoritesCount: favoritesCountResults[index] ?? 0,
         })),
         nextCursor: experiences.length === limit ? cursor + limit : undefined,
       };

@@ -1,42 +1,46 @@
-import { Experience, Tag, User } from "@advanced-react/server/database/schema";
 import { LinkIcon, MessageSquare, Users } from "lucide-react";
+import { useState } from "react";
 
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
-import Button from "@/features/shared/components/ui/Button";
+import { Button } from "@/features/shared/components/ui/Button";
+import Card from "@/features/shared/components/ui/Card";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/features/shared/components/ui/Dialog";
 import Link from "@/features/shared/components/ui/Link";
 import TagList from "@/features/tag/components/TagList";
 import UserAvatar from "@/features/user/components/UserAvatar";
 
 import { useExperienceMutations } from "../hooks/useExperienceMutations";
+import { ExperienceForList } from "../types";
 import ExperienceAttendButton from "./ExperienceAttendButton";
-import { FavoriteButton } from "./FavoriteButton";
+import { ExperienceFavoriteButton } from "./ExperienceFavoriteButton";
 
 type ExperienceCardProps = {
-  experience: Experience & {
-    commentsCount: number;
-    user: User;
-    attendeesCount: number;
-    attendees: User[];
-    tags: Tag[];
-    isFavorited: boolean;
-  };
+  experience: ExperienceForList;
 };
 
 export default function ExperienceCard({ experience }: ExperienceCardProps) {
   return (
-    <article className="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-800">
+    <Card className="overflow-hidden p-0">
       <ExperienceCardMedia experience={experience} />
-      <div className="space-y-4 p-4">
-        <div className="flex items-start gap-4">
-          <ExperienceCardAvatar experience={experience} />
-          <div className="min-w-0 flex-1 space-y-4">
-            <ExperienceCardHeader experience={experience} />
-            <ExperienceCardContent experience={experience} />
-            <ExperienceCardButtons experience={experience} />
-          </div>
+      <div className="flex items-start gap-4 p-4">
+        <ExperienceCardAvatar experience={experience} />
+        <div className="w-full space-y-4">
+          <ExperienceCardHeader experience={experience} />
+          <ExperienceCardContent experience={experience} />
+          <ExperienceCardMeta experience={experience} />
+          <ExperienceCardTags experience={experience} />
+          <ExperienceCardMetricButtons experience={experience} />
+          <ExperienceCardActionButtons experience={experience} />
         </div>
       </div>
-    </article>
+    </Card>
   );
 }
 
@@ -62,11 +66,7 @@ type ExperienceCardAvatarProps = Pick<ExperienceCardProps, "experience">;
 
 function ExperienceCardAvatar({ experience }: ExperienceCardAvatarProps) {
   return (
-    <Link
-      to="/users/$userId"
-      params={{ userId: experience.user.id }}
-      activeProps={{ className: undefined }}
-    >
+    <Link to="/users/$userId" params={{ userId: experience.user.id }}>
       <UserAvatar user={experience.user} showName={false} />
     </Link>
   );
@@ -75,35 +75,22 @@ function ExperienceCardAvatar({ experience }: ExperienceCardAvatarProps) {
 type ExperienceCardHeaderProps = Pick<ExperienceCardProps, "experience">;
 
 function ExperienceCardHeader({ experience }: ExperienceCardHeaderProps) {
-  const { currentUser } = useCurrentUser();
-
-  const isPostOwner = currentUser?.id === experience.userId;
-
   return (
-    <div className="flex items-start justify-between">
-      <div>
-        <div className="flex items-center gap-1">
-          <Link
-            variant="secondary"
-            to="/users/$userId"
-            params={{ userId: experience.user.id }}
-            activeProps={{ className: undefined }}
-          >
-            <span className="font-semibold">{experience.user.name}</span>
-          </Link>
-        </div>
-        <Link
-          to="/experiences/$experienceId"
-          params={{ experienceId: experience.id }}
-          className="block hover:no-underline"
-          activeProps={{ className: undefined }}
-        >
-          <h2 className="text-xl font-bold hover:underline">
-            {experience.title}
-          </h2>
-        </Link>
-      </div>
-      {isPostOwner && <ExperienceCardOwnerButtons experience={experience} />}
+    <div>
+      <Link
+        variant="secondary"
+        to="/users/$userId"
+        params={{ userId: experience.user.id }}
+        className="font-semibold"
+      >
+        {experience.user.name}
+      </Link>
+      <Link
+        to="/experiences/$experienceId"
+        params={{ experienceId: experience.id }}
+      >
+        <h2 className="text-xl font-bold">{experience.title}</h2>
+      </Link>
     </div>
   );
 }
@@ -111,60 +98,100 @@ function ExperienceCardHeader({ experience }: ExperienceCardHeaderProps) {
 type ExperienceCardContentProps = Pick<ExperienceCardProps, "experience">;
 
 function ExperienceCardContent({ experience }: ExperienceCardContentProps) {
-  return (
-    <div className="space-y-4">
-      <p className="line-clamp-2 text-neutral-800 dark:text-neutral-100">
-        {experience.content}
-      </p>
+  return <p>{experience.content}</p>;
+}
 
-      <div className="flex items-center gap-4 text-sm text-neutral-600 dark:text-neutral-400">
-        <time>{new Date(experience.scheduledAt).toLocaleString()}</time>
-        {experience.url && (
+type ExperienceCardMetaProps = Pick<ExperienceCardProps, "experience">;
+
+function ExperienceCardMeta({ experience }: ExperienceCardMetaProps) {
+  return (
+    <div className="flex items-center gap-4 text-neutral-600 dark:text-neutral-400">
+      <time>{new Date(experience.scheduledAt).toLocaleString()}</time>
+      {experience.url && (
+        <div className="flex items-center gap-2">
+          <LinkIcon
+            size={16}
+            className="text-secondary-500 dark:text-primary-500"
+          />
           <a
             href={experience.url}
             target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1 text-blue-600 hover:underline dark:text-blue-400"
+            className="text-secondary-500 dark:text-primary-500 hover:underline"
           >
-            <LinkIcon size={14} />
             Event Details
           </a>
-        )}
-      </div>
-      <TagList tags={experience.tags} />
+        </div>
+      )}
     </div>
   );
 }
 
-type ExperienceCardButtonsProps = Pick<ExperienceCardProps, "experience">;
+type ExperienceCardTagsProps = Pick<ExperienceCardProps, "experience">;
 
-function ExperienceCardButtons({ experience }: ExperienceCardButtonsProps) {
+function ExperienceCardTags({ experience }: ExperienceCardTagsProps) {
+  return <TagList tags={experience.tags} />;
+}
+
+type ExperienceCardMetricButtonsProps = Pick<ExperienceCardProps, "experience">;
+
+function ExperienceCardMetricButtons({
+  experience,
+}: ExperienceCardMetricButtonsProps) {
   return (
-    <div className="flex items-center gap-4">
-      <FavoriteButton
-        experienceId={experience.id}
+    <div className="flex items-center gap-6 border-y-2 border-neutral-200 py-4 dark:border-neutral-800">
+      <ExperienceFavoriteButton
+        id={experience.id}
         isFavorited={experience.isFavorited}
+        favoritesCount={experience.favoritesCount}
       />
-      <div className="flex items-center gap-2">
-        <Users className="h-5 w-5" />
-        <span>{experience.attendeesCount}</span>
-      </div>
+      <Button variant="link" asChild>
+        <Link
+          to="/experiences/$experienceId/attendees"
+          params={{ experienceId: experience.id }}
+          variant="ghost"
+        >
+          <Users className="h-5 w-5" />
+          <span>{experience.attendeesCount}</span>
+        </Link>
+      </Button>
 
       <Button variant="link" asChild>
         <Link
           to="/experiences/$experienceId"
           params={{ experienceId: experience.id }}
           variant="ghost"
-          activeProps={{ className: undefined }}
         >
           <MessageSquare className="h-5 w-5" />
           <span>{experience.commentsCount}</span>
         </Link>
       </Button>
-
-      <ExperienceAttendButton experience={experience} />
     </div>
   );
+}
+
+type ExperienceCardActionButtonsProps = Pick<ExperienceCardProps, "experience">;
+
+function ExperienceCardActionButtons({
+  experience,
+}: ExperienceCardActionButtonsProps) {
+  const { currentUser } = useCurrentUser();
+
+  const isPostOwner = currentUser?.id === experience.userId;
+
+  if (isPostOwner) {
+    return <ExperienceCardOwnerButtons experience={experience} />;
+  }
+
+  if (currentUser) {
+    return (
+      <ExperienceAttendButton
+        experienceId={experience.id}
+        isAttending={experience.isAttending}
+      />
+    );
+  }
+
+  return null;
 }
 
 type ExperienceCardOwnerButtonsProps = Pick<ExperienceCardProps, "experience">;
@@ -172,10 +199,18 @@ type ExperienceCardOwnerButtonsProps = Pick<ExperienceCardProps, "experience">;
 function ExperienceCardOwnerButtons({
   experience,
 }: ExperienceCardOwnerButtonsProps) {
-  const { deleteMutation } = useExperienceMutations(experience.id);
+  const [isOpen, setIsOpen] = useState(false);
+
+  const { deleteMutation } = useExperienceMutations(experience.id, {
+    delete: {
+      onSuccess: () => {
+        setIsOpen(false);
+      },
+    },
+  });
 
   return (
-    <div className="flex gap-2">
+    <div className="flex gap-4">
       <Button asChild variant="link">
         <Link
           to="/experiences/$experienceId/edit"
@@ -184,19 +219,34 @@ function ExperienceCardOwnerButtons({
           Edit
         </Link>
       </Button>
-      <Button
-        variant="destructive-link"
-        onClick={() => {
-          if (
-            window.confirm("Are you sure you want to delete this experience?")
-          ) {
-            deleteMutation.mutate({ id: experience.id });
-          }
-        }}
-        disabled={deleteMutation.isPending}
-      >
-        {deleteMutation.isPending ? "Deleting..." : "Delete"}
-      </Button>
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogTrigger asChild>
+          <Button variant="destructive-link">Delete</Button>
+        </DialogTrigger>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Experience</DialogTitle>
+          </DialogHeader>
+          <p className="text-neutral-600 dark:text-neutral-400">
+            Are you sure you want to delete this experience? This action cannot
+            be undone.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                deleteMutation.mutate({ id: experience.id });
+              }}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

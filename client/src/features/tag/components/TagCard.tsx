@@ -1,5 +1,6 @@
 import { Tag } from "@advanced-react/server/database/schema";
 
+import { Badge } from "@/features/shared/components/ui/Badge";
 import Link from "@/features/shared/components/ui/Link";
 
 type TagCardProps = {
@@ -8,15 +9,10 @@ type TagCardProps = {
 
 export default function TagCard({ tag }: TagCardProps) {
   return (
-    <div className="rounded-full bg-neutral-900 bg-gradient-to-r px-2 py-1 text-xs font-semibold text-neutral-100 dark:bg-neutral-100 dark:text-neutral-900">
-      <Link
-        to="/tags/$tagId"
-        params={{ tagId: tag.id }}
-        variant="ghost"
-        activeProps={{ className: undefined }}
-      >
+    <Badge>
+      <Link to="/tags/$tagId" params={{ tagId: tag.id }} variant="ghost">
         {tag.name}
       </Link>
-    </div>
+    </Badge>
   );
 }

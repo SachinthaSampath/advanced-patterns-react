@@ -1,32 +1,28 @@
-import { userValidationSchema } from "@advanced-react/shared/schema/auth";
-import {
-  changeEmailSchema,
-  changePasswordSchema,
-} from "@advanced-react/shared/schema/auth/settings";
+import { userEditSchema } from "@advanced-react/shared/schema/auth";
 import { TRPCError } from "@trpc/server";
-import { and, count, desc, eq } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "../../database";
 import {
-  commentsTable,
   experienceAttendeesTable,
-  experienceFavoritesTable,
   experienceSelectSchema,
   experiencesTable,
-  experienceTagsTable,
   notificationsTable,
-  tagSelectSchema,
   userFollowsTable,
 } from "../../database/schema";
 import { protectedProcedure, publicProcedure, router } from "../../trpc";
-import {
-  DEFAULT_EXPERIENCE_LIMIT,
-  DEFAULT_USER_LIMIT,
-} from "../../utils/constants";
+import { DEFAULT_USER_LIMIT } from "../../utils/constants";
 import { writeFile } from "../../utils/files";
-import { auth } from "../auth";
 import { cleanUserSelectSchema, usersTable } from "../auth/models";
+import {
+  getUserFollowContext,
+  getUserFollowers,
+  getUserFollowersCount,
+  getUserFollowing,
+  getUserFollowingCount,
+  getUserHostedExperiencesCount,
+} from "./helpers";
 
 export const userRouter = router({
   byId: publicProcedure
@@ -45,6 +41,7 @@ export const userRouter = router({
         columns: {
           id: true,
           name: true,
+          bio: true,
           avatarUrl: true,
           createdAt: true,
           updatedAt: true,
@@ -58,153 +55,24 @@ export const userRouter = router({
         });
       }
 
-      const [followersCount, followingCount, hostedExperiencesCount] =
-        await Promise.all([
-          db
-            .select({ count: count() })
-            .from(userFollowsTable)
-            .where(eq(userFollowsTable.followingId, input.id))
-            .then((res) => res[0]?.count ?? 0),
-          db
-            .select({ count: count() })
-            .from(userFollowsTable)
-            .where(eq(userFollowsTable.followerId, input.id))
-            .then((res) => res[0]?.count ?? 0),
-          db
-            .select({ count: count() })
-            .from(experiencesTable)
-            .where(eq(experiencesTable.userId, input.id))
-            .then((res) => res[0]?.count ?? 0),
-        ]);
-
-      const isFollowing = ctx.user
-        ? await db.query.userFollowsTable
-            .findFirst({
-              where: and(
-                eq(userFollowsTable.followerId, ctx.user.id),
-                eq(userFollowsTable.followingId, input.id),
-              ),
-            })
-            .then(Boolean)
-        : false;
+      const [
+        followersCount,
+        followingCount,
+        hostedExperiencesCount,
+        userContext,
+      ] = await Promise.all([
+        getUserFollowersCount(input.id),
+        getUserFollowingCount(input.id),
+        getUserHostedExperiencesCount(input.id),
+        getUserFollowContext(input.id, ctx.user?.id),
+      ]);
 
       return {
         ...user,
         followersCount,
         followingCount,
-        isFollowing,
+        isFollowing: userContext.isFollowing,
         hostedExperiencesCount,
-      };
-    }),
-
-  experiences: publicProcedure
-    .input(
-      z.object({
-        id: z.number(),
-        cursor: z.number().optional(),
-        limit: z.number().optional(),
-      }),
-    )
-    .output(
-      z.object({
-        experiences: z.array(
-          experienceSelectSchema.extend({
-            commentsCount: z.number(),
-            user: cleanUserSelectSchema,
-            attendeesCount: z.number(),
-            attendees: z.array(cleanUserSelectSchema),
-            tags: z.array(tagSelectSchema),
-            isFavorited: z.boolean(),
-          }),
-        ),
-        nextCursor: z.number().optional(),
-      }),
-    )
-    .query(async ({ ctx, input }) => {
-      const limit = input.limit ?? DEFAULT_EXPERIENCE_LIMIT;
-      const cursor = input.cursor ?? 0;
-
-      const experiences = await db.query.experiencesTable.findMany({
-        limit,
-        offset: cursor,
-        where: eq(experiencesTable.userId, input.id),
-        orderBy: desc(experiencesTable.createdAt),
-        with: {
-          user: {
-            columns: {
-              password: false,
-              email: false,
-            },
-          },
-        },
-      });
-
-      const countQueries = experiences.map((experience) =>
-        db
-          .select({ count: count() })
-          .from(commentsTable)
-          .where(eq(commentsTable.experienceId, experience.id)),
-      );
-
-      const counts = await Promise.all(countQueries);
-
-      const attendeeQueries = experiences.map((experience) =>
-        Promise.all([
-          db
-            .select({ count: count() })
-            .from(experienceAttendeesTable)
-            .where(eq(experienceAttendeesTable.experienceId, experience.id)),
-          db.query.experienceAttendeesTable.findMany({
-            where: eq(experienceAttendeesTable.experienceId, experience.id),
-            limit: 5,
-            with: {
-              user: {
-                columns: {
-                  email: false,
-                  password: false,
-                },
-              },
-            },
-          }),
-        ]),
-      );
-
-      const attendeeCounts = await Promise.all(attendeeQueries);
-
-      const tagQueries = experiences.map((experience) =>
-        db.query.experienceTagsTable.findMany({
-          where: eq(experienceTagsTable.experienceId, experience.id),
-          with: {
-            tag: true,
-          },
-        }),
-      );
-
-      const tagResults = await Promise.all(tagQueries);
-
-      const favoriteQueries = experiences.map((experience) =>
-        ctx.user
-          ? db.query.experienceFavoritesTable.findFirst({
-              where: and(
-                eq(experienceFavoritesTable.experienceId, experience.id),
-                eq(experienceFavoritesTable.userId, ctx.user.id),
-              ),
-            })
-          : Promise.resolve(null),
-      );
-
-      const favoriteResults = await Promise.all(favoriteQueries);
-
-      return {
-        experiences: experiences.map((experience, i) => ({
-          ...experience,
-          commentsCount: counts[i][0].count,
-          attendeesCount: attendeeCounts[i][0][0].count,
-          attendees: attendeeCounts[i][1].map((a) => a.user),
-          tags: tagResults[i].map((t) => t.tag),
-          isFavorited: !!favoriteResults[i],
-        })),
-        nextCursor: experiences.length === limit ? cursor + limit : undefined,
       };
     }),
 
@@ -213,7 +81,7 @@ export const userRouter = router({
     .mutation(async ({ ctx, input }) => {
       if (ctx.user.id === input.id) {
         throw new TRPCError({
-          code: "BAD_REQUEST",
+          code: "FORBIDDEN",
           message: "You cannot follow yourself",
         });
       }
@@ -227,7 +95,7 @@ export const userRouter = router({
 
       if (existingFollow) {
         throw new TRPCError({
-          code: "BAD_REQUEST",
+          code: "FORBIDDEN",
           message: "You are already following this user",
         });
       }
@@ -251,6 +119,27 @@ export const userRouter = router({
   unfollow: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
+      if (ctx.user.id === input.id) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You cannot unfollow yourself",
+        });
+      }
+
+      const existingFollow = await db.query.userFollowsTable.findFirst({
+        where: and(
+          eq(userFollowsTable.followerId, ctx.user.id),
+          eq(userFollowsTable.followingId, input.id),
+        ),
+      });
+
+      if (!existingFollow) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You are not following this user",
+        });
+      }
+
       await db
         .delete(userFollowsTable)
         .where(
@@ -287,56 +176,37 @@ export const userRouter = router({
       const limit = input.limit ?? DEFAULT_USER_LIMIT;
       const cursor = input.cursor ?? 0;
 
-      const followers = await db
-        .select({
-          follower: usersTable,
-          createdAt: userFollowsTable.createdAt,
-        })
-        .from(userFollowsTable)
-        .where(eq(userFollowsTable.followingId, input.id))
-        .innerJoin(usersTable, eq(userFollowsTable.followerId, usersTable.id))
-        .orderBy(desc(userFollowsTable.createdAt))
-        .limit(limit + 1)
-        .offset(cursor);
+      const user = await db.query.usersTable.findFirst({
+        where: eq(usersTable.id, input.id),
+      });
+
+      if (!user) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+      }
+
+      const followers = await getUserFollowers(input.id, limit + 1, cursor);
 
       const items = await Promise.all(
         followers.slice(0, limit).map(async (f) => {
-          const [followersCount, followingCount] = await Promise.all([
-            db
-              .select({ count: count() })
-              .from(userFollowsTable)
-              .where(eq(userFollowsTable.followingId, f.follower.id))
-              .then((res) => res[0]?.count ?? 0),
-            db
-              .select({ count: count() })
-              .from(userFollowsTable)
-              .where(eq(userFollowsTable.followerId, f.follower.id))
-              .then((res) => res[0]?.count ?? 0),
-          ]);
+          const [followersCount, followingCount, userContext] =
+            await Promise.all([
+              getUserFollowersCount(f.follower.id),
+              getUserFollowingCount(f.follower.id),
+              getUserFollowContext(f.follower.id, ctx.user?.id),
+            ]);
 
           return {
             ...f.follower,
             followersCount,
             followingCount,
-            isFollowing: ctx.user
-              ? await db.query.userFollowsTable
-                  .findFirst({
-                    where: and(
-                      eq(userFollowsTable.followerId, ctx.user.id),
-                      eq(userFollowsTable.followingId, f.follower.id),
-                    ),
-                  })
-                  .then(Boolean)
-              : false,
+            isFollowing: userContext.isFollowing,
           };
         }),
       );
 
-      const nextCursor = followers.length > limit ? cursor + limit : undefined;
-
       return {
         items,
-        nextCursor,
+        nextCursor: followers.length > limit ? cursor + limit : undefined,
       };
     }),
 
@@ -364,61 +234,42 @@ export const userRouter = router({
       const limit = input.limit ?? DEFAULT_USER_LIMIT;
       const cursor = input.cursor ?? 0;
 
-      const following = await db
-        .select({
-          following: usersTable,
-          createdAt: userFollowsTable.createdAt,
-        })
-        .from(userFollowsTable)
-        .where(eq(userFollowsTable.followerId, input.id))
-        .innerJoin(usersTable, eq(userFollowsTable.followingId, usersTable.id))
-        .orderBy(desc(userFollowsTable.createdAt))
-        .limit(limit + 1)
-        .offset(cursor);
+      const user = await db.query.usersTable.findFirst({
+        where: eq(usersTable.id, input.id),
+      });
+
+      if (!user) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+      }
+
+      const following = await getUserFollowing(input.id, limit + 1, cursor);
 
       const items = await Promise.all(
         following.slice(0, limit).map(async (f) => {
-          const [followersCount, followingCount] = await Promise.all([
-            db
-              .select({ count: count() })
-              .from(userFollowsTable)
-              .where(eq(userFollowsTable.followingId, f.following.id))
-              .then((res) => res[0]?.count ?? 0),
-            db
-              .select({ count: count() })
-              .from(userFollowsTable)
-              .where(eq(userFollowsTable.followerId, f.following.id))
-              .then((res) => res[0]?.count ?? 0),
-          ]);
+          const [followersCount, followingCount, userContext] =
+            await Promise.all([
+              getUserFollowersCount(f.following.id),
+              getUserFollowingCount(f.following.id),
+              getUserFollowContext(f.following.id, ctx.user?.id),
+            ]);
 
           return {
             ...f.following,
             followersCount,
             followingCount,
-            isFollowing: ctx.user
-              ? await db.query.userFollowsTable
-                  .findFirst({
-                    where: and(
-                      eq(userFollowsTable.followerId, ctx.user.id),
-                      eq(userFollowsTable.followingId, f.following.id),
-                    ),
-                  })
-                  .then(Boolean)
-              : false,
+            isFollowing: userContext.isFollowing,
           };
         }),
       );
 
-      const nextCursor = following.length > limit ? cursor + limit : undefined;
-
       return {
         items,
-        nextCursor,
+        nextCursor: following.length > limit ? cursor + limit : undefined,
       };
     }),
 
   edit: protectedProcedure
-    .input(userValidationSchema)
+    .input(userEditSchema)
     .mutation(async ({ ctx, input }) => {
       if (ctx.user.id !== input.id) {
         throw new TRPCError({
@@ -436,6 +287,7 @@ export const userRouter = router({
         .update(usersTable)
         .set({
           name: input.name,
+          bio: input.bio,
           avatarUrl: imagePath,
           updatedAt: new Date().toISOString(),
         })
@@ -443,51 +295,78 @@ export const userRouter = router({
         .returning();
     }),
 
-  changeEmail: protectedProcedure
-    .input(changeEmailSchema)
-    .mutation(async ({ ctx, input }) => {
-      const isPasswordValid = await auth.verifyPassword(
-        input.password,
-        ctx.user.password,
-      );
+  experienceAttendees: publicProcedure
+    .input(
+      z.object({
+        experienceId: experienceSelectSchema.shape.id,
+        limit: z.number().optional(),
+        cursor: z.number().optional(),
+      }),
+    )
+    .output(
+      z.object({
+        attendees: z.array(
+          cleanUserSelectSchema.extend({
+            isFollowing: z.boolean(),
+            followersCount: z.number(),
+            followingCount: z.number(),
+          }),
+        ),
+        attendeesCount: z.number(),
+        nextCursor: z.number().optional(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const limit = input.limit ?? DEFAULT_USER_LIMIT;
+      const cursor = input.cursor ?? 0;
 
-      if (!isPasswordValid) {
+      const experience = await db.query.experiencesTable.findFirst({
+        where: eq(experiencesTable.id, input.experienceId),
+      });
+
+      if (!experience) {
         throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "Invalid password",
+          code: "NOT_FOUND",
+          message: "Experience not found",
         });
       }
 
-      await db
-        .update(usersTable)
-        .set({ email: input.email, updatedAt: new Date().toISOString() })
-        .where(eq(usersTable.id, ctx.user.id));
+      const [attendeesCount] = await db
+        .select({ count: count() })
+        .from(experienceAttendeesTable)
+        .where(eq(experienceAttendeesTable.experienceId, input.experienceId));
 
-      return { success: true };
-    }),
+      const attendees = await db.query.experienceAttendeesTable.findMany({
+        where: eq(experienceAttendeesTable.experienceId, input.experienceId),
+        limit,
+        offset: cursor,
+        with: {
+          user: true,
+        },
+      });
 
-  changePassword: protectedProcedure
-    .input(changePasswordSchema)
-    .mutation(async ({ ctx, input }) => {
-      const isPasswordValid = await auth.verifyPassword(
-        input.currentPassword,
-        ctx.user.password,
+      const items = await Promise.all(
+        attendees.map(async (attendee) => {
+          const [followersCount, followingCount, userContext] =
+            await Promise.all([
+              getUserFollowersCount(attendee.user.id),
+              getUserFollowingCount(attendee.user.id),
+              getUserFollowContext(attendee.user.id, ctx.user?.id),
+            ]);
+
+          return {
+            ...attendee.user,
+            isFollowing: userContext.isFollowing,
+            followersCount,
+            followingCount,
+          };
+        }),
       );
 
-      if (!isPasswordValid) {
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "Invalid current password",
-        });
-      }
-
-      const hashedPassword = await auth.hashPassword(input.newPassword);
-
-      await db
-        .update(usersTable)
-        .set({ password: hashedPassword, updatedAt: new Date().toISOString() })
-        .where(eq(usersTable.id, ctx.user.id));
-
-      return { success: true };
+      return {
+        attendees: items,
+        attendeesCount: attendeesCount?.count ?? 0,
+        nextCursor: attendees.length === limit ? cursor + limit : undefined,
+      };
     }),
 });

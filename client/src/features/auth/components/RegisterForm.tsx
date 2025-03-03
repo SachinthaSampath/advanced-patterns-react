@@ -3,9 +3,16 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { FormProvider, useForm } from "react-hook-form";
 import { z } from "zod";
 
-import FormField from "@/features/shared/components/FormField";
-import Button from "@/features/shared/components/ui/Button";
+import { Button } from "@/features/shared/components/ui/Button";
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/features/shared/components/ui/Form";
 import Input from "@/features/shared/components/ui/Input";
+import Link from "@/features/shared/components/ui/Link";
 import { useToast } from "@/features/shared/hooks/useToast";
 import { router, trpc } from "@/router";
 
@@ -19,12 +26,18 @@ export default function RegisterForm() {
   const registerMutation = trpc.auth.register.useMutation({
     onSuccess: async () => {
       await utils.auth.currentUser.invalidate();
+
       router.navigate({ to: "/" });
+
+      toast({
+        title: "Logged in",
+        description: "You have been registered and logged in",
+      });
     },
-    onError: () => {
+    onError: (error) => {
       toast({
         title: "Failed to register",
-        description: "Please try again later",
+        description: error.message,
         variant: "destructive",
       });
     },
@@ -41,37 +54,59 @@ export default function RegisterForm() {
   return (
     <FormProvider {...form}>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <FormField<RegisterFormData> name="name" label="Name">
-          {({ error, name }) => (
-            <Input
-              {...form.register(name)}
-              type="text"
-              error={error}
-              placeholder="Your name"
-            />
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Name</FormLabel>
+              <FormControl>
+                <Input {...field} placeholder="Your name" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
-        </FormField>
-        <FormField<RegisterFormData> name="email" label="Email">
-          {({ error, name }) => (
-            <Input
-              {...form.register(name)}
-              type="email"
-              error={error}
-              placeholder="name@example.com"
-            />
+        />
+
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input {...field} type="email" placeholder="dev@example.com" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
-        </FormField>
-        <FormField<RegisterFormData> name="password" label="Password">
-          {({ error, name }) => (
-            <Input {...form.register(name)} type="password" error={error} />
+        />
+
+        <FormField
+          control={form.control}
+          name="password"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Password</FormLabel>
+              <FormControl>
+                <Input {...field} type="password" placeholder="********" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
-        </FormField>
+        />
+
         <Button
           type="submit"
           className="w-full"
           disabled={registerMutation.isPending}
         >
           {registerMutation.isPending ? "Creating account..." : "Register"}
+        </Button>
+        <Button asChild type="button" variant="link">
+          <Link variant="ghost" href="/login">
+            Already have an account? Login here
+          </Link>
         </Button>
       </form>
     </FormProvider>

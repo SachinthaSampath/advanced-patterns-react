@@ -1,86 +1,76 @@
-import { Comment, User } from "@advanced-react/server/database/schema";
 import { useState } from "react";
 
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
-import { LikeButton } from "@/features/comment/components/LikeButton";
-import Button from "@/features/shared/components/ui/Button";
+import { CommentLikeButton } from "@/features/comment/components/CommentLikeButton";
+import { CommentEnhanced, CommentOptimistic } from "@/features/comment/types";
+import { Button } from "@/features/shared/components/ui/Button";
+import Card from "@/features/shared/components/ui/Card";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/features/shared/components/ui/Dialog";
 import Link from "@/features/shared/components/ui/Link";
 import { useToast } from "@/features/shared/hooks/useToast";
 import UserAvatar from "@/features/user/components/UserAvatar";
-import { cn } from "@/lib/utils/cn";
 import { trpc } from "@/router";
 
-import { OptimisticComment } from "../types";
 import CommentEditForm from "./CommentEditForm";
 
 type CommentCardProps = {
-  comment:
-    | (Comment & { user: User; isLiked: boolean; likesCount: number })
-    | OptimisticComment;
+  comment: CommentEnhanced | CommentOptimistic;
 };
 
 export default function CommentCard({ comment }: CommentCardProps) {
-  const { currentUser } = useCurrentUser();
-
   const [isEditing, setIsEditing] = useState(false);
 
   if (isEditing) {
     return <CommentEditForm comment={comment} setIsEditing={setIsEditing} />;
   }
 
-  const isCommentOwner = currentUser?.id === comment.userId;
-
   return (
-    <div
-      className={cn("space-y-2 rounded bg-neutral-50 p-4 dark:bg-neutral-800")}
-    >
-      <Link to="/users/$userId" params={{ userId: comment.user.id }}>
-        <UserAvatar user={comment.user} />
-      </Link>
-      <p className="text-neutral-800 dark:text-neutral-100">
-        {comment.content}
-      </p>
-      <div className="mt-1 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {!(comment as OptimisticComment).optimistic && (
-            <div className="flex items-center gap-1">
-              <LikeButton
-                commentId={comment.id}
-                isLiked={(comment as Comment & { isLiked: boolean }).isLiked}
-              />
-              <span className="text-xs text-neutral-500">
-                {(comment as Comment & { likesCount: number }).likesCount}
-              </span>
-            </div>
-          )}
-          <time className="text-xs text-neutral-500">
-            {new Date(comment.createdAt).toLocaleDateString()}
-          </time>
-        </div>
-        {isCommentOwner && (
-          <CommentCardOwnerButtons
-            comment={comment}
-            setIsEditing={setIsEditing}
-          />
-        )}
+    <Card className="space-y-4">
+      <div className="flex items-center gap-2">
+        <Link to="/users/$userId" params={{ userId: comment.user.id }}>
+          <UserAvatar user={comment.user} />
+        </Link>
+        <time className="text-sm text-neutral-500">
+          · {new Date(comment.createdAt).toLocaleDateString()}
+        </time>
       </div>
-    </div>
+      <p>{comment.content}</p>
+      <CommentLikeButton
+        id={comment.id}
+        isLiked={comment.isLiked}
+        likesCount={comment.likesCount}
+        isOptimistic={!!("optimistic" in comment)}
+      />
+      <CommentCardButtons comment={comment} setIsEditing={setIsEditing} />
+    </Card>
   );
 }
 
-type CommentCardOwnerButtonsProps = Pick<CommentCardProps, "comment"> & {
+type CommentCardButtonsProps = Pick<CommentCardProps, "comment"> & {
   setIsEditing: (isEditing: boolean) => void;
 };
 
-function CommentCardOwnerButtons({
+function CommentCardButtons({
   comment,
   setIsEditing,
-}: CommentCardOwnerButtonsProps) {
+}: CommentCardButtonsProps) {
   const { toast } = useToast();
   const utils = trpc.useUtils();
+  const { currentUser } = useCurrentUser();
+
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const deleteMutation = trpc.comments.delete.useMutation({
     onMutate: async ({ id }) => {
+      setIsDeleteDialogOpen(false);
+
       await Promise.all([
         utils.comments.byExperienceId.cancel(),
         utils.experiences.byId.cancel(),
@@ -120,9 +110,16 @@ function CommentCardOwnerButtons({
         },
       );
 
-      return { previousData };
+      const { dismiss } = toast({
+        title: "Comment deleted",
+        description: "Your comment has been deleted",
+      });
+
+      return { dismiss, previousData };
     },
     onError: (error, _, context) => {
+      context?.dismiss?.();
+
       utils.comments.byExperienceId.setData(
         { experienceId: comment.experienceId },
         context?.previousData.byExperienceId,
@@ -140,24 +137,65 @@ function CommentCardOwnerButtons({
       });
     },
   });
+
+  const isCommentOwner = currentUser?.id === comment.userId;
+  const isExperienceOwner =
+    !("optimistic" in comment) &&
+    currentUser?.id === comment.experience?.userId;
+
+  if (!isCommentOwner && !isExperienceOwner) {
+    return null;
+  }
+
   return (
-    <div className="flex gap-2">
-      <Button
-        variant="link"
-        onClick={() => setIsEditing(true)}
-        disabled={(comment as OptimisticComment).optimistic}
-      >
-        Edit
-      </Button>
-      <Button
-        variant="destructive-link"
-        onClick={() => deleteMutation.mutate({ id: comment.id })}
-        disabled={
-          deleteMutation.isPending || (comment as OptimisticComment).optimistic
-        }
-      >
-        {deleteMutation.isPending ? "Deleting..." : "Delete"}
-      </Button>
+    <div className="flex gap-4">
+      {isCommentOwner && (
+        <Button
+          variant="link"
+          onClick={() => setIsEditing(true)}
+          disabled={(comment as CommentOptimistic).optimistic}
+        >
+          Edit
+        </Button>
+      )}
+      {(isCommentOwner || isExperienceOwner) && (
+        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <DialogTrigger asChild>
+            <Button
+              variant="destructive-link"
+              disabled={(comment as CommentOptimistic).optimistic}
+            >
+              Delete
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Comment</DialogTitle>
+            </DialogHeader>
+            <p className="text-neutral-600 dark:text-neutral-400">
+              Are you sure you want to delete this comment? This action cannot
+              be undone.
+            </p>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsDeleteDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  deleteMutation.mutate({ id: comment.id });
+                }}
+                disabled={deleteMutation.isPending}
+              >
+                {deleteMutation.isPending ? "Deleting..." : "Delete"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

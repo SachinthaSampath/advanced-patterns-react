@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import RegisterForm from "@/features/auth/components/RegisterForm";
+import Card from "@/features/shared/components/ui/Card";
 
 export const Route = createFileRoute("/register")({
   component: RegisterPage,
@@ -8,11 +9,10 @@ export const Route = createFileRoute("/register")({
 
 function RegisterPage() {
   return (
-    <div className="container mx-auto max-w-md p-4">
-      <div className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
-        <h1 className="mb-4 text-2xl font-bold">Create Account</h1>
+    <main>
+      <Card>
         <RegisterForm />
-      </div>
-    </div>
+      </Card>
+    </main>
   );
 }

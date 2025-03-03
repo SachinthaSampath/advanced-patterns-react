@@ -52,6 +52,8 @@ export const notificationRouter = router({
         content: getNotificationContent(notification),
       }));
 
+      console.log(notificationsWithContent);
+
       return {
         notifications: notificationsWithContent,
         nextCursor: notifications.length === limit ? cursor + limit : undefined,
@@ -92,6 +94,7 @@ function getNotificationContent(
     fromUser: Pick<User, "name"> | null;
   },
 ): string {
+  console.log(notification.type);
   switch (notification.type) {
     case "user_attending_experience":
       return `${notification.fromUser?.name} is attending your experience`;
@@ -101,6 +104,8 @@ function getNotificationContent(
       return `${notification.fromUser?.name} commented on your experience`;
     case "user_followed_user":
       return `${notification.fromUser?.name} followed you`;
+    case "user_kicked_experience":
+      return `${notification.fromUser?.name} kicked you from the experience`;
     default:
       return "New notification";
   }

@@ -8,7 +8,7 @@ type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> &
     asChild?: boolean;
   };
 
-export default function Button({
+export function Button({
   className,
   variant,
   size,
@@ -32,7 +32,7 @@ export const buttonVariants = cva(
         default:
           "from-primary-500 to-secondary-500 hover:from-primary-500/70 hover:to-secondary-500/70 bg-gradient-to-r text-neutral-900 hover:bg-gradient-to-r",
         outline:
-          "border border-neutral-200 hover:bg-neutral-100 hover:text-neutral-900 dark:border-neutral-800 dark:hover:bg-neutral-800 dark:hover:text-neutral-50",
+          "border border-neutral-200 hover:bg-neutral-200 hover:text-neutral-900 dark:border-neutral-800 dark:hover:bg-neutral-800 dark:hover:text-neutral-50",
         ghost:
           "bg-transparent hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-50",
         link: "bg-transparent hover:opacity-70",

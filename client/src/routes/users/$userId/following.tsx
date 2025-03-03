@@ -1,20 +1,25 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, notFound } from "@tanstack/react-router";
 import { z } from "zod";
 
 import InfiniteScroll from "@/features/shared/components/InfiniteScroll";
-import { QueryErrorFallback } from "@/features/shared/components/QueryErrorFallback";
-import FollowButton from "@/features/user/components/FollowButton";
+import FollowButton from "@/features/user/components/UserFollowButton";
 import UserList from "@/features/user/components/UserList";
-import { trpc } from "@/router";
+import { isTRPCClientError, trpc } from "@/router";
 
 export const Route = createFileRoute("/users/$userId/following")({
   parseParams: (params) => ({
     userId: z.coerce.number().parse(params.userId),
   }),
-  loader: async () => {
-    // TODO: This currently doesn't work due to a bug in TRPC
-    // https://github.com/trpc/trpc/discussions/5833
-    // await trpcQueryUtils.users.following.ensureData({ userId: params.userId });
+  loader: async ({ params, context: { trpcQueryUtils } }) => {
+    try {
+      await trpcQueryUtils.users.following.fetchInfinite({
+        id: params.userId,
+      });
+    } catch (error) {
+      if (isTRPCClientError(error) && error.data?.code === "NOT_FOUND") {
+        throw notFound();
+      }
+    }
   },
   component: UserFollowing,
 });
@@ -22,49 +27,40 @@ export const Route = createFileRoute("/users/$userId/following")({
 function UserFollowing() {
   const { userId } = Route.useParams();
 
-  const followingQuery = trpc.users.following.useInfiniteQuery(
-    { id: userId },
-    {
-      getNextPageParam: (lastPage) => lastPage.nextCursor,
-    },
-  );
-
-  if (followingQuery.error) {
-    return <QueryErrorFallback refetch={followingQuery.refetch} />;
-  }
+  const [{ pages }, followingQuery] =
+    trpc.users.following.useSuspenseInfiniteQuery(
+      { id: userId },
+      {
+        getNextPageParam: (lastPage) => lastPage.nextCursor,
+      },
+    );
 
   return (
-    <div className="container mx-auto p-4">
-      <div className="max-w-feed mx-auto">
-        <h1 className="mb-8 text-2xl font-bold">Following</h1>
+    <main className="space-y-4">
+      <h1 className="text-2xl font-bold">Following</h1>
 
-        <InfiniteScroll
-          onLoadMore={() => {
-            if (
-              followingQuery.hasNextPage &&
-              !followingQuery.isFetchingNextPage
-            ) {
-              followingQuery.fetchNextPage();
-            }
-          }}
-          hasNextPage={followingQuery.hasNextPage}
-        >
-          <UserList
-            users={
-              followingQuery.data?.pages.flatMap((page) => page.items) ?? []
-            }
-            isLoading={
-              followingQuery.isLoading || followingQuery.isFetchingNextPage
-            }
-            rightComponent={(user) => (
-              <FollowButton
-                targetUserId={user.id}
-                isFollowing={user.isFollowing}
-              />
-            )}
-          />
-        </InfiniteScroll>
-      </div>
-    </div>
+      <InfiniteScroll
+        onLoadMore={() => {
+          if (
+            followingQuery.hasNextPage &&
+            !followingQuery.isFetchingNextPage
+          ) {
+            followingQuery.fetchNextPage();
+          }
+        }}
+        hasNextPage={followingQuery.hasNextPage}
+      >
+        <UserList
+          users={pages.flatMap((page) => page.items)}
+          isLoading={followingQuery.isFetchingNextPage}
+          rightComponent={(user) => (
+            <FollowButton
+              targetUserId={user.id}
+              isFollowing={user.isFollowing}
+            />
+          )}
+        />
+      </InfiniteScroll>
+    </main>
   );
 }

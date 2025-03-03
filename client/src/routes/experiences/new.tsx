@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import ExperienceForm from "@/features/experience/components/ExperienceForm";
+import Card from "@/features/shared/components/ui/Card";
 import { router } from "@/router";
 
 export const Route = createFileRoute("/experiences/new")({
@@ -9,9 +10,9 @@ export const Route = createFileRoute("/experiences/new")({
 
 function NewExperience() {
   return (
-    <div className="container mx-auto p-4">
-      <div className="max-w-feed mx-auto">
-        <h1 className="mb-4 text-2xl font-bold">Create Experience</h1>
+    <main className="space-y-4">
+      <h1 className="text-2xl font-bold">Create Experience</h1>
+      <Card>
         <ExperienceForm
           onSuccess={(id) =>
             router.navigate({
@@ -21,7 +22,7 @@ function NewExperience() {
           }
           onCancel={() => router.history.back()}
         />
-      </div>
-    </div>
+      </Card>
+    </main>
   );
 }

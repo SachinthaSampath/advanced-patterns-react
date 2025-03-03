@@ -1,3 +1,5 @@
+import { Experience } from "@advanced-react/server/database/schema";
+import { User } from "@advanced-react/server/features/auth/models";
 import { useParams, useSearch } from "@tanstack/react-router";
 
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
@@ -5,19 +7,30 @@ import { useToast } from "@/features/shared/hooks/useToast";
 import { trpc } from "@/router";
 
 type ExperienceMutationsOptions = {
+  add?: {
+    onSuccess?: (id: Experience["id"]) => void;
+  };
+  edit?: {
+    onSuccess?: (id: Experience["id"]) => void;
+  };
   delete?: {
+    onMutate?: (id: Experience["id"]) => void;
+    onSuccess?: (id: Experience["id"]) => void;
+  };
+  kick?: {
     onSuccess?: () => void;
   };
 };
 
 export function useExperienceMutations(
-  experienceId: number,
+  experienceId: Experience["id"] | undefined,
   options: ExperienceMutationsOptions = {},
 ) {
   const { currentUser } = useCurrentUser();
   const utils = trpc.useUtils();
   const { toast } = useToast();
 
+  const { experienceId: pathExperienceId } = useParams({ strict: false });
   const { userId: pathUserId } = useParams({ strict: false });
   const { tagId: pathTagId } = useParams({ strict: false });
 
@@ -25,142 +38,136 @@ export function useExperienceMutations(
   const { scheduledAt: pathScheduledAt } = useSearch({ strict: false });
   const { tags: pathTags } = useSearch({ strict: false });
 
-  const optimisticUpdates = [
-    {
-      key: "byId",
-      procedure: utils.experiences.byId,
-      args: { id: experienceId },
-      type: "query",
+  const addMutation = trpc.experiences.add.useMutation({
+    onSuccess: (data) => {
+      toast({
+        title: "Experience created",
+        description: "Your experience has been created",
+      });
+
+      options.add?.onSuccess?.(data[0].id);
     },
-    {
-      key: "feed",
-      procedure: utils.experiences.feed,
-      args: {},
-      type: "infiniteQuery",
+    onError: (error) => {
+      toast({
+        title: "Failed to create experience",
+        description: error.message,
+        variant: "destructive",
+      });
     },
-    ...(pathQ || pathScheduledAt || pathTags
-      ? [
-          {
-            key: "search",
-            procedure: utils.experiences.search,
-            args: {
-              q: pathQ,
-              scheduledAt: pathScheduledAt,
-              tags: pathTags,
-            },
-            type: "infiniteQuery",
-          },
-        ]
-      : []),
-    {
-      key: "favorites",
-      procedure: utils.experiences.favorites,
-      args: {},
-      type: "infiniteQuery",
+  });
+
+  const editMutation = trpc.experiences.edit.useMutation({
+    onSuccess: (data) => {
+      toast({
+        title: "Experience updated",
+        description: "Your experience has been updated",
+      });
+
+      options.edit?.onSuccess?.(data[0].id);
     },
-    ...(pathUserId
-      ? [
-          {
-            key: "userExperiences",
-            procedure: utils.users.experiences,
-            args: { id: pathUserId },
-            type: "infiniteQuery",
-          },
-        ]
-      : []),
-    ...(pathTagId
-      ? [
-          {
-            key: "tagExperiences",
-            procedure: utils.tags.experiences,
-            args: { id: pathTagId },
-            type: "infiniteQuery",
-          },
-        ]
-      : []),
-  ] as const;
+    onError: (error) => {
+      toast({
+        title: "Failed to edit experience",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   const attendMutation = trpc.experiences.attend.useMutation({
-    onMutate: async () => {
+    onMutate: async ({ id }) => {
       if (!currentUser) {
         return;
       }
 
       function updateExperience<
-        T extends { attendeesCount: number; attendees: User[] },
+        T extends {
+          isAttending: boolean;
+          attendeesCount: number;
+          attendees?: User[];
+        },
       >(oldData: T) {
         return {
           ...oldData,
+          isAttending: true,
           attendeesCount: oldData.attendeesCount + 1,
-          attendees: [currentUser, ...oldData.attendees],
+          ...(oldData.attendees && {
+            attendees: [currentUser, ...oldData.attendees],
+          }),
         };
       }
 
-      await Promise.all(
-        optimisticUpdates.map(({ procedure, args }) => procedure.cancel(args)),
-      );
+      await Promise.all([
+        utils.experiences.byId.cancel({ id }),
+        utils.experiences.feed.cancel(),
+        pathQ || pathScheduledAt || pathTags
+          ? utils.experiences.search.cancel({
+              q: pathQ,
+              scheduledAt: pathScheduledAt,
+              tags: pathTags,
+            })
+          : undefined,
+        utils.experiences.favorites.cancel(),
+        pathUserId
+          ? utils.experiences.byUserId.cancel({ id: pathUserId })
+          : undefined,
+        pathTagId
+          ? utils.experiences.byTagId.cancel({ id: pathTagId })
+          : undefined,
+      ]);
 
-      // await Promise.all([
-      //   utils.experiences.byId.cancel({ id }),
-      //   utils.experiences.feed.cancel(),
-      //   pathQ || pathScheduledAt || pathTags
-      //     ? utils.experiences.search.cancel({
-      //         q: pathQ,
-      //         scheduledAt: pathScheduledAt,
-      //         tags: pathTags,
-      //       })
-      //     : undefined,
-      //   utils.experiences.favorites.cancel(),
-      //   pathUserId
-      //     ? utils.users.experiences.cancel({ id: pathUserId })
-      //     : undefined,
-      //   pathTagId
-      //     ? utils.tags.experiences.cancel({ id: pathTagId })
-      //     : undefined,
-      // ]);
+      const previousData = {
+        byId: utils.experiences.byId.getData({ id }),
+        feed: utils.experiences.feed.getInfiniteData(),
+        search:
+          pathQ || pathScheduledAt || pathTags
+            ? utils.experiences.search.getInfiniteData({
+                q: pathQ,
+                scheduledAt: pathScheduledAt,
+                tags: pathTags,
+              })
+            : undefined,
+        favorites: utils.experiences.favorites.getInfiniteData(),
+        byUserId: pathUserId
+          ? utils.experiences.byUserId.getInfiniteData({ id: pathUserId })
+          : undefined,
+        byTagId: pathTagId
+          ? utils.experiences.byTagId.getInfiniteData({ id: pathTagId })
+          : undefined,
+      };
 
-      const previousData = optimisticUpdates.map(
-        ({ key, procedure, args, type }) => ({
-          [key]:
-            type === "query"
-              ? procedure.getData(args)
-              : procedure.getInfiniteData(args),
-        }),
-      );
-
-      // const previousData = {
-      //   byId: utils.experiences.byId.getData({ id }),
-      //   feed: utils.experiences.feed.getInfiniteData(),
-      //   search:
-      //     pathQ || pathScheduledAt || pathTags
-      //       ? utils.experiences.search.getInfiniteData({
-      //           q: pathQ,
-      //           scheduledAt: pathScheduledAt,
-      //           tags: pathTags,
-      //         })
-      //       : undefined,
-      //   favorites: utils.experiences.favorites.getInfiniteData(),
-      //   byUserId: pathUserId
-      //     ? utils.users.experiences.getInfiniteData({ id: pathUserId })
-      //     : undefined,
-      //   byTagId: pathTagId
-      //     ? utils.tags.experiences.getInfiniteData({ id: pathTagId })
-      //     : undefined,
-      // };
-
-      optimisticUpdates.forEach(({ procedure, args, type }) => {
-        if (type === "query") {
-          procedure.setData(args, (oldData) => {
-            if (!oldData) {
-              return;
-            }
-
-            return updateExperience(oldData);
-          });
+      utils.experiences.byId.setData({ id }, (oldData) => {
+        if (!oldData) {
+          return;
         }
 
-        if (type === "infiniteQuery") {
-          procedure.setInfiniteData(args, (oldData) => {
+        return updateExperience(oldData);
+      });
+
+      utils.experiences.feed.setInfiniteData({}, (oldData) => {
+        if (!oldData) {
+          return { pages: [], pageParams: [] };
+        }
+
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page) => ({
+            ...page,
+            experiences: page.experiences.map((e) =>
+              e.id === experienceId ? updateExperience(e) : e,
+            ),
+          })),
+        };
+      });
+
+      if (pathQ || pathScheduledAt || pathTags) {
+        utils.experiences.search.setInfiniteData(
+          {
+            q: pathQ,
+            scheduledAt: pathScheduledAt,
+            tags: pathTags,
+          },
+          (oldData) => {
             if (!oldData) {
               return { pages: [], pageParams: [] };
             }
@@ -174,160 +181,104 @@ export function useExperienceMutations(
                 ),
               })),
             };
-          });
+          },
+        );
+      }
+
+      utils.experiences.favorites.setInfiniteData({}, (oldData) => {
+        if (!oldData) {
+          return { pages: [], pageParams: [] };
         }
+
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page) => ({
+            ...page,
+            experiences: page.experiences.map((e) =>
+              e.id === experienceId ? updateExperience(e) : e,
+            ),
+          })),
+        };
       });
 
-      // utils.experiences.byId.setData({ id }, (oldData) => {
-      //   if (!oldData) {
-      //     return;
-      //   }
+      if (pathUserId) {
+        utils.experiences.byUserId.setInfiniteData(
+          { id: pathUserId },
+          (oldData) => {
+            if (!oldData) {
+              return { pages: [], pageParams: [] };
+            }
 
-      //   return updateExperience(oldData);
-      // });
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page) => ({
+                ...page,
+                experiences: page.experiences.map((e) =>
+                  e.id === experienceId ? updateExperience(e) : e,
+                ),
+              })),
+            };
+          },
+        );
+      }
 
-      // utils.experiences.feed.setInfiniteData({}, (oldData) => {
-      //   if (!oldData) {
-      //     return { pages: [], pageParams: [] };
-      //   }
+      if (pathTagId) {
+        utils.experiences.byTagId.setInfiniteData(
+          { id: pathTagId },
+          (oldData) => {
+            if (!oldData) {
+              return { pages: [], pageParams: [] };
+            }
 
-      //   return {
-      //     ...oldData,
-      //     pages: oldData.pages.map((page) => ({
-      //       ...page,
-      //       experiences: page.experiences.map((e) =>
-      //         e.id === experienceId ? updateExperience(e) : e,
-      //       ),
-      //     })),
-      //   };
-      // });
-
-      // if (pathQ || pathScheduledAt || pathTags) {
-      //   utils.experiences.search.setInfiniteData(
-      //     {
-      //       q: pathQ,
-      //       scheduledAt: pathScheduledAt,
-      //       tags: pathTags,
-      //     },
-      //     (oldData) => {
-      //       if (!oldData) {
-      //         return { pages: [], pageParams: [] };
-      //       }
-
-      //       return {
-      //         ...oldData,
-      //         pages: oldData.pages.map((page) => ({
-      //           ...page,
-      //           experiences: page.experiences.map((e) =>
-      //             e.id === experienceId ? updateExperience(e) : e,
-      //           ),
-      //         })),
-      //       };
-      //     },
-      //   );
-      // }
-
-      // utils.experiences.favorites.setInfiniteData({}, (oldData) => {
-      //   if (!oldData) {
-      //     return { pages: [], pageParams: [] };
-      //   }
-
-      //   return {
-      //     ...oldData,
-      //     pages: oldData.pages.map((page) => ({
-      //       ...page,
-      //       experiences: page.experiences.map((e) =>
-      //         e.id === experienceId ? updateExperience(e) : e,
-      //       ),
-      //     })),
-      //   };
-      // });
-
-      // if (pathUserId) {
-      //   utils.users.experiences.setInfiniteData(
-      //     { id: pathUserId },
-      //     (oldData) => {
-      //       if (!oldData) {
-      //         return { pages: [], pageParams: [] };
-      //       }
-
-      //       return {
-      //         ...oldData,
-      //         pages: oldData.pages.map((page) => ({
-      //           ...page,
-      //           experiences: page.experiences.map((e) =>
-      //             e.id === experienceId ? updateExperience(e) : e,
-      //           ),
-      //         })),
-      //       };
-      //     },
-      //   );
-      // }
-
-      // if (pathTagId) {
-      //   utils.tags.experiences.setInfiniteData({ id: pathTagId }, (oldData) => {
-      //     if (!oldData) {
-      //       return { pages: [], pageParams: [] };
-      //     }
-
-      //     return {
-      //       ...oldData,
-      //       pages: oldData.pages.map((page) => ({
-      //         ...page,
-      //         experiences: page.experiences.map((e) =>
-      //           e.id === experienceId ? updateExperience(e) : e,
-      //         ),
-      //       })),
-      //     };
-      //   });
-      // }
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page) => ({
+                ...page,
+                experiences: page.experiences.map((e) =>
+                  e.id === experienceId ? updateExperience(e) : e,
+                ),
+              })),
+            };
+          },
+        );
+      }
 
       return { previousData };
     },
-    onError: (error, __, context) => {
-      optimisticUpdates.forEach(({ key, procedure, args, type }) => {
-        if (type === "query") {
-          procedure.setData(args, context?.previousData[key]);
-        }
+    onError: (error, { id }, context) => {
+      utils.experiences.byId.setData({ id }, context?.previousData.byId);
 
-        if (type === "infiniteQuery") {
-          procedure.setInfiniteData(args, context?.previousData[key]);
-        }
-      });
+      utils.experiences.feed.setInfiniteData({}, context?.previousData.feed);
 
-      // utils.experiences.byId.setData({ id }, context?.previousData.byId);
+      if (pathQ || pathScheduledAt || pathTags) {
+        utils.experiences.search.setInfiniteData(
+          {
+            q: pathQ,
+            scheduledAt: pathScheduledAt,
+            tags: pathTags,
+          },
+          context?.previousData.search,
+        );
+      }
 
-      // utils.experiences.feed.setInfiniteData({}, context?.previousData.feed);
+      utils.experiences.favorites.setInfiniteData(
+        {},
+        context?.previousData.favorites,
+      );
 
-      // if (pathQ || pathScheduledAt || pathTags) {
-      //   utils.experiences.search.setInfiniteData(
-      //     {
-      //       q: pathQ,
-      //       scheduledAt: pathScheduledAt,
-      //       tags: pathTags,
-      //     },
-      //     context?.previousData.search,
-      //   );
-      // }
+      if (pathUserId) {
+        utils.experiences.byUserId.setInfiniteData(
+          { id: pathUserId },
+          context?.previousData.byUserId,
+        );
+      }
 
-      // utils.experiences.favorites.setInfiniteData(
-      //   {},
-      //   context?.previousData.favorites,
-      // );
-
-      // if (pathUserId) {
-      //   utils.users.experiences.setInfiniteData(
-      //     { id: pathUserId },
-      //     context?.previousData.byUserId,
-      //   );
-      // }
-
-      // if (pathTagId) {
-      //   utils.tags.experiences.setInfiniteData(
-      //     { id: pathTagId },
-      //     context?.previousData.byTagId,
-      //   );
-      // }
+      if (pathTagId) {
+        utils.experiences.byTagId.setInfiniteData(
+          { id: pathTagId },
+          context?.previousData.byTagId,
+        );
+      }
 
       toast({
         title: "Failed to attend experience",
@@ -344,60 +295,95 @@ export function useExperienceMutations(
       }
 
       function updateExperience<
-        T extends { attendeesCount: number; attendees: User[] },
+        T extends {
+          isAttending: boolean;
+          attendeesCount: number;
+          attendees?: User[];
+        },
       >(oldData: T) {
         return {
           ...oldData,
+          isAttending: false,
           attendeesCount: Math.max(0, oldData.attendeesCount - 1),
-          attendees: oldData.attendees.filter((a) => a.id !== currentUser?.id),
+          ...(oldData.attendees && {
+            attendees: oldData.attendees.filter(
+              (a) => a.id !== currentUser?.id,
+            ),
+          }),
         };
       }
 
-      await Promise.all(
-        optimisticUpdates.map(({ procedure, args }) => procedure.cancel(args)),
-      );
+      await Promise.all([
+        utils.experiences.byId.cancel({ id }),
+        utils.experiences.feed.cancel(),
+        pathQ || pathScheduledAt || pathTags
+          ? utils.experiences.search.cancel({
+              q: pathQ,
+              scheduledAt: pathScheduledAt,
+              tags: pathTags,
+            })
+          : undefined,
+        utils.experiences.favorites.cancel(),
+        pathUserId
+          ? utils.experiences.byUserId.cancel({ id: pathUserId })
+          : undefined,
+        pathTagId
+          ? utils.experiences.byTagId.cancel({ id: pathTagId })
+          : undefined,
+      ]);
 
-      // await Promise.all([
-      //   utils.experiences.byId.cancel({ id }),
-      //   utils.experiences.feed.cancel(),
-      //   pathQ || pathScheduledAt || pathTags
-      //     ? utils.experiences.search.cancel({
-      //         q: pathQ,
-      //         scheduledAt: pathScheduledAt,
-      //         tags: pathTags,
-      //       })
-      //     : undefined,
-      //   utils.experiences.favorites.cancel(),
-      //   pathUserId
-      //     ? utils.users.experiences.cancel({ id: pathUserId })
-      //     : undefined,
-      //   pathTagId
-      //     ? utils.tags.experiences.cancel({ id: pathTagId })
-      //     : undefined,
-      // ]);
+      const previousData = {
+        byId: utils.experiences.byId.getData({ id }),
+        feed: utils.experiences.feed.getInfiniteData(),
+        search:
+          pathQ || pathScheduledAt || pathTags
+            ? utils.experiences.search.getInfiniteData({
+                q: pathQ,
+                scheduledAt: pathScheduledAt,
+                tags: pathTags,
+              })
+            : undefined,
+        favorites: utils.experiences.favorites.getInfiniteData(),
+        byUserId: pathUserId
+          ? utils.experiences.byUserId.getInfiniteData({ id: pathUserId })
+          : undefined,
+        byTagId: pathTagId
+          ? utils.experiences.byTagId.getInfiniteData({ id: pathTagId })
+          : undefined,
+      };
 
-      const previousData = optimisticUpdates.map(
-        ({ key, procedure, args, type }) => ({
-          [key]:
-            type === "query"
-              ? procedure.getData(args)
-              : procedure.getInfiniteData(args),
-        }),
-      );
-
-      optimisticUpdates.forEach(({ procedure, args, type }) => {
-        if (type === "query") {
-          procedure.setData(args, (oldData) => {
-            if (!oldData) {
-              return;
-            }
-
-            return updateExperience(oldData);
-          });
+      utils.experiences.byId.setData({ id }, (oldData) => {
+        if (!oldData) {
+          return;
         }
 
-        if (type === "infiniteQuery") {
-          procedure.setInfiniteData(args, (oldData) => {
+        return updateExperience(oldData);
+      });
+
+      utils.experiences.feed.setInfiniteData({}, (oldData) => {
+        if (!oldData) {
+          return { pages: [], pageParams: [] };
+        }
+
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page) => ({
+            ...page,
+            experiences: page.experiences.map((e) =>
+              e.id === experienceId ? updateExperience(e) : e,
+            ),
+          })),
+        };
+      });
+
+      if (pathQ || pathScheduledAt || pathTags) {
+        utils.experiences.search.setInfiniteData(
+          {
+            q: pathQ,
+            scheduledAt: pathScheduledAt,
+            tags: pathTags,
+          },
+          (oldData) => {
             if (!oldData) {
               return { pages: [], pageParams: [] };
             }
@@ -411,180 +397,104 @@ export function useExperienceMutations(
                 ),
               })),
             };
-          });
+          },
+        );
+      }
+
+      utils.experiences.favorites.setInfiniteData({}, (oldData) => {
+        if (!oldData) {
+          return { pages: [], pageParams: [] };
         }
+
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page) => ({
+            ...page,
+            experiences: page.experiences.map((e) =>
+              e.id === experienceId ? updateExperience(e) : e,
+            ),
+          })),
+        };
       });
 
-      // const previousData = {
-      //   byId: utils.experiences.byId.getData({ id }),
-      //   feed: utils.experiences.feed.getInfiniteData(),
-      //   search:
-      //     pathQ || pathScheduledAt || pathTags
-      //       ? utils.experiences.search.getInfiniteData({
-      //           q: pathQ,
-      //           scheduledAt: pathScheduledAt,
-      //           tags: pathTags,
-      //         })
-      //       : undefined,
-      //   favorites: utils.experiences.favorites.getInfiniteData(),
-      //   byUserId: pathUserId
-      //     ? utils.users.experiences.getInfiniteData({ id: pathUserId })
-      //     : undefined,
-      //   byTagId: pathTagId
-      //     ? utils.tags.experiences.getInfiniteData({ id: pathTagId })
-      //     : undefined,
-      // };
+      if (pathUserId) {
+        utils.experiences.byUserId.setInfiniteData(
+          { id: pathUserId },
+          (oldData) => {
+            if (!oldData) {
+              return { pages: [], pageParams: [] };
+            }
 
-      // utils.experiences.byId.setData({ id }, (oldData) => {
-      //   if (!oldData) {
-      //     return;
-      //   }
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page) => ({
+                ...page,
+                experiences: page.experiences.map((e) =>
+                  e.id === experienceId ? updateExperience(e) : e,
+                ),
+              })),
+            };
+          },
+        );
+      }
 
-      //   return updateExperience(oldData);
-      // });
+      if (pathTagId) {
+        utils.experiences.byTagId.setInfiniteData(
+          { id: pathTagId },
+          (oldData) => {
+            if (!oldData) {
+              return { pages: [], pageParams: [] };
+            }
 
-      // utils.experiences.feed.setInfiniteData({}, (oldData) => {
-      //   if (!oldData) {
-      //     return { pages: [], pageParams: [] };
-      //   }
-
-      //   return {
-      //     ...oldData,
-      //     pages: oldData.pages.map((page) => ({
-      //       ...page,
-      //       experiences: page.experiences.map((e) =>
-      //         e.id === experienceId ? updateExperience(e) : e,
-      //       ),
-      //     })),
-      //   };
-      // });
-
-      // if (pathQ || pathScheduledAt || pathTags) {
-      //   utils.experiences.search.setInfiniteData(
-      //     {
-      //       q: pathQ,
-      //       scheduledAt: pathScheduledAt,
-      //       tags: pathTags,
-      //     },
-      //     (oldData) => {
-      //       if (!oldData) {
-      //         return { pages: [], pageParams: [] };
-      //       }
-
-      //       return {
-      //         ...oldData,
-      //         pages: oldData.pages.map((page) => ({
-      //           ...page,
-      //           experiences: page.experiences.map((e) =>
-      //             e.id === experienceId ? updateExperience(e) : e,
-      //           ),
-      //         })),
-      //       };
-      //     },
-      //   );
-      // }
-
-      // utils.experiences.favorites.setInfiniteData({}, (oldData) => {
-      //   if (!oldData) {
-      //     return { pages: [], pageParams: [] };
-      //   }
-
-      //   return {
-      //     ...oldData,
-      //     pages: oldData.pages.map((page) => ({
-      //       ...page,
-      //       experiences: page.experiences.map((e) =>
-      //         e.id === experienceId ? updateExperience(e) : e,
-      //       ),
-      //     })),
-      //   };
-      // });
-
-      // if (pathUserId) {
-      //   utils.users.experiences.setInfiniteData(
-      //     { id: pathUserId },
-      //     (oldData) => {
-      //       if (!oldData) {
-      //         return { pages: [], pageParams: [] };
-      //       }
-
-      //       return {
-      //         ...oldData,
-      //         pages: oldData.pages.map((page) => ({
-      //           ...page,
-      //           experiences: page.experiences.map((e) =>
-      //             e.id === experienceId ? updateExperience(e) : e,
-      //           ),
-      //         })),
-      //       };
-      //     },
-      //   );
-      // }
-
-      // if (pathTagId) {
-      //   utils.tags.experiences.setInfiniteData({ id: pathTagId }, (oldData) => {
-      //     if (!oldData) {
-      //       return { pages: [], pageParams: [] };
-      //     }
-
-      //     return {
-      //       ...oldData,
-      //       pages: oldData.pages.map((page) => ({
-      //         ...page,
-      //         experiences: page.experiences.map((e) =>
-      //           e.id === experienceId ? updateExperience(e) : e,
-      //         ),
-      //       })),
-      //     };
-      //   });
-      // }
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page) => ({
+                ...page,
+                experiences: page.experiences.map((e) =>
+                  e.id === experienceId ? updateExperience(e) : e,
+                ),
+              })),
+            };
+          },
+        );
+      }
 
       return { previousData };
     },
-    onError: (error, __, context) => {
-      optimisticUpdates.forEach(({ key, procedure, args, type }) => {
-        if (type === "query") {
-          procedure.setData(args, context?.previousData[key]);
-        }
+    onError: (error, { id }, context) => {
+      utils.experiences.byId.setData({ id }, context?.previousData.byId);
 
-        if (type === "infiniteQuery") {
-          procedure.setInfiniteData(args, context?.previousData[key]);
-        }
-      });
+      utils.experiences.feed.setInfiniteData({}, context?.previousData.feed);
 
-      // utils.experiences.byId.setData({ id }, context?.previousData.byId);
+      if (pathQ || pathScheduledAt || pathTags) {
+        utils.experiences.search.setInfiniteData(
+          {
+            q: pathQ,
+            scheduledAt: pathScheduledAt,
+            tags: pathTags,
+          },
+          context?.previousData.search,
+        );
+      }
 
-      // utils.experiences.feed.setInfiniteData({}, context?.previousData.feed);
+      utils.experiences.favorites.setInfiniteData(
+        {},
+        context?.previousData.favorites,
+      );
 
-      // if (pathQ || pathScheduledAt || pathTags) {
-      //   utils.experiences.search.setInfiniteData(
-      //     {
-      //       q: pathQ,
-      //       scheduledAt: pathScheduledAt,
-      //       tags: pathTags,
-      //     },
-      //     context?.previousData.search,
-      //   );
-      // }
+      if (pathUserId) {
+        utils.experiences.byUserId.setInfiniteData(
+          { id: pathUserId },
+          context?.previousData.byUserId,
+        );
+      }
 
-      // utils.experiences.favorites.setInfiniteData(
-      //   {},
-      //   context?.previousData.favorites,
-      // );
-
-      // if (pathUserId) {
-      //   utils.users.experiences.setInfiniteData(
-      //     { id: pathUserId },
-      //     context?.previousData.byUserId,
-      //   );
-      // }
-
-      // if (pathTagId) {
-      //   utils.tags.experiences.setInfiniteData(
-      //     { id: pathTagId },
-      //     context?.previousData.byTagId,
-      //   );
-      // }
+      if (pathTagId) {
+        utils.experiences.byTagId.setInfiniteData(
+          { id: pathTagId },
+          context?.previousData.byTagId,
+        );
+      }
 
       toast({
         title: "Failed to unattend experience",
@@ -596,65 +506,65 @@ export function useExperienceMutations(
 
   const deleteMutation = trpc.experiences.delete.useMutation({
     onMutate: async ({ id }) => {
-      optimisticUpdates.forEach(({ procedure, args }) =>
-        procedure.cancel(args),
-      );
+      await Promise.all([
+        utils.experiences.feed.cancel(),
+        pathQ || pathScheduledAt || pathTags
+          ? utils.experiences.search.cancel({
+              q: pathQ,
+              scheduledAt: pathScheduledAt,
+              tags: pathTags,
+            })
+          : undefined,
+        utils.experiences.favorites.cancel(),
+        pathUserId
+          ? utils.experiences.byUserId.cancel({ id: pathUserId })
+          : undefined,
+        pathTagId
+          ? utils.experiences.byTagId.cancel({ id: pathTagId })
+          : undefined,
+      ]);
 
-      const previousData = optimisticUpdates.map(
-        ({ key, procedure, args, type }) => ({
-          [key]:
-            type === "query"
-              ? procedure.getData(args)
-              : procedure.getInfiniteData(args),
-        }),
-      );
+      const previousData = {
+        feed: utils.experiences.feed.getInfiniteData(),
+        search:
+          pathQ || pathScheduledAt || pathTags
+            ? utils.experiences.search.getInfiniteData({
+                q: pathQ,
+                scheduledAt: pathScheduledAt,
+                tags: pathTags,
+              })
+            : undefined,
+        favorites: utils.experiences.favorites.getInfiniteData(),
+        byUserId: pathUserId
+          ? utils.experiences.byUserId.getInfiniteData({ id: pathUserId })
+          : undefined,
+        byTagId: pathTagId
+          ? utils.experiences.byTagId.getInfiniteData({ id: pathTagId })
+          : undefined,
+      };
 
-      // await Promise.all([
-      //   utils.experiences.byId.cancel({ id }),
-      //   utils.experiences.feed.cancel(),
-      //   pathQ || pathScheduledAt || pathTags
-      //     ? utils.experiences.search.cancel({
-      //         q: pathQ,
-      //         scheduledAt: pathScheduledAt,
-      //         tags: pathTags,
-      //       })
-      //     : undefined,
-      //   utils.experiences.favorites.cancel(),
-      //   pathUserId
-      //     ? utils.users.experiences.cancel({ id: pathUserId })
-      //     : undefined,
-      //   pathTagId
-      //     ? utils.tags.experiences.cancel({ id: pathTagId })
-      //     : undefined,
-      // ]);
-
-      // const previousData = {
-      //   byId: utils.experiences.byId.getData({ id }),
-      //   feed: utils.experiences.feed.getInfiniteData(),
-      //   search:
-      //     pathQ || pathScheduledAt || pathTags
-      //       ? utils.experiences.search.getInfiniteData({
-      //           q: pathQ,
-      //           scheduledAt: pathScheduledAt,
-      //           tags: pathTags,
-      //         })
-      //       : undefined,
-      //   favorites: utils.experiences.favorites.getInfiniteData(),
-      //   byUserId: pathUserId
-      //     ? utils.users.experiences.getInfiniteData({ id: pathUserId })
-      //     : undefined,
-      //   byTagId: pathTagId
-      //     ? utils.tags.experiences.getInfiniteData({ id: pathTagId })
-      //     : undefined,
-      // };
-
-      optimisticUpdates.forEach(({ procedure, args, type }) => {
-        if (type === "query") {
-          procedure.reset(args);
+      utils.experiences.feed.setInfiniteData({}, (oldData) => {
+        if (!oldData) {
+          return { pages: [], pageParams: [] };
         }
 
-        if (type === "infiniteQuery") {
-          procedure.setInfiniteData(args, (oldData) => {
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page) => ({
+            ...page,
+            experiences: page.experiences.filter((e) => e.id !== id),
+          })),
+        };
+      });
+
+      if (pathQ || pathScheduledAt || pathTags) {
+        utils.experiences.search.setInfiniteData(
+          {
+            q: pathQ,
+            scheduledAt: pathScheduledAt,
+            tags: pathTags,
+          },
+          (oldData) => {
             if (!oldData) {
               return { pages: [], pageParams: [] };
             }
@@ -666,154 +576,120 @@ export function useExperienceMutations(
                 experiences: page.experiences.filter((e) => e.id !== id),
               })),
             };
-          });
+          },
+        );
+      }
+
+      utils.experiences.favorites.setInfiniteData({}, (oldData) => {
+        if (!oldData) {
+          return { pages: [], pageParams: [] };
         }
+
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page) => ({
+            ...page,
+            experiences: page.experiences.filter((e) => e.id !== id),
+          })),
+        };
       });
 
-      // utils.experiences.byId.reset({ id });
+      if (pathUserId) {
+        utils.experiences.byUserId.setInfiniteData(
+          { id: pathUserId },
+          (oldData) => {
+            if (!oldData) {
+              return { pages: [], pageParams: [] };
+            }
 
-      // utils.experiences.feed.setInfiniteData({}, (oldData) => {
-      //   if (!oldData) {
-      //     return { pages: [], pageParams: [] };
-      //   }
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page) => ({
+                ...page,
+                experiences: page.experiences.filter((e) => e.id !== id),
+              })),
+            };
+          },
+        );
+      }
 
-      //   return {
-      //     ...oldData,
-      //     pages: oldData.pages.map((page) => ({
-      //       ...page,
-      //       experiences: page.experiences.filter((e) => e.id !== id),
-      //     })),
-      //   };
-      // });
+      if (pathTagId) {
+        utils.experiences.byTagId.setInfiniteData(
+          { id: pathTagId },
+          (oldData) => {
+            if (!oldData) {
+              return { pages: [], pageParams: [] };
+            }
 
-      // if (pathQ || pathScheduledAt || pathTags) {
-      //   utils.experiences.search.setInfiniteData(
-      //     {
-      //       q: pathQ,
-      //       scheduledAt: pathScheduledAt,
-      //       tags: pathTags,
-      //     },
-      //     (oldData) => {
-      //       if (!oldData) {
-      //         return { pages: [], pageParams: [] };
-      //       }
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page) => ({
+                ...page,
+                experiences: page.experiences.filter((e) => e.id !== id),
+              })),
+            };
+          },
+        );
+      }
 
-      //       return {
-      //         ...oldData,
-      //         pages: oldData.pages.map((page) => ({
-      //           ...page,
-      //           experiences: page.experiences.filter((e) => e.id !== id),
-      //         })),
-      //       };
-      //     },
-      //   );
-      // }
+      let dismissFn: (() => void) | undefined = undefined;
+      if (!pathExperienceId) {
+        const { dismiss } = toast({
+          title: "Experience deleted",
+          description: "Your experience has been deleted",
+        });
 
-      // utils.experiences.favorites.setInfiniteData({}, (oldData) => {
-      //   if (!oldData) {
-      //     return { pages: [], pageParams: [] };
-      //   }
+        dismissFn = dismiss;
+      }
 
-      //   return {
-      //     ...oldData,
-      //     pages: oldData.pages.map((page) => ({
-      //       ...page,
-      //       experiences: page.experiences.filter((e) => e.id !== id),
-      //     })),
-      //   };
-      // });
+      options.delete?.onMutate?.(id);
 
-      // if (pathUserId) {
-      //   utils.users.experiences.setInfiniteData(
-      //     { id: pathUserId },
-      //     (oldData) => {
-      //       if (!oldData) {
-      //         return { pages: [], pageParams: [] };
-      //       }
-
-      //       return {
-      //         ...oldData,
-      //         pages: oldData.pages.map((page) => ({
-      //           ...page,
-      //           experiences: page.experiences.filter((e) => e.id !== id),
-      //         })),
-      //       };
-      //     },
-      //   );
-      // }
-
-      // if (pathTagId) {
-      //   utils.tags.experiences.setInfiniteData({ id: pathTagId }, (oldData) => {
-      //     if (!oldData) {
-      //       return { pages: [], pageParams: [] };
-      //     }
-
-      //     return {
-      //       ...oldData,
-      //       pages: oldData.pages.map((page) => ({
-      //         ...page,
-      //         experiences: page.experiences.filter((e) => e.id !== id),
-      //       })),
-      //     };
-      //   });
-      // }
-
-      const { dismiss } = toast({
-        title: "Experience deleted",
-        description: "Your experience has been deleted",
-      });
-
-      return { dismiss, previousData };
+      return { dismiss: dismissFn, previousData };
     },
-    onSuccess: () => {
-      options.delete?.onSuccess?.();
+    onSuccess: (id) => {
+      if (pathExperienceId) {
+        toast({
+          title: "Experience deleted",
+          description: "Your experience has been deleted",
+        });
+      }
+
+      options.delete?.onSuccess?.(id);
     },
-    onError: (error, { id }, context) => {
-      context?.dismiss();
+    onError: (error, _, context) => {
+      context?.dismiss?.();
 
-      optimisticUpdates.forEach(({ key, procedure, args, type }) => {
-        if (type === "query") {
-          procedure.setData(args, context?.previousData[key]);
-        }
+      utils.experiences.feed.setInfiniteData({}, context?.previousData.feed);
 
-        if (type === "infiniteQuery") {
-          procedure.setInfiniteData(args, context?.previousData[key]);
-        }
-      });
+      if (pathQ || pathScheduledAt || pathTags) {
+        utils.experiences.search.setInfiniteData(
+          {
+            q: pathQ,
+            scheduledAt: pathScheduledAt,
+            tags: pathTags,
+          },
+          context?.previousData.search,
+        );
+      }
 
-      // utils.experiences.byId.setData({ id }, context?.previousData.byId);
+      utils.experiences.favorites.setInfiniteData(
+        {},
+        context?.previousData.favorites,
+      );
 
-      // utils.experiences.feed.setInfiniteData({}, context?.previousData.feed);
+      if (pathUserId) {
+        utils.experiences.byUserId.setInfiniteData(
+          { id: pathUserId },
+          context?.previousData.byUserId,
+        );
+      }
 
-      // if (pathQ || pathScheduledAt || pathTags) {
-      //   utils.experiences.search.setInfiniteData(
-      //     {
-      //       q: pathQ,
-      //       scheduledAt: pathScheduledAt,
-      //       tags: pathTags,
-      //     },
-      //     context?.previousData.search,
-      //   );
-      // }
-
-      // utils.experiences.favorites.setInfiniteData(
-      //   {},
-      //   context?.previousData.favorites,
-      // );
-
-      // if (pathUserId) {
-      //   utils.users.experiences.setInfiniteData(
-      //     { id: pathUserId },
-      //     context?.previousData.byUserId,
-      //   );
-      // }
-
-      // if (pathTagId) {
-      //   utils.tags.experiences.setInfiniteData(
-      //     { id: pathTagId },
-      //     context?.previousData.byTagId,
-      //   );
-      // }
+      if (pathTagId) {
+        utils.experiences.byTagId.setInfiniteData(
+          { id: pathTagId },
+          context?.previousData.byTagId,
+        );
+      }
 
       toast({
         title: "Failed to delete experience",
@@ -825,84 +701,87 @@ export function useExperienceMutations(
 
   const favoriteMutation = trpc.experiences.favorite.useMutation({
     onMutate: async ({ id }) => {
-      if (!currentUser) {
-        return;
-      }
-
-      function updateExperience<T extends { isFavorited: boolean }>(
-        oldData: T,
-      ) {
+      function updateExperience<
+        T extends { isFavorited: boolean; favoritesCount: number },
+      >(oldData: T) {
         return {
           ...oldData,
           isFavorited: true,
+          favoritesCount: oldData.favoritesCount + 1,
         };
       }
 
-      await Promise.all(
-        optimisticUpdates.map(({ procedure, args }) => procedure.cancel(args)),
-      );
+      await Promise.all([
+        utils.experiences.byId.cancel({ id }),
+        utils.experiences.feed.cancel(),
+        pathQ || pathScheduledAt || pathTags
+          ? utils.experiences.search.cancel({
+              q: pathQ,
+              scheduledAt: pathScheduledAt,
+              tags: pathTags,
+            })
+          : undefined,
+        utils.experiences.favorites.cancel(),
+        pathUserId
+          ? utils.experiences.byUserId.cancel({ id: pathUserId })
+          : undefined,
+        pathTagId
+          ? utils.experiences.byTagId.cancel({ id: pathTagId })
+          : undefined,
+      ]);
 
-      // await Promise.all([
-      //   utils.experiences.byId.cancel({ id }),
-      //   utils.experiences.feed.cancel(),
-      //   pathQ || pathScheduledAt || pathTags
-      //     ? utils.experiences.search.cancel({
-      //         q: pathQ,
-      //         scheduledAt: pathScheduledAt,
-      //         tags: pathTags,
-      //       })
-      //     : undefined,
-      //   utils.experiences.favorites.cancel(),
-      //   pathUserId
-      //     ? utils.users.experiences.cancel({ id: pathUserId })
-      //     : undefined,
-      //   pathTagId
-      //     ? utils.tags.experiences.cancel({ id: pathTagId })
-      //     : undefined,
-      // ]);
+      const previousData = {
+        byId: utils.experiences.byId.getData({ id }),
+        feed: utils.experiences.feed.getInfiniteData(),
+        search:
+          pathQ || pathScheduledAt || pathTags
+            ? utils.experiences.search.getInfiniteData({
+                q: pathQ,
+                scheduledAt: pathScheduledAt,
+                tags: pathTags,
+              })
+            : undefined,
+        favorites: utils.experiences.favorites.getInfiniteData(),
+        byUserId: pathUserId
+          ? utils.experiences.byUserId.getInfiniteData({ id: pathUserId })
+          : undefined,
+        byTagId: pathTagId
+          ? utils.experiences.byTagId.getInfiniteData({ id: pathTagId })
+          : undefined,
+      };
 
-      const previousData = optimisticUpdates.map(
-        ({ key, procedure, args, type }) => ({
-          [key]:
-            type === "query"
-              ? procedure.getData(args)
-              : procedure.getInfiniteData(args),
-        }),
-      );
-
-      // const previousData = {
-      //   byId: utils.experiences.byId.getData({ id }),
-      //   feed: utils.experiences.feed.getInfiniteData(),
-      //   search:
-      //     pathQ || pathScheduledAt || pathTags
-      //       ? utils.experiences.search.getInfiniteData({
-      //           q: pathQ,
-      //           scheduledAt: pathScheduledAt,
-      //           tags: pathTags,
-      //         })
-      //       : undefined,
-      //   favorites: utils.experiences.favorites.getInfiniteData(),
-      //   byUserId: pathUserId
-      //     ? utils.users.experiences.getInfiniteData({ id: pathUserId })
-      //     : undefined,
-      //   byTagId: pathTagId
-      //     ? utils.tags.experiences.getInfiniteData({ id: pathTagId })
-      //     : undefined,
-      // };
-
-      optimisticUpdates.forEach(({ procedure, args, type }) => {
-        if (type === "query") {
-          procedure.setData(args, (oldData) => {
-            if (!oldData) {
-              return;
-            }
-
-            return updateExperience(oldData);
-          });
+      utils.experiences.byId.setData({ id }, (oldData) => {
+        if (!oldData) {
+          return;
         }
 
-        if (type === "infiniteQuery") {
-          procedure.setInfiniteData(args, (oldData) => {
+        return updateExperience(oldData);
+      });
+
+      utils.experiences.feed.setInfiniteData({}, (oldData) => {
+        if (!oldData) {
+          return { pages: [], pageParams: [] };
+        }
+
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page) => ({
+            ...page,
+            experiences: page.experiences.map((e) =>
+              e.id === experienceId ? updateExperience(e) : e,
+            ),
+          })),
+        };
+      });
+
+      if (pathQ || pathScheduledAt || pathTags) {
+        utils.experiences.search.setInfiniteData(
+          {
+            q: pathQ,
+            scheduledAt: pathScheduledAt,
+            tags: pathTags,
+          },
+          (oldData) => {
             if (!oldData) {
               return { pages: [], pageParams: [] };
             }
@@ -916,160 +795,104 @@ export function useExperienceMutations(
                 ),
               })),
             };
-          });
+          },
+        );
+      }
+
+      utils.experiences.favorites.setInfiniteData({}, (oldData) => {
+        if (!oldData) {
+          return { pages: [], pageParams: [] };
         }
+
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page) => ({
+            ...page,
+            experiences: page.experiences.map((e) =>
+              e.id === experienceId ? updateExperience(e) : e,
+            ),
+          })),
+        };
       });
 
-      // utils.experiences.byId.setData({ id }, (oldData) => {
-      //   if (!oldData) {
-      //     return;
-      //   }
+      if (pathUserId) {
+        utils.experiences.byUserId.setInfiniteData(
+          { id: pathUserId },
+          (oldData) => {
+            if (!oldData) {
+              return { pages: [], pageParams: [] };
+            }
 
-      //   return updateExperience(oldData);
-      // });
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page) => ({
+                ...page,
+                experiences: page.experiences.map((e) =>
+                  e.id === experienceId ? updateExperience(e) : e,
+                ),
+              })),
+            };
+          },
+        );
+      }
 
-      // utils.experiences.feed.setInfiniteData({}, (oldData) => {
-      //   if (!oldData) {
-      //     return { pages: [], pageParams: [] };
-      //   }
+      if (pathTagId) {
+        utils.experiences.byTagId.setInfiniteData(
+          { id: pathTagId },
+          (oldData) => {
+            if (!oldData) {
+              return { pages: [], pageParams: [] };
+            }
 
-      //   return {
-      //     ...oldData,
-      //     pages: oldData.pages.map((page) => ({
-      //       ...page,
-      //       experiences: page.experiences.map((e) =>
-      //         e.id === experienceId ? updateExperience(e) : e,
-      //       ),
-      //     })),
-      //   };
-      // });
-
-      // if (pathQ || pathScheduledAt || pathTags) {
-      //   utils.experiences.search.setInfiniteData(
-      //     {
-      //       q: pathQ,
-      //       scheduledAt: pathScheduledAt,
-      //       tags: pathTags,
-      //     },
-      //     (oldData) => {
-      //       if (!oldData) {
-      //         return { pages: [], pageParams: [] };
-      //       }
-
-      //       return {
-      //         ...oldData,
-      //         pages: oldData.pages.map((page) => ({
-      //           ...page,
-      //           experiences: page.experiences.map((e) =>
-      //             e.id === experienceId ? updateExperience(e) : e,
-      //           ),
-      //         })),
-      //       };
-      //     },
-      //   );
-      // }
-
-      // utils.experiences.favorites.setInfiniteData({}, (oldData) => {
-      //   if (!oldData) {
-      //     return { pages: [], pageParams: [] };
-      //   }
-
-      //   return {
-      //     ...oldData,
-      //     pages: oldData.pages.map((page) => ({
-      //       ...page,
-      //       experiences: page.experiences.map((e) =>
-      //         e.id === experienceId ? updateExperience(e) : e,
-      //       ),
-      //     })),
-      //   };
-      // });
-
-      // if (pathUserId) {
-      //   utils.users.experiences.setInfiniteData(
-      //     { id: pathUserId },
-      //     (oldData) => {
-      //       if (!oldData) {
-      //         return { pages: [], pageParams: [] };
-      //       }
-
-      //       return {
-      //         ...oldData,
-      //         pages: oldData.pages.map((page) => ({
-      //           ...page,
-      //           experiences: page.experiences.map((e) =>
-      //             e.id === experienceId ? updateExperience(e) : e,
-      //           ),
-      //         })),
-      //       };
-      //     },
-      //   );
-      // }
-
-      // if (pathTagId) {
-      //   utils.tags.experiences.setInfiniteData({ id: pathTagId }, (oldData) => {
-      //     if (!oldData) {
-      //       return { pages: [], pageParams: [] };
-      //     }
-
-      //     return {
-      //       ...oldData,
-      //       pages: oldData.pages.map((page) => ({
-      //         ...page,
-      //         experiences: page.experiences.map((e) =>
-      //           e.id === experienceId ? updateExperience(e) : e,
-      //         ),
-      //       })),
-      //     };
-      //   });
-      // }
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page) => ({
+                ...page,
+                experiences: page.experiences.map((e) =>
+                  e.id === experienceId ? updateExperience(e) : e,
+                ),
+              })),
+            };
+          },
+        );
+      }
 
       return { previousData };
     },
     onError: (error, { id }, context) => {
-      optimisticUpdates.forEach(({ key, procedure, args, type }) => {
-        if (type === "query") {
-          procedure.setData(args, context?.previousData[key]);
-        }
+      utils.experiences.byId.setData({ id }, context?.previousData.byId);
 
-        if (type === "infiniteQuery") {
-          procedure.setInfiniteData(args, context?.previousData[key]);
-        }
-      });
+      utils.experiences.feed.setInfiniteData({}, context?.previousData.feed);
 
-      // utils.experiences.byId.setData({ id }, context?.previousData.byId);
+      if (pathQ || pathScheduledAt || pathTags) {
+        utils.experiences.search.setInfiniteData(
+          {
+            q: pathQ,
+            scheduledAt: pathScheduledAt,
+            tags: pathTags,
+          },
+          context?.previousData.search,
+        );
+      }
 
-      // utils.experiences.feed.setInfiniteData({}, context?.previousData.feed);
+      utils.experiences.favorites.setInfiniteData(
+        {},
+        context?.previousData.favorites,
+      );
 
-      // if (pathQ || pathScheduledAt || pathTags) {
-      //   utils.experiences.search.setInfiniteData(
-      //     {
-      //       q: pathQ,
-      //       scheduledAt: pathScheduledAt,
-      //       tags: pathTags,
-      //     },
-      //     context?.previousData.search,
-      //   );
-      // }
+      if (pathUserId) {
+        utils.experiences.byUserId.setInfiniteData(
+          { id: pathUserId },
+          context?.previousData.byUserId,
+        );
+      }
 
-      // utils.experiences.favorites.setInfiniteData(
-      //   {},
-      //   context?.previousData.favorites,
-      // );
-
-      // if (pathUserId) {
-      //   utils.users.experiences.setInfiniteData(
-      //     { id: pathUserId },
-      //     context?.previousData.byUserId,
-      //   );
-      // }
-
-      // if (pathTagId) {
-      //   utils.tags.experiences.setInfiniteData(
-      //     { id: pathTagId },
-      //     context?.previousData.byTagId,
-      //   );
-      // }
+      if (pathTagId) {
+        utils.experiences.byTagId.setInfiniteData(
+          { id: pathTagId },
+          context?.previousData.byTagId,
+        );
+      }
 
       toast({
         title: "Failed to favorite experience",
@@ -1081,84 +904,87 @@ export function useExperienceMutations(
 
   const unfavoriteMutation = trpc.experiences.unfavorite.useMutation({
     onMutate: async ({ id }) => {
-      if (!currentUser) {
-        return;
-      }
-
-      function updateExperience<T extends { isFavorited: boolean }>(
-        oldData: T,
-      ) {
+      function updateExperience<
+        T extends { isFavorited: boolean; favoritesCount: number },
+      >(oldData: T) {
         return {
           ...oldData,
           isFavorited: false,
+          favoritesCount: oldData.favoritesCount - 1,
         };
       }
 
-      await Promise.all(
-        optimisticUpdates.map(({ procedure, args }) => procedure.cancel(args)),
-      );
+      await Promise.all([
+        utils.experiences.byId.cancel({ id }),
+        utils.experiences.feed.cancel(),
+        pathQ || pathScheduledAt || pathTags
+          ? utils.experiences.search.cancel({
+              q: pathQ,
+              scheduledAt: pathScheduledAt,
+              tags: pathTags,
+            })
+          : undefined,
+        utils.experiences.favorites.cancel(),
+        pathUserId
+          ? utils.experiences.byUserId.cancel({ id: pathUserId })
+          : undefined,
+        pathTagId
+          ? utils.experiences.byTagId.cancel({ id: pathTagId })
+          : undefined,
+      ]);
 
-      // await Promise.all([
-      //   utils.experiences.byId.cancel({ id }),
-      //   utils.experiences.feed.cancel(),
-      //   pathQ || pathScheduledAt || pathTags
-      //     ? utils.experiences.search.cancel({
-      //         q: pathQ,
-      //         scheduledAt: pathScheduledAt,
-      //         tags: pathTags,
-      //       })
-      //     : undefined,
-      //   utils.experiences.favorites.cancel(),
-      //   pathUserId
-      //     ? utils.users.experiences.cancel({ id: pathUserId })
-      //     : undefined,
-      //   pathTagId
-      //     ? utils.tags.experiences.cancel({ id: pathTagId })
-      //     : undefined,
-      // ]);
+      const previousData = {
+        byId: utils.experiences.byId.getData({ id }),
+        feed: utils.experiences.feed.getInfiniteData(),
+        search:
+          pathQ || pathScheduledAt || pathTags
+            ? utils.experiences.search.getInfiniteData({
+                q: pathQ,
+                scheduledAt: pathScheduledAt,
+                tags: pathTags,
+              })
+            : undefined,
+        favorites: utils.experiences.favorites.getInfiniteData(),
+        byUserId: pathUserId
+          ? utils.experiences.byUserId.getInfiniteData({ id: pathUserId })
+          : undefined,
+        byTagId: pathTagId
+          ? utils.experiences.byTagId.getInfiniteData({ id: pathTagId })
+          : undefined,
+      };
 
-      const previousData = optimisticUpdates.map(
-        ({ key, procedure, args, type }) => ({
-          [key]:
-            type === "query"
-              ? procedure.getData(args)
-              : procedure.getInfiniteData(args),
-        }),
-      );
-
-      // const previousData = {
-      //   byId: utils.experiences.byId.getData({ id }),
-      //   feed: utils.experiences.feed.getInfiniteData(),
-      //   search:
-      //     pathQ || pathScheduledAt || pathTags
-      //       ? utils.experiences.search.getInfiniteData({
-      //           q: pathQ,
-      //           scheduledAt: pathScheduledAt,
-      //           tags: pathTags,
-      //         })
-      //       : undefined,
-      //   favorites: utils.experiences.favorites.getInfiniteData(),
-      //   byUserId: pathUserId
-      //     ? utils.users.experiences.getInfiniteData({ id: pathUserId })
-      //     : undefined,
-      //   byTagId: pathTagId
-      //     ? utils.tags.experiences.getInfiniteData({ id: pathTagId })
-      //     : undefined,
-      // };
-
-      optimisticUpdates.forEach(({ procedure, args, type }) => {
-        if (type === "query") {
-          procedure.setData(args, (oldData) => {
-            if (!oldData) {
-              return;
-            }
-
-            return updateExperience(oldData);
-          });
+      utils.experiences.byId.setData({ id }, (oldData) => {
+        if (!oldData) {
+          return;
         }
 
-        if (type === "infiniteQuery") {
-          procedure.setInfiniteData(args, (oldData) => {
+        return updateExperience(oldData);
+      });
+
+      utils.experiences.feed.setInfiniteData({}, (oldData) => {
+        if (!oldData) {
+          return { pages: [], pageParams: [] };
+        }
+
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page) => ({
+            ...page,
+            experiences: page.experiences.map((e) =>
+              e.id === experienceId ? updateExperience(e) : e,
+            ),
+          })),
+        };
+      });
+
+      if (pathQ || pathScheduledAt || pathTags) {
+        utils.experiences.search.setInfiniteData(
+          {
+            q: pathQ,
+            scheduledAt: pathScheduledAt,
+            tags: pathTags,
+          },
+          (oldData) => {
             if (!oldData) {
               return { pages: [], pageParams: [] };
             }
@@ -1167,162 +993,106 @@ export function useExperienceMutations(
               ...oldData,
               pages: oldData.pages.map((page) => ({
                 ...page,
-                experiences: page.experiences.filter(
-                  (e) => e.id !== experienceId,
+                experiences: page.experiences.map((e) =>
+                  e.id === experienceId ? updateExperience(e) : e,
                 ),
               })),
             };
-          });
+          },
+        );
+      }
+
+      utils.experiences.favorites.setInfiniteData({}, (oldData) => {
+        if (!oldData) {
+          return { pages: [], pageParams: [] };
         }
+
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page) => ({
+            ...page,
+            experiences: page.experiences.filter((e) => e.id !== experienceId),
+          })),
+        };
       });
 
-      // utils.experiences.byId.setData({ id }, (oldData) => {
-      //   if (!oldData) {
-      //     return;
-      //   }
+      if (pathUserId) {
+        utils.experiences.byUserId.setInfiniteData(
+          { id: pathUserId },
+          (oldData) => {
+            if (!oldData) {
+              return { pages: [], pageParams: [] };
+            }
 
-      //   return updateExperience(oldData);
-      // });
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page) => ({
+                ...page,
+                experiences: page.experiences.map((e) =>
+                  e.id === experienceId ? updateExperience(e) : e,
+                ),
+              })),
+            };
+          },
+        );
+      }
 
-      // utils.experiences.feed.setInfiniteData({}, (oldData) => {
-      //   if (!oldData) {
-      //     return { pages: [], pageParams: [] };
-      //   }
+      if (pathTagId) {
+        utils.experiences.byTagId.setInfiniteData(
+          { id: pathTagId },
+          (oldData) => {
+            if (!oldData) {
+              return { pages: [], pageParams: [] };
+            }
 
-      //   return {
-      //     ...oldData,
-      //     pages: oldData.pages.map((page) => ({
-      //       ...page,
-      //       experiences: page.experiences.map((e) =>
-      //         e.id === experienceId ? updateExperience(e) : e,
-      //       ),
-      //     })),
-      //   };
-      // });
-
-      // if (pathQ || pathScheduledAt || pathTags) {
-      //   utils.experiences.search.setInfiniteData(
-      //     {
-      //       q: pathQ,
-      //       scheduledAt: pathScheduledAt,
-      //       tags: pathTags,
-      //     },
-      //     (oldData) => {
-      //       if (!oldData) {
-      //         return { pages: [], pageParams: [] };
-      //       }
-
-      //       return {
-      //         ...oldData,
-      //         pages: oldData.pages.map((page) => ({
-      //           ...page,
-      //           experiences: page.experiences.map((e) =>
-      //             e.id === experienceId ? updateExperience(e) : e,
-      //           ),
-      //         })),
-      //       };
-      //     },
-      //   );
-      // }
-
-      // utils.experiences.favorites.setInfiniteData({}, (oldData) => {
-      //   if (!oldData) {
-      //     return { pages: [], pageParams: [] };
-      //   }
-
-      //   return {
-      //     ...oldData,
-      //     pages: oldData.pages.map((page) => ({
-      //       ...page,
-      //       experiences: page.experiences.filter((e) => e.id !== experienceId),
-      //     })),
-      //   };
-      // });
-
-      // if (pathUserId) {
-      //   utils.users.experiences.setInfiniteData(
-      //     { id: pathUserId },
-      //     (oldData) => {
-      //       if (!oldData) {
-      //         return { pages: [], pageParams: [] };
-      //       }
-
-      //       return {
-      //         ...oldData,
-      //         pages: oldData.pages.map((page) => ({
-      //           ...page,
-      //           experiences: page.experiences.map((e) =>
-      //             e.id === experienceId ? updateExperience(e) : e,
-      //           ),
-      //         })),
-      //       };
-      //     },
-      //   );
-      // }
-
-      // if (pathTagId) {
-      //   utils.tags.experiences.setInfiniteData({ id: pathTagId }, (oldData) => {
-      //     if (!oldData) {
-      //       return { pages: [], pageParams: [] };
-      //     }
-
-      //     return {
-      //       ...oldData,
-      //       pages: oldData.pages.map((page) => ({
-      //         ...page,
-      //         experiences: page.experiences.map((e) =>
-      //           e.id === experienceId ? updateExperience(e) : e,
-      //         ),
-      //       })),
-      //     };
-      //   });
-      // }
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page) => ({
+                ...page,
+                experiences: page.experiences.map((e) =>
+                  e.id === experienceId ? updateExperience(e) : e,
+                ),
+              })),
+            };
+          },
+        );
+      }
 
       return { previousData };
     },
-    onError: (error, __, context) => {
-      optimisticUpdates.forEach(({ key, procedure, args, type }) => {
-        if (type === "query") {
-          procedure.setData(args, context?.previousData[key]);
-        }
+    onError: (error, { id }, context) => {
+      utils.experiences.byId.setData({ id }, context?.previousData.byId);
+      utils.experiences.feed.setInfiniteData({}, context?.previousData.feed);
 
-        if (type === "infiniteQuery") {
-          procedure.setInfiniteData(args, context?.previousData[key]);
-        }
-      });
+      if (pathQ || pathScheduledAt || pathTags) {
+        utils.experiences.search.setInfiniteData(
+          {
+            q: pathQ,
+            scheduledAt: pathScheduledAt,
+            tags: pathTags,
+          },
+          context?.previousData.search,
+        );
+      }
 
-      // utils.experiences.byId.setData({ id }, context?.previousData.byId);
-      // utils.experiences.feed.setInfiniteData({}, context?.previousData.feed);
+      utils.experiences.favorites.setInfiniteData(
+        {},
+        context?.previousData.favorites,
+      );
 
-      // if (pathQ || pathScheduledAt || pathTags) {
-      //   utils.experiences.search.setInfiniteData(
-      //     {
-      //       q: pathQ,
-      //       scheduledAt: pathScheduledAt,
-      //       tags: pathTags,
-      //     },
-      //     context?.previousData.search,
-      //   );
-      // }
+      if (pathUserId) {
+        utils.experiences.byUserId.setInfiniteData(
+          { id: pathUserId },
+          context?.previousData.byUserId,
+        );
+      }
 
-      // utils.experiences.favorites.setInfiniteData(
-      //   {},
-      //   context?.previousData.favorites,
-      // );
-
-      // if (pathUserId) {
-      //   utils.users.experiences.setInfiniteData(
-      //     { id: pathUserId },
-      //     context?.previousData.byUserId,
-      //   );
-      // }
-
-      // if (pathTagId) {
-      //   utils.tags.experiences.setInfiniteData(
-      //     { id: pathTagId },
-      //     context?.previousData.byTagId,
-      //   );
-      // }
+      if (pathTagId) {
+        utils.experiences.byTagId.setInfiniteData(
+          { id: pathTagId },
+          context?.previousData.byTagId,
+        );
+      }
 
       toast({
         title: "Failed to unfavorite experience",
@@ -1332,11 +1102,60 @@ export function useExperienceMutations(
     },
   });
 
+  const kickMutation = trpc.experiences.kickAttendee.useMutation({
+    onMutate: async ({ userId, experienceId }) => {
+      await utils.users.experienceAttendees.cancel();
+
+      const prevData = utils.users.experienceAttendees.getInfiniteData({
+        experienceId,
+      });
+
+      utils.users.experienceAttendees.setInfiniteData(
+        { experienceId },
+        (old) => {
+          if (!old) {
+            return {
+              pages: [],
+              pageParams: [],
+            };
+          }
+
+          return {
+            ...old,
+            pages: old.pages.map((page) => ({
+              ...page,
+              attendees: page.attendees.filter(
+                (attendee) => attendee.id !== userId,
+              ),
+              attendeesCount: page.attendeesCount - 1,
+            })),
+          };
+        },
+      );
+
+      return { prevData };
+    },
+    onError: (_, { experienceId }, context) => {
+      if (context?.prevData) {
+        utils.users.experienceAttendees.setInfiniteData(
+          { experienceId },
+          context.prevData,
+        );
+      }
+    },
+    onSuccess: () => {
+      options.kick?.onSuccess?.();
+    },
+  });
+
   return {
+    addMutation,
+    editMutation,
     attendMutation,
     unattendMutation,
     deleteMutation,
     favoriteMutation,
     unfavoriteMutation,
+    kickMutation,
   };
 }

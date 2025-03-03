@@ -3,15 +3,11 @@ import { useEffect, useRef, useState } from "react";
 
 import Input from "./Input";
 
-export type FileInputProps = React.InputHTMLAttributes<HTMLInputElement> & {
-  ref?: React.RefObject<HTMLInputElement> | React.RefCallback<HTMLInputElement>;
-};
+export type FileInputProps = React.InputHTMLAttributes<HTMLInputElement>;
 
-export default function FileInput({ ref, onChange, ...props }: FileInputProps) {
+export default function FileInput({ onChange, ...props }: FileInputProps) {
   const [preview, setPreview] = useState<string>();
   const inputRef = useRef<HTMLInputElement>(null);
-
-  const resolvedRef = ref || inputRef;
 
   useEffect(() => {
     return () => {
@@ -43,8 +39,8 @@ export default function FileInput({ ref, onChange, ...props }: FileInputProps) {
       setPreview(undefined);
     }
 
-    if (resolvedRef.current) {
-      resolvedRef.current.value = "";
+    if (inputRef.current) {
+      inputRef.current.value = "";
     }
 
     onChange?.(
@@ -56,7 +52,7 @@ export default function FileInput({ ref, onChange, ...props }: FileInputProps) {
 
   return (
     <div className="space-y-4">
-      <Input ref={resolvedRef} type="file" onChange={handleChange} {...props} />
+      <Input ref={inputRef} type="file" onChange={handleChange} {...props} />
       {preview && (
         <div className="relative inline-block">
           <button
@@ -69,7 +65,7 @@ export default function FileInput({ ref, onChange, ...props }: FileInputProps) {
           <img
             src={preview}
             alt="Preview"
-            className="max-h-48 rounded-lg object-contain"
+            className="h-48 w-48 rounded-lg object-cover"
           />
         </div>
       )}

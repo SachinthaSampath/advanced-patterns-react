@@ -29,44 +29,41 @@ function Search() {
   );
 
   return (
-    <div className="container mx-auto p-4">
-      <div className="max-w-feed mx-auto flex flex-col gap-4">
-        <ExperienceFilters
-          onFiltersChange={(filters) => {
-            navigate({
-              search: filters,
-            });
-          }}
-          initialFilters={search}
+    <main className="space-y-4">
+      <ExperienceFilters
+        onFiltersChange={(filters) => {
+          navigate({
+            search: filters,
+          });
+        }}
+        initialFilters={search}
+      />
+      <InfiniteScroll
+        onLoadMore={() => {
+          if (
+            experiencesQuery.hasNextPage &&
+            !experiencesQuery.isFetchingNextPage
+          ) {
+            experiencesQuery.fetchNextPage();
+          }
+        }}
+        hasNextPage={experiencesQuery.hasNextPage}
+      >
+        <ExperienceList
+          experiences={
+            experiencesQuery.data?.pages.flatMap((page) => page.experiences) ??
+            []
+          }
+          isLoading={
+            experiencesQuery.isLoading || experiencesQuery.isFetchingNextPage
+          }
+          noExperiencesMessage={
+            !!search.q || !!search.scheduledAt || !!search.tags
+              ? "No experiences found"
+              : "Search to find experiences"
+          }
         />
-        <InfiniteScroll
-          onLoadMore={() => {
-            if (
-              experiencesQuery.hasNextPage &&
-              !experiencesQuery.isFetchingNextPage
-            ) {
-              experiencesQuery.fetchNextPage();
-            }
-          }}
-          hasNextPage={experiencesQuery.hasNextPage}
-        >
-          <ExperienceList
-            experiences={
-              experiencesQuery.data?.pages.flatMap(
-                (page) => page.experiences,
-              ) ?? []
-            }
-            isLoading={
-              experiencesQuery.isLoading || experiencesQuery.isFetchingNextPage
-            }
-            noExperiencesMessage={
-              !!search.q || !!search.scheduledAt || !!search.tags
-                ? "No experiences found"
-                : "Search by name or date to find experiences"
-            }
-          />
-        </InfiniteScroll>
-      </div>
-    </div>
+      </InfiniteScroll>
+    </main>
   );
 }

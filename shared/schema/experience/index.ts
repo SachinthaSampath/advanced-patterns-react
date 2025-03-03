@@ -14,7 +14,7 @@ export const experienceValidationSchema = zfd.formData({
   title: zfd.text(z.string().min(1, "Title is required")),
   content: zfd.text(z.string().min(1, "Content is required")),
   scheduledAt: zfd.text(z.string().datetime("Invalid date")),
-  url: zfd.text(z.string().url("Invalid link").nullable()),
+  url: zfd.text(z.string().url("Invalid link")).nullable(),
   image: zfd.file().optional(),
   location: zfd.json(locationSchema),
 });
