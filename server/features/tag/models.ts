@@ -1,13 +1,13 @@
-import { index, int, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { index, integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { createSelectSchema } from "drizzle-zod";
 
-export const tagsTable = sqliteTable(
+export const tagsTable = pgTable(
   "tags",
   {
-    id: int().primaryKey({ autoIncrement: true }),
+    id: integer().primaryKey().generatedAlwaysAsIdentity(),
     name: text("name").notNull().unique(),
-    createdAt: text("created_at").notNull(),
-    updatedAt: text("updated_at").notNull(),
+    createdAt: timestamp("created_at", { mode: "string" }).notNull(),
+    updatedAt: timestamp("updated_at", { mode: "string" }).notNull(),
   },
   (table) => ({
     tags_name_idx: index("tags_name_idx").on(table.name),
