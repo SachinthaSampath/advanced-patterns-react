@@ -1,32 +1,33 @@
 import {
   index,
-  int,
+  integer,
+  pgTable,
   primaryKey,
-  sqliteTable,
   text,
-} from "drizzle-orm/sqlite-core";
+  timestamp,
+} from "drizzle-orm/pg-core";
 import { createSelectSchema } from "drizzle-zod";
 
 import { usersTable } from "../auth/models";
 import { tagsTable } from "../tag/models";
 
-export const experiencesTable = sqliteTable(
+export const experiencesTable = pgTable(
   "experiences",
   {
-    id: int().primaryKey({ autoIncrement: true }),
+    id: integer().primaryKey().generatedAlwaysAsIdentity(),
     title: text("title").notNull(),
     content: text("content").notNull(),
-    scheduledAt: text("scheduled_at").notNull(),
+    scheduledAt: timestamp("scheduled_at", { mode: "string" }).notNull(),
     url: text("url"),
     imageUrl: text("image_url"),
     location: text("location"),
 
-    userId: int("user_id")
+    userId: integer("user_id")
       .notNull()
       .references(() => usersTable.id, { onDelete: "cascade" }),
 
-    createdAt: text("created_at").notNull(),
-    updatedAt: text("updated_at").notNull(),
+    createdAt: timestamp("created_at", { mode: "string" }).notNull(),
+    updatedAt: timestamp("updated_at", { mode: "string" }).notNull(),
   },
   (table) => ({
     experiences_user_id_idx: index("experiences_user_id_idx").on(table.userId),
@@ -37,16 +38,16 @@ export const experienceSelectSchema = createSelectSchema(experiencesTable);
 
 export type Experience = typeof experiencesTable.$inferSelect;
 
-export const experienceAttendeesTable = sqliteTable(
+export const experienceAttendeesTable = pgTable(
   "experience_attendees",
   {
-    experienceId: int("experience_id")
+    experienceId: integer("experience_id")
       .notNull()
       .references(() => experiencesTable.id, { onDelete: "cascade" }),
-    userId: int("user_id")
+    userId: integer("user_id")
       .notNull()
       .references(() => usersTable.id, { onDelete: "cascade" }),
-    createdAt: text("created_at").notNull(),
+    createdAt: timestamp("created_at", { mode: "string" }).notNull(),
   },
   (table) => ({
     experience_attendees_pk: primaryKey({
@@ -63,16 +64,16 @@ export const experienceAttendeesTable = sqliteTable(
 
 export type ExperienceAttendee = typeof experienceAttendeesTable.$inferSelect;
 
-export const experienceTagsTable = sqliteTable(
+export const experienceTagsTable = pgTable(
   "experience_tags",
   {
-    experienceId: int("experience_id")
+    experienceId: integer("experience_id")
       .notNull()
       .references(() => experiencesTable.id, { onDelete: "cascade" }),
-    tagId: int("tag_id")
+    tagId: integer("tag_id")
       .notNull()
       .references(() => tagsTable.id, { onDelete: "cascade" }),
-    createdAt: text("created_at").notNull(),
+    createdAt: timestamp("created_at", { mode: "string" }).notNull(),
   },
   (table) => ({
     experience_tags_pk: primaryKey({
@@ -90,16 +91,16 @@ export const experienceTagSelectSchema =
   createSelectSchema(experienceTagsTable);
 export type ExperienceTag = typeof experienceTagsTable.$inferSelect;
 
-export const experienceFavoritesTable = sqliteTable(
+export const experienceFavoritesTable = pgTable(
   "experience_favorites",
   {
-    experienceId: int("experience_id")
+    experienceId: integer("experience_id")
       .notNull()
       .references(() => experiencesTable.id, { onDelete: "cascade" }),
-    userId: int("user_id")
+    userId: integer("user_id")
       .notNull()
       .references(() => usersTable.id, { onDelete: "cascade" }),
-    createdAt: text("created_at").notNull(),
+    createdAt: timestamp("created_at", { mode: "string" }).notNull(),
   },
   (table) => ({
     experience_favorites_pk: primaryKey({

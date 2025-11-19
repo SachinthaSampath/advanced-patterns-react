@@ -1,15 +1,15 @@
-import { int, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { integer, pgTable, primaryKey, text, timestamp } from "drizzle-orm/pg-core";
 import { createSelectSchema } from "drizzle-zod";
 
-export const usersTable = sqliteTable("users", {
-  id: int().primaryKey({ autoIncrement: true }),
+export const usersTable = pgTable("users", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
   name: text().notNull(),
   bio: text(),
   avatarUrl: text(),
   email: text().notNull().unique(),
   password: text().notNull(),
-  createdAt: text().notNull(),
-  updatedAt: text().notNull(),
+  createdAt: timestamp("created_at", { mode: "string" }).notNull(),
+  updatedAt: timestamp("updated_at", { mode: "string" }).notNull(),
 });
 
 export const userSelectSchema = createSelectSchema(usersTable);
@@ -18,16 +18,16 @@ export const cleanUserSelectSchema = userSelectSchema.omit({
   email: true,
 });
 
-export const userFollowsTable = sqliteTable(
+export const userFollowsTable = pgTable(
   "user_follows",
   {
-    followerId: int("follower_id")
+    followerId: integer("follower_id")
       .notNull()
       .references(() => usersTable.id, { onDelete: "cascade" }),
-    followingId: int("following_id")
+    followingId: integer("following_id")
       .notNull()
       .references(() => usersTable.id, { onDelete: "cascade" }),
-    createdAt: text("created_at").notNull(),
+    createdAt: timestamp("created_at", { mode: "string" }).notNull(),
   },
   (table) => ({
     pk: primaryKey({ columns: [table.followerId, table.followingId] }),
