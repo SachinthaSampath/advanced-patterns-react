@@ -5,7 +5,10 @@
   "scripts": {
     "lint": "eslint \"**/*.{ts,tsx}\"",
     "lint:fix": "eslint \"**/*.{ts,tsx}\" --fix",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "dev": "concurrently \"pnpm --filter @advanced-react/server dev\" \"pnpm --filter @advanced-react/client dev\" ",
+    "dev:client": "pnpm --filter @advanced-react/client dev",
+    "dev:server": "pnpm --filter @advanced-react/server dev"
   },
   "dependencies": {
     "zod": "^3.23.8",
@@ -15,6 +18,7 @@
     "@types/node": "^22.9.1",
     "@typescript-eslint/eslint-plugin": "^8.15.0",
     "@typescript-eslint/parser": "^8.15.0",
+    "concurrently": "^9.2.1",
     "eslint": "^9.15.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-react": "^7.33.2",
