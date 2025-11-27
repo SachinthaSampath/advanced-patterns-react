@@ -1,16 +1,16 @@
 import { Button } from "@/features/shared/components/ui/Button";
 import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormMessage,
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
 } from "@/features/shared/components/ui/Form";
 import { TextArea } from "@/features/shared/components/ui/TextArea";
 import { useToast } from "@/features/shared/hooks/useToast";
 import { trpc } from "@/trpc";
 import { Comment } from "@advanced-react/server/database/schema";
-import { commentValidationSchema } from "@advanced-react/shared/schema/comment";
+import { commentValidationSchema } from "@advanced-react/shared/comment";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -72,7 +72,7 @@ export function CommentEditForm({
               <FormControl>
                 <TextArea {...field} placeholder="Add a comment..." />
               </FormControl>
-              <FormMessage  />
+              <FormMessage />
             </FormItem>
           )}
         />

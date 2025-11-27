@@ -2,8 +2,10 @@ import { LinkIcon, MessageSquare } from "lucide-react";
 
 import Card from "@/features/shared/components/ui/Card";
 
-import { ExperienceForList } from "../types";
+import { replacePortNumber } from "@advanced-react/shared/url-utils";
+
 import { CommentSection } from "@/features/comment/components/CommentSection";
+import { ExperienceForList } from "../types";
 
 type ExperienceCardProps = {
   experience: ExperienceForList;
@@ -37,7 +39,7 @@ function ExperienceCardMedia({ experience }: ExperienceCardMediaProps) {
   return (
     <div className="aspect-video w-full">
       <img
-        src={experience.imageUrl}
+        src={replacePortNumber(experience.imageUrl, 5173)}
         alt={experience.title}
         className="h-full w-full object-cover"
       />
