@@ -2,6 +2,9 @@
   "name": "@advanced-react/shared",
   "exports": {
     "./url-utils": "./utils/url-utils.ts",
+    "./schema/comment": "./schema/comment/index.ts",
+    "./schema/auth": "./schema/auth/index.ts",
+    "./schema/experience": "./schema/experience/index.ts",
     "./comment": "./schema/comment/index.ts"
   }
 }
