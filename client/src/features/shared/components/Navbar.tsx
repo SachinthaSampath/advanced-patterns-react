@@ -1,5 +1,6 @@
 import { HomeIcon } from "lucide-react";
 import Link from "./ui/Link";
+import ThemeToggle from "./ThemeToggle";
 
 export default function Navigation() {
   const navLinkClassName =
@@ -18,6 +19,7 @@ export default function Navigation() {
       >
         <HomeIcon className="h-6 w-6" /> Home
       </Link>
+      <ThemeToggle />
     </nav>
   );
 }

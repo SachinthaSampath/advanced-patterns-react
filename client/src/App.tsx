@@ -3,6 +3,7 @@ import { httpBatchLink } from "@trpc/react-query";
 import { useState } from "react";
 import { InfiniteScroll } from "./features/shared/components/InfiniteScroll";
 import Navbar from "./features/shared/components/Navbar";
+import { ThemeProvider } from "./features/shared/components/ThemeProvider";
 import { Toaster } from "./features/shared/components/ui/Toaster";
 import { env } from "./lib/utils/env";
 import { trpc } from "@/router";
@@ -22,30 +23,32 @@ export function App() {
 
   return (
     <>
-      <trpc.Provider client={trpcClient} queryClient={queryClient}>
-        <QueryClientProvider client={queryClient}>
-          <Toaster />
-          <div className="flex justify-center gap-8 pb-8">
-            <Navbar />
-            <div className="min-h-screen w-full max-w-2xl">
-              <header className="mb-4 border-b border-neutral-200 p-4 dark:border-neutral-800">
-                <h1 className="text-center text-xl font-bold">
-                  Advanced Patterns React
-                </h1>
-                <p className="text-center text-sm text-neutral-500">
-                  <b>
-                    <span className="dark:text-primary-500">Cosden</span>{" "}
-                    Solutions
-                  </b>
-                </p>
-              </header>
-              <div className="space-y-4 p-4">
-                <Index />
+      <ThemeProvider defaultTheme="dark">
+        <trpc.Provider client={trpcClient} queryClient={queryClient}>
+          <QueryClientProvider client={queryClient}>
+            <Toaster />
+            <div className="flex justify-center gap-8 pb-8">
+              <Navbar />
+              <div className="min-h-screen w-full max-w-2xl">
+                <header className="mb-4 border-b border-neutral-200 p-4 dark:border-neutral-800">
+                  <h1 className="text-center text-xl font-bold">
+                    Advanced Patterns React
+                  </h1>
+                  <p className="text-center text-sm text-neutral-500">
+                    <b>
+                      <span className="dark:text-primary-500">Cosden</span>{" "}
+                      Solutions
+                    </b>
+                  </p>
+                </header>
+                <div className="space-y-4 p-4">
+                  <Index />
+                </div>
               </div>
             </div>
-          </div>
-        </QueryClientProvider>
-      </trpc.Provider>
+          </QueryClientProvider>
+        </trpc.Provider>
+      </ThemeProvider>
     </>
   );
 }
