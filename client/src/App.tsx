@@ -5,7 +5,7 @@ import { InfiniteScroll } from "./features/shared/components/InfiniteScroll";
 import Navbar from "./features/shared/components/Navbar";
 import { Toaster } from "./features/shared/components/ui/Toaster";
 import { env } from "./lib/utils/env";
-import { trpc } from "./trpc";
+import { trpc } from "@/router";
 import { ExperienceList } from "./features/experience/components/ExperienceList";
 
 export function App() {

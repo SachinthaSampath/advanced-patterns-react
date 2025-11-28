@@ -8,7 +8,7 @@ import {
 } from "@/features/shared/components/ui/Form";
 import { TextArea } from "@/features/shared/components/ui/TextArea";
 import { useToast } from "@/features/shared/hooks/useToast";
-import { trpc } from "@/trpc";
+import { trpc } from "@/router";
 import { Experience } from "@advanced-react/server/database/schema";
 import { commentValidationSchema } from "@advanced-react/shared/schema/comment";
 import { zodResolver } from "@hookform/resolvers/zod";
